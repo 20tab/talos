@@ -1,0 +1,4 @@
+{
+    "project_name": "20tab standard project",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '_').replace('-', '_') }}"
+}

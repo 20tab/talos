@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: development-{{cookiecutter.project_slug}}-nginx-media-config-map
+data:
+  nginx.conf: |
+    worker_processes        1;
+
+    events {
+      worker_connections  512;
+    }
+
+    http {
+      include    mime.types;
+
+      server {
+          location / {
+              root /app/;
+          }
+      }
+    }
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: development-{{cookiecutter.project_slug}}-media-nginx-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: development-{{cookiecutter.project_slug}}-media-nginx
+  template:
+    metadata:
+      labels:
+        component: development-{{cookiecutter.project_slug}}-media-nginx
+    spec:
+      volumes:
+        - name: development-{{cookiecutter.project_slug}}-nginx-config
+          configMap:
+            name: development-{{cookiecutter.project_slug}}-nginx-media-config-map
+        - name: development-{{cookiecutter.project_slug}}-media-volume
+          persistentVolumeClaim:
+            claimName: development-{{cookiecutter.project_slug}}-media-persistent-volume-claim
+      containers:
+        - name: nginx-media-files
+          image: nginx
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: development-{{cookiecutter.project_slug}}-nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: development-{{cookiecutter.project_slug}}-media-volume
+              mountPath: /app/media
+              subPath: media
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: development-{{cookiecutter.project_slug}}-media-nginx-cluster-ip-service
+spec:
+  type: ClusterIP
+  selector:
+    component: development-{{cookiecutter.project_slug}}-media-nginx
+  ports:
+    - port: 80
+      targetPort: 80

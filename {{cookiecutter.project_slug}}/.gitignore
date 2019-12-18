@@ -1,0 +1,8 @@
+.DS_Store
+.env
+.vscode
+.devcontainer
+kubeconfig.yaml
+secrets.yaml
+backend/
+frontend/

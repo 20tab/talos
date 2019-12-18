@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: development-{{cookiecutter.project_slug}}-postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: development-{{cookiecutter.project_slug}}-postgres
+  template:
+    metadata:
+      labels:
+        component: development-{{cookiecutter.project_slug}}-postgres
+    spec:
+      volumes:
+        - name: development-{{cookiecutter.project_slug}}-postgres-storage
+          persistentVolumeClaim:
+            claimName: development-{{cookiecutter.project_slug}}-postgres-persistent-volume-claim
+      containers:
+        - name: postgres
+          image: postgres:12
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: development-{{cookiecutter.project_slug}}-postgres-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: development-{{cookiecutter.project_slug}}-secrets
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: development-{{cookiecutter.project_slug}}-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: development-{{cookiecutter.project_slug}}-secrets
+                  key: POSTGRES_PASSWORD
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: development-{{cookiecutter.project_slug}}-postgres-cluster-ip-service
+spec:
+  type: ClusterIP
+  selector:
+    component: development-{{cookiecutter.project_slug}}-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

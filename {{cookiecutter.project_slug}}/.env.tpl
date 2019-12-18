@@ -1,0 +1,4 @@
+POSTGRES_DB={{cookiecutter.project_slug}}
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=
+POSTGRES_HOST=127.0.0.1

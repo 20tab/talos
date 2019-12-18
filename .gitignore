@@ -1,0 +1,50 @@
+# START https://github.com/github/gitignore/blob/master/Python.gitignore
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Sphinx documentation
+docs/_build/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# Pyre type checker
+.pyre/
+
+# END https://github.com/github/gitignore/blob/master/Python.gitignore
+
+# JetBrains
+.idea/
+
+# Eclipse / Kate
+*.swp
+
+# SublimeText
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.un~
+
+# VisualStudioCode
+.vscode/
+
+# macOS
+.DS_Store
+

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: __ENVIRONMENT__-{{cookiecutter.project_slug}}-secrets
+type: Opaque
+stringData:
+  API_URL:
+  DATABASE_URL:
+  DJANGO_ALLOWED_HOSTS:
+  DJANGO_CONFIGURATION:
+  DJANGO_HASHID_FIELD_SALT:
+  DJANGO_SECRET_KEY:
+  DJANGO_SERVER_EMAIL:
+  POSTGRES_DB:
+  POSTGRES_PASSWORD:
+  POSTGRES_USER:
+  POSTGRES_HOST:

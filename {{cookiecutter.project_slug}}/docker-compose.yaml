@@ -1,0 +1,60 @@
+version: "3.4"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:12
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/app
+      - static:/app/static
+      - media:/app/media
+    depends_on:
+      - postgres
+    environment: 
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: docker/dev.Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules/
+    depends_on:
+      - backend
+
+  nginx:
+    container_name: nginx
+    build: ./nginx
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/localhost.crt:/etc/nginx/localhost.crt
+      - ./nginx/localhost.key:/etc/nginx/localhost.key
+      - static:/static
+      - media:/media
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  pg_data: {}
+  static: {}
+  media: {}
