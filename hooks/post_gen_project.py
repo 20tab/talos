@@ -28,4 +28,9 @@ def copy_secrets():
             fd.write(text_production)
 
 
+def create_apps():
+    os.system('./bin/init.sh')
+
+
 copy_secrets()
+create_apps()

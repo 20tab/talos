@@ -12,5 +12,5 @@ stringData:
   EMAIL_URL: console:///
   POSTGRES_DB: {{cookiecutter.project_slug}}
   POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: password
-  POSTGRES_HOST: 127.0.0.1
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: postgres
