@@ -1,6 +1,7 @@
 # cat post_gen_project.py
 import os
 import shutil
+from cookiecutter.main import cookiecutter
 
 
 def remove(filepath):
@@ -30,6 +31,14 @@ def copy_secrets():
 
 def create_apps():
     os.system('./bin/init.sh')
+    cookiecutter(
+        'https://github.com/20tab/django-continuous-delivery',
+        extra_context={'project_name': "{{cookiecutter.project_name}}"}
+    )
+    cookiecutter(
+        'https://github.com/20tab/react-continuous-delivery',
+        extra_context={'project_name': "{{cookiecutter.project_name}}"}
+    )
 
 
 copy_secrets()
