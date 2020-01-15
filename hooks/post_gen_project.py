@@ -33,11 +33,16 @@ def create_apps():
     os.system('./bin/init.sh')
     cookiecutter(
         'https://github.com/20tab/django-continuous-delivery',
-        extra_context={'project_name': "{{cookiecutter.project_name}}"}
+        extra_context={
+            'project_name': "{{cookiecutter.project_name}}",
+            'static_url': "/backendstatic/"
+        },
+        no_input=True
     )
     cookiecutter(
         'https://github.com/20tab/react-continuous-delivery',
-        extra_context={'project_name': "{{cookiecutter.project_name}}"}
+        extra_context={'project_name': "{{cookiecutter.project_name}}"},
+        no_input=True
     )
 
 
