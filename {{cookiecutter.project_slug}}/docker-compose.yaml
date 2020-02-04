@@ -15,10 +15,12 @@ services:
     container_name: backend
     build:
       context: ./backend
+      target: dev
     volumes:
       - ./backend:/app
       - static:/app/static
       - media:/app/media
+      - ~/.ssh:/root/.ssh-localhost:ro
     depends_on:
       - postgres
     environment:
