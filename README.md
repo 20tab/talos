@@ -94,6 +94,7 @@ $ cd devopsproj
     namespace:  11 bytes
     token:      <authentication_token>
   ```
+- Assicurarsi di rimuovere la spunta a gitlab-managed cluster
 - Salvare le impostazioni su gitlab
 
 ### Apply dell'orchestratore
