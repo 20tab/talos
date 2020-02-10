@@ -13,4 +13,4 @@ stringData:
   POSTGRES_DB: {{cookiecutter.project_slug}}
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
-  POSTGRES_HOST: postgres
+  POSTGRES_HOST: __ENVIRONMENT__-{{cookiecutter.project_slug}}-postgres-cluster-ip-service
