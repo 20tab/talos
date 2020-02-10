@@ -13,7 +13,7 @@ spec:
             backend:
               serviceName: production-{{cookiecutter.project_slug}}-frontend-cluster-ip-service
               servicePort: 3000
-          - path: /static/
+          - path: /backendstatic/
             backend:
               serviceName: production-{{cookiecutter.project_slug}}-static-nginx-cluster-ip-service
               servicePort: 80
