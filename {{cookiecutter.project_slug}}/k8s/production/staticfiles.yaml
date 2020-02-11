@@ -16,7 +16,7 @@ data:
       server {
         location / {
           root /app/static/;
-          rewrite ^/([^/]+)(.*)$ /$2 break;
+          rewrite ^/([^/]+)(.*)$ $2 break;
         }
       }
     }
