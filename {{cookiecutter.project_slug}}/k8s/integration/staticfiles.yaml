@@ -14,9 +14,10 @@ data:
       include    mime.types;
 
       server {
-          location / {
-              root /app/;
-          }
+        location / {
+          root /app/static/;
+          rewrite ^/([^/]+)(.*)$ /$2 break;
+        }
       }
     }
 
