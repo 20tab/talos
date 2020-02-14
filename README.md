@@ -4,16 +4,55 @@ This is the [20tab](https://www.20tab.com/) standard project template based on [
 
 ## Outline
 
-* [Basic requirements](#basic-requirements)
+* [Conventions](#conventions)
+* [Workspace initialization](#workspace-initialization)
+    * [Basic requirements](#basic-requirements)
 * [Setup a new project](#setup-a-new-project)
     * [Start Project](#start-project)
 
-## Basic requirements
+## Conventions
+
+- replace `projects` with your actual projects directory
+
+- replace `project_name` with your chosen project name
+
+## Workspace initialization
+
+### Basic requirements
 
 **Cookiecutter** must be installed before initializing the project.
 
 ```shell
 $ pip install --user cookiecutter
+```
+
+#### Digital Ocean
+
+##### OSX
+
+```shell
+$ brew install doctl
+```
+
+##### Linux
+
+```shell
+$ snap install doctl
+$ sudo snap connect doctl:kube-config
+```
+
+#### Kubernetes
+
+##### OSX
+
+```shell
+$ brew install kubectl
+```
+
+##### Linux
+
+```shell
+$ sudo snap install kubectl --classic
 ```
 
 ## Setup a new project
@@ -26,38 +65,27 @@ Change directory and start a new project with this template:
 
 ```shell
 $ cd ~/projects/
-$ cookiecutter git@github.com:20tab/django-continuous-delivery.git
-project_name [20tab standard project]: devopsproj
-project_slug [devopsproj]:
-$ cd devopsproj
+$ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
+$ cookiecutter https://github.com/20tab/20tab-standard-project
+project_name [20tab standard project]: project_name
+project_slug [project_name]:
+$ cd project_name
 ```
 
 ---
 
 ## WIP
 
-### Requirements
-- doctl cli:
-    - Mac: brew install doctl
-    - Linux: snap install doctl
-- kubectl cli:
-  - Mac: brew install kubectl
-  - Linux: snap install kubectl
-
 ### Setup repositories su gitlab.com
 
-- Creazione nuovo gruppo: https://gitlab.com/groups/new (fare un check per capire se il nome del gruppo è stato già usato)
-- Settare il nome e lo slug del gruppo utilizzando project_name e project_slug
-- Creazione nuovo progetto (nel gruppo appena creato) con `project_name = "orchestrator"`
-- Creazione nuovo progetto (nel gruppo appena creato) con `project_name = "backend"`
-- Creazione nuovo progetto (nel gruppo appena creato) con `project_name = "frontend"`
+- TODO: creare di default il branch develop
 - Inizializzare le 3 cartelle `git init` e `git remote add origin <url>`
-- Creare il link del registro composto da `registry.gitlab.com` + `slug_progetto` + `slug_repo` e aggiungerlo in `backend.yaml` e `frontend.yaml` dei vari ambienti.
 - Aggiungiamo i membri al gruppo (anche @gitlab-20tab) come owners
 
 ### Configurazione cluster digitalocean
-- Creare un cluster k8s su digitalocean
-- Creare un token nella sezione **API -> Generate New Token**
+
+- Creare un cluster k8s su digitalocean **Create -> Clusters**
+- Creare un token nella sezione **API -> Generate New Token** o usare uno esistente
 - Login `doctl auth init` con il token
 - Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
 - Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
@@ -68,12 +96,13 @@ $ cd devopsproj
     - `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com`
 
 ### Connessione tra kubernetes e gitlab
+
 - Visitare la sezione kubernetes del gruppo.
 - Aggiungere il nome del cluster (mettici il cavolo che ti pare)
 - Aggiungere **API_URL**: `kubectl cluster-info | grep 'Kubernetes master' | awk '/http/ {print $NF}'`
 - Aggiungere Certificato:
-  - Lista dei secrets: `kubectl get secrets`, dovrebbe essere simile a `default-token-xxxxx`
-  - Mostra il certificato: `kubectl get secret <secret name> -o jsonpath="{['data']['ca\.crt']}" | base64 --decode`
+  - Lista dei secrets: `kubectl get secrets | grep 'default-token' | awk '{print $1}'` (dovrebbe essere simile a `default-token-xxxxx`)
+  - Mostra il certificato: `kubectl get secret default-token-xxxxx -o jsonpath="{['data']['ca\.crt']}" | base64 --decode`
   - Incollare il certificato su gitlab
 - Aggiungere token:
   - Eseguire l'apply del file `kubectl apply -f k8s/gitlab-admin-service-account.yaml`
@@ -94,10 +123,33 @@ $ cd devopsproj
     namespace:  11 bytes
     token:      <authentication_token>
   ```
-- Assicurarsi di rimuovere la spunta a gitlab-managed cluster
+- Assicurarsi di rimuovere la spunta da gitlab-managed cluster
 - Salvare le impostazioni su gitlab
 
 ### Apply dell'orchestratore
+
 - Modificare l'host sul file `ingress.yaml` e aggiungere il dominio tra gli allowed_hosts in `secrets.yaml`
 - Apply della cartella `kubectl apply -f k8s/development` (su tutti e tre i progetti il primo commit si deve fare su develop)
 - Git push su frontend e backend (su develop)
+
+#### FIXME
+```
+Error from server (Invalid): error when creating "k8s/development/ingress.yaml": Ingress.extensions "development-rocchettacontest2020-ingress-service" is invalid: spec.rules[0].http.backend.serviceName: Invalid value: "development-rocchettacontest2020-static-nginx-cluster-ip-service": must be no more than 63 characters
+Error from server (Invalid): error when creating "k8s/development/staticfiles.yaml": Service "development-rocchettacontest2020-static-nginx-cluster-ip-service" is invalid: metadata.name: Invalid value: "development-rocchettacontest2020-static-nginx-cluster-ip-service": must be no more than 63 characters
+```
+
+# Comandi utili
+
+Comandi utili da utilizzare dopo l'avvio:
+
+```
+$ kubectl get deployments
+$ kubectl delete deployment <deployment-name>
+$ kubectl get pods
+# controlla errori di k8s
+$ kubectl describe pod <pod-name>
+# controlla errori del servizio
+$ kubectl logs -f <pod-name>
+# eseguire comandi sul pod
+$ kubectl exec -it <pod-name> bash
+```
