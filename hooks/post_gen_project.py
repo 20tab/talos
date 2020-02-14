@@ -1,4 +1,4 @@
-"""Execute the post-generation projects steps."""
+"""Define hooks to be run after project generation."""
 
 import os
 import shutil
