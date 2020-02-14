@@ -14,7 +14,7 @@ def remove(filepath):
 
 
 def copy_secrets():
-    
+
     with open("k8s/secrets.yaml.tpl", "r") as f:
         text = f.read()
         text_development = text.replace("__ENVIRONMENT__", "development")
@@ -26,43 +26,46 @@ def copy_secrets():
 
         with open("k8s/integration/secrets.yaml", "w+") as fd:
             fd.write(text_integration)
-        
+
         with open("k8s/production/secrets.yaml", "w+") as fd:
             fd.write(text_production)
 
 
 def create_apps():
-    os.system('./bin/init.sh')
+    os.system("./bin/init.sh")
     cookiecutter(
-        'https://github.com/20tab/django-continuous-delivery',
+        "https://github.com/20tab/django-continuous-delivery",
         extra_context={
-            'project_name': "{{cookiecutter.project_name}}",
-            'static_url': "/backendstatic/"
+            "project_name": "{{cookiecutter.project_name}}",
+            "static_url": "/backendstatic/",
         },
-        no_input=True
+        no_input=True,
     )
     cookiecutter(
-        'https://github.com/20tab/react-continuous-delivery',
-        extra_context={'project_name': "{{cookiecutter.project_name}}"},
-        no_input=True
+        "https://github.com/20tab/react-continuous-delivery",
+        extra_context={"project_name": "{{cookiecutter.project_name}}"},
+        no_input=True,
     )
 
 
 class GitlabSync:
-
     def __init__(self, *args, **kwargs):
-        self.gl = Gitlab('https://gitlab.com', private_token=os.environ['GITLAB_PRIVATE_TOKEN'])
+        self.gl = Gitlab(
+            "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
+        )
         self.gl.auth()
 
     def create_group(self, project_name, group_name):
-        group = self.gl.groups.create({
-            'name': project_name, 'path': group_name
-            })
-        orchestrator = self.gl.projects.create({'name': 'Orchestrator', 'namespace_id': group.id})
-        backend = self.gl.projects.create({'name': 'Backend', 'namespace_id': group.id})
-        frontend = self.gl.projects.create({'name': 'Frontend', 'namespace_id': group.id})
-        
-            
+        group = self.gl.groups.create({"name": project_name, "path": group_name})
+        orchestrator = self.gl.projects.create(
+            {"name": "Orchestrator", "namespace_id": group.id}
+        )
+        backend = self.gl.projects.create({"name": "Backend", "namespace_id": group.id})
+        frontend = self.gl.projects.create(
+            {"name": "Frontend", "namespace_id": group.id}
+        )
+
+
 gl = GitlabSync()
 gl.create_group("{{ cookiecutter.project_name }}", "{{ cookiecutter.gitlab_group }}")
 
