@@ -28,7 +28,7 @@ gls = GitlabSync()
 group_name = "{{ cookiecutter.gitlab_group}}"
 if not gls.is_group_name_available(group_name):
     print(
-        f"A Gitlab group named \"{group_name}\" already exists. Please choose a "
+        f'A Gitlab group named "{group_name}" already exists. Please choose a '
         "different name and try again."
     )
     sys.exit(1)

@@ -1,7 +1,7 @@
-# cat post_gen_project.py
+"""Execute the post-generation projects steps."""
+
 import os
 import shutil
-import sys
 
 from cookiecutter.main import cookiecutter
 from gitlab import Gitlab
@@ -34,6 +34,7 @@ def copy_secrets():
 
 
 def create_apps():
+    """Create the the django and react apps."""
     os.system("./bin/init.sh")
     cookiecutter(
         "https://github.com/20tab/django-continuous-delivery",
@@ -63,11 +64,13 @@ class GitlabSync:
     def create_group(self, project_name, group_name):
         """Create a GitLab group."""
         group = self.gl.groups.create({"name": project_name, "path": group_name})
-        orchestrator = self.gl.projects.create(
+        orchestrator = self.gl.projects.create(  # noqa
             {"name": "Orchestrator", "namespace_id": group.id}
         )
-        backend = self.gl.projects.create({"name": "Backend", "namespace_id": group.id})
-        frontend = self.gl.projects.create(
+        backend = self.gl.projects.create(  # noqa
+            {"name": "Backend", "namespace_id": group.id}
+        )
+        frontend = self.gl.projects.create(  # noqa
             {"name": "Frontend", "namespace_id": group.id}
         )
 
