@@ -40,13 +40,19 @@ def create_apps():
         "https://github.com/20tab/django-continuous-delivery",
         extra_context={
             "project_name": "{{cookiecutter.project_name}}",
+            "project_slug": "{{cookiecutter.project_slug}}",
+            "project_dirname": "backend",
             "static_url": "/backendstatic/",
         },
         no_input=True,
     )
     cookiecutter(
         "https://github.com/20tab/react-continuous-delivery",
-        extra_context={"project_name": "{{cookiecutter.project_name}}"},
+        extra_context={
+            "project_name": "{{cookiecutter.project_name}}",
+            "project_slug": "{{cookiecutter.project_slug}}",
+            "project_dirname": "frontend",
+        },
         no_input=True,
     )
 
