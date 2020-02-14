@@ -1,20 +1,22 @@
 # cat post_gen_project.py
-from gitlab import Gitlab
 import os
-import sys
 import shutil
+import sys
+
 from cookiecutter.main import cookiecutter
+from gitlab import Gitlab
 
 
-def remove(filepath):
-    if os.path.isfile(filepath):
-        os.remove(filepath)
-    elif os.path.isdir(filepath):
-        shutil.rmtree(filepath)
+def remove(path):
+    """Remove a file or a directory at the given path."""
+    if os.path.isfile(path):
+        os.remove(path)
+    elif os.path.isdir(path):
+        shutil.rmtree(path)
 
 
 def copy_secrets():
-
+    """Copy the Kubernetes secrets manifest."""
     with open("k8s/secrets.yaml.tpl", "r") as f:
         text = f.read()
         text_development = text.replace("__ENVIRONMENT__", "development")
@@ -49,13 +51,17 @@ def create_apps():
 
 
 class GitlabSync:
+    """A GitLab interface."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the instance."""
         self.gl = Gitlab(
             "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
         )
         self.gl.auth()
 
     def create_group(self, project_name, group_name):
+        """Create a GitLab group."""
         group = self.gl.groups.create({"name": project_name, "path": group_name})
         orchestrator = self.gl.projects.create(
             {"name": "Orchestrator", "namespace_id": group.id}
