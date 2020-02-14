@@ -1,5 +1,7 @@
 # cat post_gen_project.py
+from gitlab import Gitlab
 import os
+import sys
 import shutil
 from cookiecutter.main import cookiecutter
 
@@ -45,6 +47,24 @@ def create_apps():
         no_input=True
     )
 
+
+class GitlabSync:
+
+    def __init__(self, *args, **kwargs):
+        self.gl = Gitlab('https://gitlab.com', private_token=os.environ['GITLAB_PRIVATE_TOKEN'])
+        self.gl.auth()
+
+    def create_group(self, project_name, group_name):
+        group = self.gl.groups.create({
+            'name': project_name, 'path': group_name
+            })
+        orchestrator = self.gl.projects.create({'name': 'Orchestrator', 'namespace_id': group.id})
+        backend = self.gl.projects.create({'name': 'Backend', 'namespace_id': group.id})
+        frontend = self.gl.projects.create({'name': 'Frontend', 'namespace_id': group.id})
+        
+            
+gl = GitlabSync()
+gl.create_group("{{ cookiecutter.project_name }}", "{{ cookiecutter.gitlab_group }}")
 
 copy_secrets()
 create_apps()
