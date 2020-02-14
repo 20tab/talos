@@ -8,4 +8,3 @@ EMAIL_URL=console:///
 POSTGRES_DB={{cookiecutter.project_slug}}
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
-POSTGRES_HOST=postgres
