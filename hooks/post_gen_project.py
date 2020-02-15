@@ -5,7 +5,7 @@ import requests
 import shutil
 
 from cookiecutter.main import cookiecutter
-from gitlab import Gitlab
+from gitlab import Gitlab, MAINTAINER_ACCESS
 
 
 class GitlabSync:
@@ -13,15 +13,16 @@ class GitlabSync:
 
     def __init__(self, *args, **kwargs):
         """Initialize the instance."""
-        self.server_url = "https://gitlab.com"
+        self.protocol = "https://"
+        self.server_url = "gitlab.com"
         self.gl = Gitlab(
-           self.server_url , private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
+           f"{self.protocol}{self.server_url}" , private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
         )
         self.gl.auth()
 
     def is_group_name_available(self, group_name):
         """Tell if group name is available."""
-        resp = requests.get(self.server_url)
+        resp = requests.get(f"{self.protocol}{self.server_url}")
         for p in self.gl.groups.list(search=group_name):
             if p.path == group_name:
                 return False
@@ -31,10 +32,11 @@ class GitlabSync:
         """Create a GitLab group."""
         # TODO: check if group name == any account name because group creation will fail
         self.group = self.gl.groups.create({"name": project_name, "path": group_name})
-        badge_link = "/%{project_path}/pipelines"
-        badge_image_url = "/%{project_path}/badges/%{default_branch}/pipeline.svg"
-        badge = self.group.badges.create({
-            "link_url": f"{self.server_url}{badge_link}", 'image_url': f"{self.server_url}{badge_image_url}"
+        pipeline_badge_link = "/%{project_path}/pipelines"
+        pipeline_badge_image_url = "/%{project_path}/badges/%{default_branch}/pipeline.svg"
+        pipeline_badge = self.group.badges.create({
+            "link_url": f"{self.protocol}{self.server_url}{pipeline_badge_link}", 
+            'image_url': f"{self.protocol}{self.server_url}{pipeline_badge_image_url}"
         })
         self.orchestrator = self.gl.projects.create(  # noqa
             {"name": "Orchestrator", "namespace_id": self.group.id}
@@ -42,9 +44,35 @@ class GitlabSync:
         self.backend = self.gl.projects.create(  # noqa
             {"name": "Backend", "namespace_id": self.group.id}
         )
+        coverage_badge_image_url = "/%{project_path}/badges/%{default_branch}/coverage.svg"
+        coverage_badge = self.group.badges.create({
+            "link_url": f"{self.protocol}{self.group.path}.{self.server_url}/{self.backend.path}", 
+            'image_url': f"{self.protocol}{self.server_url}{coverage_badge_image_url}"
+        })
         self.frontend = self.gl.projects.create(  # noqa
             {"name": "Frontend", "namespace_id": self.group.id}
         )
+
+    def set_default_branch(self):
+        """Set default branch"""
+        self.orchestrator.default_branch = "develop"
+        self.orchestrator.save()
+        self.backend.default_branch = "develop"
+        self.backend.save()
+        self.frontend.default_branch = "develop"
+        self.frontend.save()
+
+    def set_members(self):
+        """Add given members to gitlab group"""
+        members = input("Insert all users' username you want to add to group, separated by comma: ")
+        for member in members.split(","):
+            try:
+                user = self.gl.users.list(username=member.strip())[0]
+                self.group.members.create({'user_id': user.id, 'access_level': MAINTAINER_ACCESS})
+                print(f"{member} added to group {self.group.name}")
+            except IndexError:
+                print(f"{member} doesn't exists. Please add him from gitlab.com")
+
 
 class MainProcess:
     """Main process class"""
@@ -53,7 +81,9 @@ class MainProcess:
         """Create a main process instance with chosen parameters"""
         self.project_name = "{{ cookiecutter.project_name }}"
         self.project_slug = "{{ cookiecutter.project_slug }}"
+        self.group_name = self.project_slug
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "y"
+        self.gitlab = None
         
     def remove(self, path):
         """Remove a file or a directory at the given path."""
@@ -88,6 +118,7 @@ class MainProcess:
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
                 "project_dirname": "backend",
+                "gitlab_group_name": self.group_name,
                 "static_url": "/backendstatic/",
             },
             no_input=True,
@@ -97,6 +128,7 @@ class MainProcess:
             extra_context={
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
+                "gitlab_group_name": self.group_name,
                 "project_dirname": "frontend",
             },
             no_input=True,
@@ -104,23 +136,28 @@ class MainProcess:
 
     def git_init(self):
         """Initialize local git repository"""
-        os.system(".bin/gitinit.sh")
+        os.system(f"./bin/git_init.sh {self.gitlab.orchestrator.ssh_url_to_repo}")
+        os.system(f"cd backend && ../bin/git_init.sh {self.gitlab.backend.ssh_url_to_repo}")
+        os.system(f"cd frontend && ../bin/git_init.sh {self.gitlab.frontend.ssh_url_to_repo}")
     
     def run(self):
-        """Run the main process operations"""
-        # if self.use_gitlab:
-        #     gl = GitlabSync()
-        #     self.group_name = input("Choose the gitlab group name: ")
-        #     while not gl.is_group_name_available(self.group_name):
-        #         self.group_name = input(
-        #             f'A Gitlab group named "{self.group_name}" already exists. Please choose a '
-        #             "different name and try again: "
-        #         )
-        #     gl.create_group(self.project_name, self.group_name)
+        # """Run the main process operations"""
+        if self.use_gitlab:
+            self.gitlab = GitlabSync()
+            self.group_name = input("Choose the gitlab group name: ")
+            while not self.gitlab.is_group_name_available(self.group_name):
+                self.group_name = input(
+                    f'A Gitlab group named "{self.group_name}" already exists. Please choose a '
+                    "different name and try again: "
+                )
+            self.gitlab.create_group(self.project_name, self.group_name)
 
         self.copy_secrets()
         self.create_apps()
-        self.git_init()
+        if self.gitlab:
+            self.git_init()
+            self.gitlab.set_default_branch()
+            self.gitlab.set_members()
 
 
 main_process = MainProcess()
