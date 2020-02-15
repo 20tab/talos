@@ -1,5 +1,5 @@
 {
     "project_name": "20tab standard project",
     "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '').replace('-', '') }}",
-    "gitlab_group": "{{ cookiecutter.project_slug }}"
+    "use_gitlab": "y"
 }
