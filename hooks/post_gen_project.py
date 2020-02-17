@@ -15,6 +15,7 @@ class GitlabSync:
         """Initialize the instance."""
         self.protocol = "https://"
         self.server_url = "gitlab.com"
+        self.default_group_name = ""
         self.gl = Gitlab(
            f"{self.protocol}{self.server_url}" , private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
         )
@@ -26,11 +27,14 @@ class GitlabSync:
         for p in self.gl.groups.list(search=group_name):
             if p.path == group_name:
                 return False
+        for u in self.gl.users.list(username=group_name):
+            if u.web_url.replace(f"{self.protocol}{self.server_url}/", "").lower() == group_name:
+                return False
+        self.default_group_name = group_name
         return True
 
     def create_group(self, project_name, group_name):
         """Create a GitLab group."""
-        # TODO: check if group name == any account name because group creation will fail
         self.group = self.gl.groups.create({"name": project_name, "path": group_name})
         pipeline_badge_link = "/%{project_path}/pipelines"
         pipeline_badge_image_url = "/%{project_path}/badges/%{default_branch}/pipeline.svg"
@@ -64,7 +68,7 @@ class GitlabSync:
 
     def set_members(self):
         """Add given members to gitlab group"""
-        members = input("Insert all users' username you want to add to group, separated by comma: ")
+        members = input("Insert the usernames of all users you want to add to the group, separated by comma or empty to skip: ")
         for member in members.split(","):
             try:
                 user = self.gl.users.list(username=member.strip())[0]
@@ -144,7 +148,7 @@ class MainProcess:
         # """Run the main process operations"""
         if self.use_gitlab:
             self.gitlab = GitlabSync()
-            self.group_name = input("Choose the gitlab group name: ")
+            self.group_name = input(f"Choose the gitlab group name [{self.group_name}]: ") or self.group_name
             while not self.gitlab.is_group_name_available(self.group_name):
                 self.group_name = input(
                     f'A Gitlab group named "{self.group_name}" already exists. Please choose a '
