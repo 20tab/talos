@@ -15,7 +15,6 @@ class GitlabSync:
         """Initialize the instance."""
         self.protocol = "https://"
         self.server_url = "gitlab.com"
-        self.default_group_name = ""
         self.gl = Gitlab(
            f"{self.protocol}{self.server_url}" , private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
         )
@@ -30,7 +29,6 @@ class GitlabSync:
         for u in self.gl.users.list(username=group_name):
             if u.web_url.replace(f"{self.protocol}{self.server_url}/", "").lower() == group_name:
                 return False
-        self.default_group_name = group_name
         return True
 
     def create_group(self, project_name, group_name):
