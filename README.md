@@ -120,14 +120,15 @@ username of the local user to the members list.
 
 - Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
 - Create a token in the **API -> Generate New Token** section or select an existing one
-- Login using `doctl auth init` and the selected token
+- Login using `doctl auth init -t <digital_ocean_access_token>` and the selected token
 - Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
 - Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
 - Installare [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac):
     - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/mandatory.yaml`
     - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/provider/cloud-generic.yaml`
 - Installare secret per il registro di docker-gitlab:
-    - `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com`
+    - `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=<DO_GITLAB_USERNAME> --docker-password=<DO_GITLAB_PASSWORD> --docker-email=<DO_GITLAB_EMAIL>`
+    - sarebbe meglio inserire come variabili di ambiente locali, i parametri di accesso dell'utente abilitato a pullare le immagini da gitlab.
 
 ### Kubernetes and GitLab connection
 
