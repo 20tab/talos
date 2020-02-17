@@ -1,29 +1,47 @@
 # 20tab standard project
 
-This is the [20tab](https://www.20tab.com/) standard project template based on [cookiecutter](https://github.com/cookiecutter/cookiecutter).
+This is the [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
 
-## Outline
+## Documentation <!-- omit in toc -->
 
-* [Conventions](#conventions)
-* [Workspace initialization](#workspace-initialization)
-    * [Basic requirements](#basic-requirements)
-* [Setup a new project](#setup-a-new-project)
-    * [Start Project](#start-project)
+- [20tab standard project](#20tab-standard-project)
+  - [Conventions](#conventions)
+  - [Workspace initialization](#workspace-initialization)
+    - [Basic requirements](#basic-requirements)
+      - [Python packages](#python-packages)
+      - [Digital Ocean](#digital-ocean)
+        - [OSX](#osx)
+        - [Linux](#linux)
+      - [Kubernetes](#kubernetes)
+        - [OSX](#osx-1)
+        - [Linux](#linux-1)
+      - [GitLab](#gitlab)
+  - [New project](#new-project)
+    - [Creation](#creation)
+  - [WIP](#wip)
+    - [Digital Ocean setup](#digital-ocean-setup)
+    - [Kubernetes and GitLab connection](#kubernetes-and-gitlab-connection)
+    - [Kubernetes apply](#kubernetes-apply)
+      - [Warning](#warning)
+  - [Useful commands](#useful-commands)
 
 ## Conventions
 
-- replace `projects` with your actual projects directory
+In the following instructions:
 
+- replace `projects` with your actual projects directory
 - replace `project_name` with your chosen project name
 
 ## Workspace initialization
 
 ### Basic requirements
 
+#### Python packages
+
 **Cookiecutter** must be installed before initializing the project.
 
 ```shell
-$ pip install --user cookiecutter
+$ pip install --user cookiecutter python-gitlab
 ```
 
 #### Digital Ocean
@@ -55,38 +73,54 @@ $ brew install kubectl
 $ sudo snap install kubectl --classic
 ```
 
-## Setup a new project
+#### GitLab
 
-This section explains the first steps when you need to create a new project.
+Make sure a GitLab user exists that will be the repository owner and the one Kubernetes
+uses during the deploy procedures.
 
-### Start Project
+Put the GitLab Access Token of the chosen user in an env variable before running any
+other command. You can export it in the command line or put it in your bash config.
 
-Change directory and start a new project with this template:
+```shell
+$ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
+```
+
+**Note:** the access token can be generated from the GitLab settings "Access Tokens"
+section. Make sure to give it full permission. Beware that the token is shown and can
+be copied only right after creation and it is hidden thereafter.
+
+
+## New project
+
+This section shows how to create and initialize a project.
+
+### Creation
+
+Change directory and start a project with this template:
 
 ```shell
 $ cd ~/projects/
-$ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
 $ cookiecutter https://github.com/20tab/20tab-standard-project
 project_name [20tab standard project]: project_name
 project_slug [project_name]:
+use_gitlab [y]:
+Choose the gitlab group name [project_name]:
+Insert the usernames of all users you want to add to the group, separated by comma:
 $ cd project_name
 ```
+
+**Note:** in order to make the subsequent commands work, make sure to add at least the
+username of the local user to the members list.
 
 ---
 
 ## WIP
 
-### Setup repositories su gitlab.com
+### Digital Ocean setup
 
-- TODO: creare di default il branch develop
-- Inizializzare le 3 cartelle `git init` e `git remote add origin <url>`
-- Aggiungiamo i membri al gruppo (anche @gitlab-20tab) come owners
-
-### Configurazione cluster digitalocean
-
-- Creare un cluster k8s su digitalocean **Create -> Clusters**
-- Creare un token nella sezione **API -> Generate New Token** o usare uno esistente
-- Login `doctl auth init` con il token
+- Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
+- Create a token in the **API -> Generate New Token** section or select an existing one
+- Login using `doctl auth init` and the selected token
 - Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
 - Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
 - Installare [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac):
@@ -95,7 +129,7 @@ $ cd project_name
 - Installare secret per il registro di docker-gitlab:
     - `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com`
 
-### Connessione tra kubernetes e gitlab
+### Kubernetes and GitLab connection
 
 - Visitare la sezione kubernetes del gruppo.
 - Aggiungere il nome del cluster (mettici il cavolo che ti pare)
@@ -109,11 +143,11 @@ $ cd project_name
   - Stampa il token per il servizio creato: `kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep gitlab-admin | awk '{print $1}')`
   - Copiare <authentication_token> dall'output:
   ```shell
-    Name:         gitlab-admin-token-b5zv4
+    Name:         gitlab-admin-token-a0bc1
     Namespace:    kube-system
     Labels:       <none>
     Annotations:  kubernetes.io/service-account.name=gitlab-admin
-                kubernetes.io/service-account.uid=bcfe66ac-39be-11e8-97e8-026dce96b6e8
+                kubernetes.io/service-account.uid=abcd01ef-23gh-45i6-78j9-012klm34n5o6
 
     Type:  kubernetes.io/service-account-token
 
@@ -126,25 +160,30 @@ $ cd project_name
 - Assicurarsi di rimuovere la spunta da gitlab-managed cluster
 - Salvare le impostazioni su gitlab
 
-### Apply dell'orchestratore
+### Kubernetes apply
 
 - Modificare l'host sul file `ingress.yaml` e aggiungere il dominio tra gli allowed_hosts in `secrets.yaml`
 - Apply della cartella `kubectl apply -f k8s/development` (su tutti e tre i progetti il primo commit si deve fare su develop)
 - Git push su frontend e backend (su develop)
 
-#### FIXME
-```
-Error from server (Invalid): error when creating "k8s/development/ingress.yaml": Ingress.extensions "development-rocchettacontest2020-ingress-service" is invalid: spec.rules[0].http.backend.serviceName: Invalid value: "development-rocchettacontest2020-static-nginx-cluster-ip-service": must be no more than 63 characters
-Error from server (Invalid): error when creating "k8s/development/staticfiles.yaml": Service "development-rocchettacontest2020-static-nginx-cluster-ip-service" is invalid: metadata.name: Invalid value: "development-rocchettacontest2020-static-nginx-cluster-ip-service": must be no more than 63 characters
+#### Warning
+
+Fare attenzione ad i nomi molto lunghi:
+
+```python
+Error from server (Invalid): error when creating "k8s/development/ingress.yaml": Ingress.extensions "development-verylongprojectname2020-ingress-service" is invalid: spec.rules[0].http.backend.serviceName: Invalid value: "development-verylongprojectname2020-static-nginx-cluster-ip-service": must be no more than 63 characters
+Error from server (Invalid): error when creating "k8s/development/staticfiles.yaml": Service "development-verylongprojectname2020-static-nginx-cluster-ip-service" is invalid: metadata.name: Invalid value: "development-verylongprojectname2020-static-nginx-cluster-ip-service": must be no more than 63 characters
 ```
 
-# Comandi utili
+## Useful commands
 
 Comandi utili da utilizzare dopo l'avvio:
 
 ```
 $ kubectl get deployments
 $ kubectl delete deployment <deployment-name>
+$ kubectl scale deployment <deployment-name> --replicas=0
+$ kubectl scale deployment <deployment-name> --replicas=1
 $ kubectl get pods
 # controlla errori di k8s
 $ kubectl describe pod <pod-name>
