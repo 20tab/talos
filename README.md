@@ -2,23 +2,62 @@
 
 This is the [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
 
-## Outline
+## Outline <!-- omit in toc -->
 
-* [Conventions](#conventions)
-* [Workspace initialization](#workspace-initialization)
-    * [Basic requirements](#basic-requirements)
-* [Setup a new project](#setup-a-new-project)
-    * [Start Project](#start-project)
+- [20tab standard project](#20tab-standard-project)
+  - [Conventions](#conventions)
+  - [Workspace initialization](#workspace-initialization)
+    - [Basic requirements](#basic-requirements)
+      - [Python packages](#python-packages)
+      - [Digital Ocean](#digital-ocean)
+        - [OSX](#osx)
+        - [Linux](#linux)
+      - [Kubernetes](#kubernetes)
+        - [OSX](#osx-1)
+        - [Linux](#linux-1)
+      - [GitLab](#gitlab)
+  - [New project](#new-project)
+    - [Creation](#creation)
+  - [Existing project](#existing-project)
+    - [Git](#git)
+      - [Clone](#clone)
+    - [Environment variables](#environment-variables)
+    - [Docker](#docker)
+      - [Build](#build)
+      - [Run](#run)
+    - [Makefile shortcuts](#makefile-shortcuts)
+      - [Pull](#pull)
+      - [Django manage command](#django-manage-command)
+      - [Create a superuser](#create-a-superuser)
+      - [Restart and build services](#restart-and-build-services)
+    - [Create SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-ssl-certificate-sup-ida-setup-https-locally1sup)
+    - [Create and activate a local SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-and-activate-a-local-ssl-certificate-sup-ida-setup-https-locally1sup)
+      - [Install the cert utils](#install-the-cert-utils)
+        - [Ubuntu](#ubuntu)
+        - [Mac Os](#mac-os)
+      - [Import certificates](#import-certificates)
+      - [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
+        - [Ubuntu](#ubuntu-1)
+        - [Mac Os](#mac-os-1)
+  - [WIP](#wip)
+    - [Digital Ocean setup](#digital-ocean-setup)
+    - [Kubernetes and GitLab connection](#kubernetes-and-gitlab-connection)
+    - [Kubernetes apply](#kubernetes-apply)
+      - [Warning](#warning)
+  - [Useful commands](#useful-commands)
 
 ## Conventions
 
 In the following instructions:
+
 - replace `projects` with your actual projects directory
 - replace `project_name` with your chosen project name
 
 ## Workspace initialization
 
 ### Basic requirements
+
+#### Python packages
 
 **Cookiecutter** must be installed before initializing the project.
 
@@ -67,7 +106,7 @@ other command. You can export it in the command line or put it in your bash conf
 $ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
 ```
 
-Note: the access token can be generated from the GitLab settings "Access Tokens"
+**Note:** the access token can be generated from the GitLab settings "Access Tokens"
 section. Make sure to give it full permission. Beware that the token is shown and can
 be copied only right after creation and it is hidden thereafter.
 
@@ -91,70 +130,12 @@ Insert the usernames of all users you want to add to the group, separated by com
 $ cd project_name
 ```
 
-Note: in order to make the subsequent commands work, make sure to add at least the
+**Note:** in order to make the subsequent commands work, make sure to add at least the
 username of the local user to the members list.
 
----
-
-# WIP
-
-### DigitalOcean setup
-
-- Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
-- Create a token in the **API -> Generate New Token** section or select an existing one
-- Login using `doctl auth init` and the selected token
-- Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
-- Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
-- Installare [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac):
-    - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/mandatory.yaml`
-    - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/provider/cloud-generic.yaml`
-- Installare secret per il registro di docker-gitlab:
-    - `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com`
-
-### Connessione tra kubernetes e gitlab
-
-- Visitare la sezione kubernetes del gruppo.
-- Aggiungere il nome del cluster (mettici il cavolo che ti pare)
-- Aggiungere **API_URL**: `kubectl cluster-info | grep 'Kubernetes master' | awk '/http/ {print $NF}'`
-- Aggiungere Certificato:
-  - Lista dei secrets: `kubectl get secrets | grep 'default-token' | awk '{print $1}'` (dovrebbe essere simile a `default-token-xxxxx`)
-  - Mostra il certificato: `kubectl get secret default-token-xxxxx -o jsonpath="{['data']['ca\.crt']}" | base64 --decode`
-  - Incollare il certificato su gitlab
-- Aggiungere token:
-  - Eseguire l'apply del file `kubectl apply -f k8s/gitlab-admin-service-account.yaml`
-  - Stampa il token per il servizio creato: `kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep gitlab-admin | awk '{print $1}')`
-  - Copiare <authentication_token> dall'output:
-  ```shell
-    Name:         gitlab-admin-token-b5zv4
-    Namespace:    kube-system
-    Labels:       <none>
-    Annotations:  kubernetes.io/service-account.name=gitlab-admin
-                kubernetes.io/service-account.uid=bcfe66ac-39be-11e8-97e8-026dce96b6e8
-
-    Type:  kubernetes.io/service-account-token
-
-    Data
-    ====
-    ca.crt:     1025 bytes
-    namespace:  11 bytes
-    token:      <authentication_token>
-  ```
-- Assicurarsi di rimuovere la spunta da gitlab-managed cluster
-- Salvare le impostazioni su gitlab
-
-### Apply dell'orchestratore
-
-- Modificare l'host sul file `ingress.yaml` e aggiungere il dominio tra gli allowed_hosts in `secrets.yaml`
-- Apply della cartella `kubectl apply -f k8s/development` (su tutti e tre i progetti il primo commit si deve fare su develop)
-- Git push su frontend e backend (su develop)
-
-#### FIXME
-```
-Error from server (Invalid): error when creating "k8s/development/ingress.yaml": Ingress.extensions "development-rocchettacontest2020-ingress-service" is invalid: spec.rules[0].http.backend.serviceName: Invalid value: "development-rocchettacontest2020-static-nginx-cluster-ip-service": must be no more than 63 characters
-Error from server (Invalid): error when creating "k8s/development/staticfiles.yaml": Service "development-rocchettacontest2020-static-nginx-cluster-ip-service" is invalid: metadata.name: Invalid value: "development-rocchettacontest2020-static-nginx-cluster-ip-service": must be no more than 63 characters
-```
-
 ## Existing project
+
+Steps to work in an existing project:
 
 1. [clone](#clone) the project code
 2. set all the [environment variables](#environment-variables)
@@ -163,9 +144,9 @@ Error from server (Invalid): error when creating "k8s/development/staticfiles.ya
 5. [run](#run) all the services
 6. login using the URL: http://localhost:8080
 
-## Git
+### Git
 
-### Clone
+#### Clone
 
 Clone the main repo and fetch the sub-repos in such a way to have the `.git` folder
 inside the sub-dirs:
@@ -175,30 +156,30 @@ $ git clone git@gitlab.com:__GITLAB_GROUP__/backend.git
 $ git clone git@gitlab.com:__GITLAB_GROUP__/frontend.git
 ```
 
-## Environment variables
+### Environment variables
 
 In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env.tpl` template is provided for each of the aforementioned files.
 
-## Docker
+### Docker
 
 All the following Docker commands are supposed to be run from the orchestrator directory.
 
-### Build
+#### Build
 
 ```shell
 $ docker-compose build
 ```
 
-### Run
+#### Run
 
 ```shell
 $ docker-compose up
 ```
 **NOTE**: It can be daemonized adding the `-d` flag.
 
-## Makefile shortcuts
+### Makefile shortcuts
 
-### Pull
+#### Pull
 
 Pull the main git repo and the sub-repos:
 
@@ -206,7 +187,7 @@ Pull the main git repo and the sub-repos:
 $ make pull
 ```
 
-### Django manage command
+#### Django manage command
 
 Use the Django `manage.py` command shell:
 
@@ -220,7 +201,7 @@ You can pass the specific command:
 $ make django p=check
 ```
 
-### Create a superuser
+#### Create a superuser
 
 Create a Django superuser to log in the admin:
 
@@ -234,7 +215,7 @@ You can pass the container name:
 $ make createsuperuser c=portaleformazione_backend_2
 ```
 
-### Restart and build services
+#### Restart and build services
 
 Restart and build all services:
 
@@ -266,17 +247,19 @@ $ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.c
 
 ### Create and activate a local SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
 
-Install the cert utils:
+#### Install the cert utils
 
-#### Ubuntu
+##### Ubuntu
 ```shell
 $ sudo apt-get install libnss3-tools
 ```
 
-#### Mac Os
+##### Mac Os
 ```shell
 $ brew install nss
 ```
+
+#### Import certificates
 
 Move to the `nginx` directory
 ```shell
@@ -294,21 +277,84 @@ $ mkdir -p $HOME/.pki/nssdb
 $ certutil -d $HOME/.pki/nssdb -N
 ```
 
-Trust the self-signed server certificate:
+#### Trust the self-signed server certificate
 
-#### Ubuntu
+##### Ubuntu
 ```shell
 $ certutil -d sql:$HOME/.pki/nssdb -A -t "P,," -n 'dev cert' -i localhost.crt
 ```
 
-#### Mac Os
+##### Mac Os
 ```shell
 $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.crt
 ```
 
 <a id="f-setup-https-locally" href="#a-setup-https-locally">1</a>. For further reference look [here](https://medium.com/@workockmoses/how-to-setup-https-for-local-development-on-ubuntu-with-self-signed-certificate-f97834064fd).
 
-# Comandi utili
+---
+
+## WIP
+
+### Digital Ocean setup
+
+- Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
+- Create a token in the **API -> Generate New Token** section or select an existing one
+- Login using `doctl auth init` and the selected token
+- Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
+- Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
+- Installare [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac):
+    - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/mandatory.yaml`
+    - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/provider/cloud-generic.yaml`
+- Installare secret per il registro di docker-gitlab:
+    - `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com`
+
+### Kubernetes and GitLab connection
+
+- Visitare la sezione kubernetes del gruppo.
+- Aggiungere il nome del cluster (mettici il cavolo che ti pare)
+- Aggiungere **API_URL**: `kubectl cluster-info | grep 'Kubernetes master' | awk '/http/ {print $NF}'`
+- Aggiungere Certificato:
+  - Lista dei secrets: `kubectl get secrets | grep 'default-token' | awk '{print $1}'` (dovrebbe essere simile a `default-token-xxxxx`)
+  - Mostra il certificato: `kubectl get secret default-token-xxxxx -o jsonpath="{['data']['ca\.crt']}" | base64 --decode`
+  - Incollare il certificato su gitlab
+- Aggiungere token:
+  - Eseguire l'apply del file `kubectl apply -f k8s/gitlab-admin-service-account.yaml`
+  - Stampa il token per il servizio creato: `kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep gitlab-admin | awk '{print $1}')`
+  - Copiare <authentication_token> dall'output:
+  ```shell
+    Name:         gitlab-admin-token-a0bc1
+    Namespace:    kube-system
+    Labels:       <none>
+    Annotations:  kubernetes.io/service-account.name=gitlab-admin
+                kubernetes.io/service-account.uid=abcd01ef-23gh-45i6-78j9-012klm34n5o6
+
+    Type:  kubernetes.io/service-account-token
+
+    Data
+    ====
+    ca.crt:     1025 bytes
+    namespace:  11 bytes
+    token:      <authentication_token>
+  ```
+- Assicurarsi di rimuovere la spunta da gitlab-managed cluster
+- Salvare le impostazioni su gitlab
+
+### Kubernetes apply
+
+- Modificare l'host sul file `ingress.yaml` e aggiungere il dominio tra gli allowed_hosts in `secrets.yaml`
+- Apply della cartella `kubectl apply -f k8s/development` (su tutti e tre i progetti il primo commit si deve fare su develop)
+- Git push su frontend e backend (su develop)
+
+#### Warning
+
+Fare attenzione ad i nomi molto lunghi:
+
+```python
+Error from server (Invalid): error when creating "k8s/development/ingress.yaml": Ingress.extensions "development-verylongprojectname2020-ingress-service" is invalid: spec.rules[0].http.backend.serviceName: Invalid value: "development-verylongprojectname2020-static-nginx-cluster-ip-service": must be no more than 63 characters
+Error from server (Invalid): error when creating "k8s/development/staticfiles.yaml": Service "development-verylongprojectname2020-static-nginx-cluster-ip-service" is invalid: metadata.name: Invalid value: "development-verylongprojectname2020-static-nginx-cluster-ip-service": must be no more than 63 characters
+```
+
+## Useful commands
 
 Comandi utili da utilizzare dopo l'avvio:
 
