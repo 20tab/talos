@@ -12,21 +12,21 @@ spec:
         paths:
           - path: /
             backend:
-              serviceName: development-{{cookiecutter.project_slug}}-frontend-cluster-ip-service
+              serviceName: frontend-cluster-ip-service
               servicePort: 3000
           - path: /backendstatic/
             backend:
-              serviceName: development-{{cookiecutter.project_slug}}-static-nginx-cluster-ip-service
+              serviceName: static-nginx-cluster-ip-service
               servicePort: 80
           - path: /media/
             backend:
-              serviceName: development-{{cookiecutter.project_slug}}-media-nginx-cluster-ip-service
+              serviceName: media-nginx-cluster-ip-service
               servicePort: 80
           - path: /api/
             backend:
-              serviceName: development-{{cookiecutter.project_slug}}-backend-cluster-ip-service
+              serviceName: backend-cluster-ip-service
               servicePort: 8000
           - path: /admin/
             backend:
-              serviceName: development-{{cookiecutter.project_slug}}-backend-cluster-ip-service
+              serviceName: backend-cluster-ip-service
               servicePort: 8000

@@ -33,29 +33,29 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      component: production-{{cookiecutter.project_slug}}-static-nginx
+      component: static-nginx
   template:
     metadata:
       labels:
-        component: production-{{cookiecutter.project_slug}}-static-nginx
+        component: static-nginx
     spec:
       volumes:
-        - name: production-{{cookiecutter.project_slug}}-nginx-config
+        - name: nginx-config
           configMap:
-            name: production-{{cookiecutter.project_slug}}-nginx-static-config-map
-        - name: production-{{cookiecutter.project_slug}}-static-volume
+            name: nginx-static-config-map
+        - name: static-volume
           persistentVolumeClaim:
-            claimName: production-{{cookiecutter.project_slug}}-static-persistent-volume-claim
+            claimName: static-persistent-volume-claim
       containers:
         - name: nginx-static-files
           image: nginx
           ports:
             - containerPort: 80
           volumeMounts:
-            - name: production-{{cookiecutter.project_slug}}-nginx-config
+            - name: nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
-            - name: production-{{cookiecutter.project_slug}}-static-volume
+            - name: static-volume
               mountPath: /app/static
               subPath: static
 
@@ -69,7 +69,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    component: production-{{cookiecutter.project_slug}}-static-nginx
+    component: static-nginx
   ports:
     - port: 80
       targetPort: 80

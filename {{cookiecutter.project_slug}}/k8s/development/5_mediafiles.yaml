@@ -32,29 +32,29 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      component: development-{{cookiecutter.project_slug}}-media-nginx
+      component: media-nginx
   template:
     metadata:
       labels:
-        component: development-{{cookiecutter.project_slug}}-media-nginx
+        component: media-nginx
     spec:
       volumes:
-        - name: development-{{cookiecutter.project_slug}}-nginx-config
+        - name: nginx-config
           configMap:
-            name: development-{{cookiecutter.project_slug}}-nginx-media-config-map
-        - name: development-{{cookiecutter.project_slug}}-media-volume
+            name: nginx-media-config-map
+        - name: media-volume
           persistentVolumeClaim:
-            claimName: development-{{cookiecutter.project_slug}}-media-persistent-volume-claim
+            claimName: media-persistent-volume-claim
       containers:
         - name: nginx-media-files
           image: nginx
           ports:
             - containerPort: 80
           volumeMounts:
-            - name: development-{{cookiecutter.project_slug}}-nginx-config
+            - name: nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
-            - name: development-{{cookiecutter.project_slug}}-media-volume
+            - name: media-volume
               mountPath: /app/media
               subPath: media
 
@@ -68,7 +68,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    component: development-{{cookiecutter.project_slug}}-media-nginx
+    component: media-nginx
   ports:
     - port: 80
       targetPort: 80
