@@ -120,6 +120,16 @@ class MainProcess:
             with open("k8s/production/secrets.yaml", "w+") as fd:
                 fd.write(text_production)
 
+    def replace_gitlab_path(self):
+        """Replace __GITLAB_GROUP__ variable in README.md file"""
+        text_group = ""
+        with open("TEMP_README.md", "r") as f:
+            text = f.read()
+            text_group = text.replace("__GITLAB_GROUP__", self.group_slug)
+        with open("README.md", "w+") as f:
+            f.write(text_group)
+        self.remove("TEMP_README.md")
+
     def create_subprojects(self):
         """Create the the django and react apps."""
         os.system("./scripts/init.sh")
@@ -165,6 +175,7 @@ class MainProcess:
 
         self.copy_secrets()
         self.create_subprojects()
+        self.replace_gitlab_path()
         if self.gitlab:
             self.gitlab.set_members()
             self.git_init()
