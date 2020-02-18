@@ -66,6 +66,7 @@ class GitlabSync:
 
     def set_members(self):
         """Add given members to gitlab group"""
+        # TODO: get local user
         members = input("Insert the usernames of all users you want to add to the group, separated by comma or empty to skip: ")
         for member in members.split(","):
             try:

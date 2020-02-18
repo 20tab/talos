@@ -32,4 +32,4 @@ doctl kubernetes cluster kubeconfig save $parameterC
 kubectl config use-context $parameterR-$parameterC
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/mandatory.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/provider/cloud-generic.yaml
-kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=DO_GITLAB_USERNAME --docker-password=DO_GITLAB_PASSWORD --docker-email=DO_GITLAB_EMAIL
+kubectl create secret generic regcred --from-file=.dockerconfigjson=$HOME/.docker/config.json --type=kubernetes.io/dockerconfigjson
