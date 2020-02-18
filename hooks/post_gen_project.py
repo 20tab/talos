@@ -1,8 +1,10 @@
 """Define hooks to be run after project generation."""
 
 import os
+import re
 import requests
 import shutil
+import unicodedata
 import warnings
 
 from cookiecutter.main import cookiecutter
@@ -96,6 +98,20 @@ class MainProcess:
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "y"
         self.gitlab = None
         
+    def slugify(value, allow_unicode=False):
+        """
+        Convert to ASCII if 'allow_unicode' is False. Convert spaces to hyphens.
+        Remove characters that aren't alphanumerics, underscores, or hyphens.
+        Convert to lowercase. Also strip leading and trailing whitespace.
+        """
+        value = str(value)
+        if allow_unicode:
+            value = unicodedata.normalize('NFKC', value)
+        else:
+            value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+        value = re.sub(r'[^\w\s-]', '', value.lower()).strip()
+        return re.sub(r'[-\s]+', '-', value)
+
     def remove(self, path):
         """Remove a file or a directory at the given path."""
         if os.path.isfile(path):
@@ -165,7 +181,8 @@ class MainProcess:
         # """Run the main process operations"""
         if self.use_gitlab:
             self.gitlab = GitlabSync()
-            self.group_slug = input(f"Choose the gitlab group path slug [{self.group_slug}]: ") or self.group_slug
+            group_slug = input(f"Choose the gitlab group path slug [{self.group_slug}]: ") or self.group_slug
+            self.group_slug = self.slugify(group_slug)
             while not self.gitlab.is_group_slug_available(self.group_slug):
                 self.group_slug = input(
                     f'A Gitlab group named "{self.group_slug}" already exists. Please choose a '
