@@ -21,20 +21,20 @@ class GitlabSync:
         )
         self.gl.auth()
 
-    def is_group_name_available(self, group_name):
+    def is_group_slug_available(self, group_slug):
         """Tell if group name is available."""
         resp = requests.get(f"{self.protocol}{self.server_url}")
-        for p in self.gl.groups.list(search=group_name):
-            if p.path == group_name:
+        for p in self.gl.groups.list(search=group_slug):
+            if p.path == group_slug:
                 return False
-        for u in self.gl.users.list(username=group_name):
-            if u.web_url.replace(f"{self.protocol}{self.server_url}/", "").casefold() == group_name.casefold():
+        for u in self.gl.users.list(username=group_slug):
+            if u.web_url.replace(f"{self.protocol}{self.server_url}/", "").casefold() == group_slug.casefold():
                 return False
         return True
 
-    def create_group(self, project_name, group_name):
+    def create_group(self, project_name, group_slug):
         """Create a GitLab group."""
-        self.group = self.gl.groups.create({"name": project_name, "path": group_name})
+        self.group = self.gl.groups.create({"name": project_name, "path": group_slug})
         pipeline_badge_link = "/%{project_path}/pipelines"
         pipeline_badge_image_url = "/%{project_path}/badges/%{default_branch}/pipeline.svg"
         pipeline_badge = self.group.badges.create({
@@ -92,7 +92,7 @@ class MainProcess:
         """Create a main process instance with chosen parameters"""
         self.project_name = "{{ cookiecutter.project_name }}"
         self.project_slug = "{{ cookiecutter.project_slug }}"
-        self.group_name = self.project_slug
+        self.group_slug = self.project_slug
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "y"
         self.gitlab = None
         
@@ -122,14 +122,14 @@ class MainProcess:
 
     def create_subprojects(self):
         """Create the the django and react apps."""
-        os.system("./bin/init.sh")
+        os.system("./scripts/init.sh")
         cookiecutter(
             "https://github.com/20tab/django-continuous-delivery",
             extra_context={
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
                 "project_dirname": "backend",
-                "gitlab_group_name": self.group_name,
+                "gitlab_group_slug": self.group_slug,
                 "static_url": "/backendstatic/",
             },
             no_input=True,
@@ -139,7 +139,7 @@ class MainProcess:
             extra_context={
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
-                "gitlab_group_name": self.group_name,
+                "gitlab_group_slug": self.group_slug,
                 "project_dirname": "frontend",
             },
             no_input=True,
@@ -147,21 +147,21 @@ class MainProcess:
 
     def git_init(self):
         """Initialize local git repository"""
-        os.system(f"./bin/git_init.sh {self.gitlab.orchestrator.ssh_url_to_repo}")
-        os.system(f"cd backend && ../bin/git_init.sh {self.gitlab.backend.ssh_url_to_repo}")
-        os.system(f"cd frontend && ../bin/git_init.sh {self.gitlab.frontend.ssh_url_to_repo}")
+        os.system(f"./scripts/git_init.sh {self.gitlab.orchestrator.ssh_url_to_repo}")
+        os.system(f"cd backend && ../scripts/git_init.sh {self.gitlab.backend.ssh_url_to_repo}")
+        os.system(f"cd frontend && ../scripts/git_init.sh {self.gitlab.frontend.ssh_url_to_repo}")
     
     def run(self):
         # """Run the main process operations"""
         if self.use_gitlab:
             self.gitlab = GitlabSync()
-            self.group_name = input(f"Choose the gitlab group name [{self.group_name}]: ") or self.group_name
-            while not self.gitlab.is_group_name_available(self.group_name):
-                self.group_name = input(
-                    f'A Gitlab group named "{self.group_name}" already exists. Please choose a '
+            self.group_slug = input(f"Choose the gitlab group path slug [{self.group_slug}]: ") or self.group_slug
+            while not self.gitlab.is_group_slug_available(self.group_slug):
+                self.group_slug = input(
+                    f'A Gitlab group named "{self.group_slug}" already exists. Please choose a '
                     "different name and try again: "
                 )
-            self.gitlab.create_group(self.project_name, self.group_name)
+            self.gitlab.create_group(self.project_name, self.group_slug)
 
         self.copy_secrets()
         self.create_subprojects()
