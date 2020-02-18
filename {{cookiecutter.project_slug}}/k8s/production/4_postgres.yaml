@@ -1,7 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: production-{{cookiecutter.project_slug}}-postgres-deployment
+  name: postgres-deployment
+  namespace: {{cookiecutter.project_slug}}-production
 spec:
   replicas: 1
   selector:
@@ -47,7 +48,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: production-{{cookiecutter.project_slug}}-postgres-cluster-ip-service
+  name: postgres-cluster-ip-service
+  namespace: {{cookiecutter.project_slug}}-production
 spec:
   type: ClusterIP
   selector:

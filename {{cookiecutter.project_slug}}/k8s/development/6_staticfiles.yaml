@@ -1,7 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: production-{{cookiecutter.project_slug}}-nginx-static-config-map
+  name: nginx-static-config-map
+  namespace: {{cookiecutter.project_slug}}-development
 data:
   nginx.conf: |
     worker_processes        1;
@@ -26,34 +27,35 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: production-{{cookiecutter.project_slug}}-static-nginx-deployment
+  name: static-nginx-deployment
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   replicas: 1
   selector:
     matchLabels:
-      component: production-{{cookiecutter.project_slug}}-static-nginx
+      component: development-{{cookiecutter.project_slug}}-static-nginx
   template:
     metadata:
       labels:
-        component: production-{{cookiecutter.project_slug}}-static-nginx
+        component: development-{{cookiecutter.project_slug}}-static-nginx
     spec:
       volumes:
-        - name: production-{{cookiecutter.project_slug}}-nginx-config
+        - name: development-{{cookiecutter.project_slug}}-nginx-config
           configMap:
-            name: production-{{cookiecutter.project_slug}}-nginx-static-config-map
-        - name: production-{{cookiecutter.project_slug}}-static-volume
+            name: development-{{cookiecutter.project_slug}}-nginx-static-config-map
+        - name: development-{{cookiecutter.project_slug}}-static-volume
           persistentVolumeClaim:
-            claimName: production-{{cookiecutter.project_slug}}-static-persistent-volume-claim
+            claimName: development-{{cookiecutter.project_slug}}-static-persistent-volume-claim
       containers:
         - name: nginx-static-files
           image: nginx
           ports:
             - containerPort: 80
           volumeMounts:
-            - name: production-{{cookiecutter.project_slug}}-nginx-config
+            - name: development-{{cookiecutter.project_slug}}-nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
-            - name: production-{{cookiecutter.project_slug}}-static-volume
+            - name: development-{{cookiecutter.project_slug}}-static-volume
               mountPath: /app/static
               subPath: static
 
@@ -62,11 +64,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: production-{{cookiecutter.project_slug}}-static-nginx-cluster-ip-service
+  name: static-nginx-cluster-ip-service
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   type: ClusterIP
   selector:
-    component: production-{{cookiecutter.project_slug}}-static-nginx
+    component: development-{{cookiecutter.project_slug}}-static-nginx
   ports:
     - port: 80
       targetPort: 80
