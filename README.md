@@ -123,14 +123,15 @@ username of the local user to the members list.
 
 - Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
 - Create a token in the **API -> Generate New Token** section or select an existing one
-- Login using `doctl auth init -t <digital_ocean_access_token>` and the selected token
-- Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
-- Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
-- Installare [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac):
-    - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/mandatory.yaml`
-    - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/provider/cloud-generic.yaml`
-- Installare secret per il registro di docker-gitlab:
-    - `kubectl create secret generic regcred --from-file=.dockerconfigjson=$HOME/.docker/config.json --type=kubernetes.io/dockerconfigjson`
+- Run ./bin/do_setup.sh
+  - Login using `doctl auth init and the selected token
+  - Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
+  - Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
+  - Installare [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac):
+      - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/mandatory.yaml`
+      - `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/provider/cloud-generic.yaml`
+  - Installare secret per il registro di docker-gitlab:
+      - `kubectl create secret generic regcred --from-file=.dockerconfigjson=$HOME/.docker/config.json --type=kubernetes.io/dockerconfigjson`
 
 ### Kubernetes and GitLab connection
 
