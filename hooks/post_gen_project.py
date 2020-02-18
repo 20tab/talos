@@ -3,6 +3,7 @@
 import os
 import requests
 import shutil
+import warnings
 
 from cookiecutter.main import cookiecutter
 from gitlab import Gitlab, MAINTAINER_ACCESS
@@ -66,9 +67,16 @@ class GitlabSync:
 
     def set_members(self):
         """Add given members to gitlab group"""
-        # TODO: get local user
+        list_members = []
+        try:
+            local_user = os.popen("git config user.email").read().strip()
+            list_members.append(self.gl.users.list(search=local_user)[0].username)
+        except IndexError:
+            warnings.warn("git local user doesn't exists")
         members = input("Insert the usernames of all users you want to add to the group, separated by comma or empty to skip: ")
-        for member in members.split(","):
+        if members:
+            list_members.extend(members.split(","))
+        for member in list_members:
             try:
                 user = self.gl.users.list(username=member.strip())[0]
                 self.group.members.create({'user_id': user.id, 'access_level': MAINTAINER_ACCESS})
