@@ -139,12 +139,11 @@ class MainProcess:
     def replace_gitlab_path(self):
         """Replace __GITLAB_GROUP__ variable in README.md file"""
         text_group = ""
-        with open("TEMP_README.md", "r") as f:
+        with open("README.md", "r") as f:
             text = f.read()
             text_group = text.replace("__GITLAB_GROUP__", self.group_slug)
         with open("README.md", "w+") as f:
             f.write(text_group)
-        self.remove("TEMP_README.md")
 
     def create_subprojects(self):
         """Create the the django and react apps."""
