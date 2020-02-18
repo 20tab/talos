@@ -27,7 +27,7 @@ class GitlabSync:
             if p.path == group_name:
                 return False
         for u in self.gl.users.list(username=group_name):
-            if u.web_url.replace(f"{self.protocol}{self.server_url}/", "").lower() == group_name:
+            if u.web_url.replace(f"{self.protocol}{self.server_url}/", "").casefold() == group_name.casefold():
                 return False
         return True
 
@@ -111,7 +111,7 @@ class MainProcess:
             with open("k8s/production/secrets.yaml", "w+") as fd:
                 fd.write(text_production)
 
-    def create_apps(self):
+    def create_subprojects(self):
         """Create the the django and react apps."""
         os.system("./bin/init.sh")
         cookiecutter(
@@ -155,11 +155,11 @@ class MainProcess:
             self.gitlab.create_group(self.project_name, self.group_name)
 
         self.copy_secrets()
-        self.create_apps()
+        self.create_subprojects()
         if self.gitlab:
+            self.gitlab.set_members()
             self.git_init()
             self.gitlab.set_default_branch()
-            self.gitlab.set_members()
 
 
 main_process = MainProcess()
