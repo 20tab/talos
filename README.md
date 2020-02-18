@@ -124,7 +124,7 @@ username of the local user to the members list.
 - Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
 - Create a token in the **API -> Generate New Token** section or select an existing one
 - Run ./bin/do_setup.sh
-  - Login using `doctl auth init and the selected token
+  - Login using `doctl auth init` and the selected token
   - Salvare la configurazione di kubernetes lanciando `doctl kubernetes cluster kubeconfig save <cluster_name>`
   - Settare il context (opzionale, lo fa lui di default) `kubectl config use-context <cluster_name>`
   - Installare [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/#docker-for-mac):
