@@ -1,7 +1,8 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: development-{{cookiecutter.project_slug}}-postgres-persistent-volume-claim
+  name: postgres-persistent-volume-claim
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   accessModes:
     - ReadWriteOnce
@@ -14,7 +15,8 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: development-{{cookiecutter.project_slug}}-static-persistent-volume-claim
+  name: static-persistent-volume-claim
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   accessModes:
     - ReadWriteOnce
@@ -27,7 +29,8 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: development-{{cookiecutter.project_slug}}-media-persistent-volume-claim
+  name: media-persistent-volume-claim
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   accessModes:
     - ReadWriteOnce

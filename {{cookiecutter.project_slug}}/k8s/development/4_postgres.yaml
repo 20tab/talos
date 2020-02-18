@@ -1,45 +1,46 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: integration-{{cookiecutter.project_slug}}-postgres-deployment
+  name: postgres-deployment
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   replicas: 1
   selector:
     matchLabels:
-      component: integration-{{cookiecutter.project_slug}}-postgres
+      component: development-{{cookiecutter.project_slug}}-postgres
   template:
     metadata:
       labels:
-        component: integration-{{cookiecutter.project_slug}}-postgres
+        component: development-{{cookiecutter.project_slug}}-postgres
     spec:
       volumes:
-        - name: integration-{{cookiecutter.project_slug}}-postgres-storage
+        - name: development-{{cookiecutter.project_slug}}-postgres-storage
           persistentVolumeClaim:
-            claimName: integration-{{cookiecutter.project_slug}}-postgres-persistent-volume-claim
+            claimName: development-{{cookiecutter.project_slug}}-postgres-persistent-volume-claim
       containers:
         - name: postgres
           image: postgres:12
           ports:
             - containerPort: 5432
           volumeMounts:
-            - name: integration-{{cookiecutter.project_slug}}-postgres-storage
+            - name: development-{{cookiecutter.project_slug}}-postgres-storage
               mountPath: /var/lib/postgresql/data
               subPath: postgres
           env:
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: integration-{{cookiecutter.project_slug}}-secrets
+                  name: development-{{cookiecutter.project_slug}}-secrets
                   key: POSTGRES_DB
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: integration-{{cookiecutter.project_slug}}-secrets
+                  name: development-{{cookiecutter.project_slug}}-secrets
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: integration-{{cookiecutter.project_slug}}-secrets
+                  name: development-{{cookiecutter.project_slug}}-secrets
                   key: POSTGRES_PASSWORD
 
 ---
@@ -47,11 +48,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: integration-{{cookiecutter.project_slug}}-postgres-cluster-ip-service
+  name: postgres-cluster-ip-service
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   type: ClusterIP
   selector:
-    component: integration-{{cookiecutter.project_slug}}-postgres
+    component: development-{{cookiecutter.project_slug}}-postgres
   ports:
     - port: 5432
       targetPort: 5432

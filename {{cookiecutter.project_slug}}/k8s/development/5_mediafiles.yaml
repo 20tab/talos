@@ -1,7 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: development-{{cookiecutter.project_slug}}-nginx-media-config-map
+  name: nginx-media-config-map
+  namespace: {{cookiecutter.project_slug}}-development
 data:
   nginx.conf: |
     worker_processes        1;
@@ -25,7 +26,8 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: development-{{cookiecutter.project_slug}}-media-nginx-deployment
+  name: media-nginx-deployment
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   replicas: 1
   selector:
@@ -61,7 +63,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: development-{{cookiecutter.project_slug}}-media-nginx-cluster-ip-service
+  name: media-nginx-cluster-ip-service
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   type: ClusterIP
   selector:
