@@ -76,6 +76,17 @@ section. Make sure to give it full permission. Beware that GitLab only shows the
 ### DigitalOcean
 
 Install the `doctl` command-line tootl and authenticate, if the DigitalOcean integration is needed.
+Install the `python-digitalocean` package, if the DigitalOcean integration is needed.
+
+```shell
+$ pip install --user python-digitalocean
+```
+
+Put the DigitalOcean Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
+
+```shell
+$ export DIGITALOCEAN_ASCESS_TOKEN={{digitalocean_access_token}}
+```
 
 #### Mac OS
 
