@@ -77,26 +77,13 @@ class MainProcess:
             no_input=True,
         )
 
-    def git_init(self):
-        """Initialize local git repository."""
-        os.system(f"./scripts/git_init.sh {self.gitlab.orchestrator.ssh_url_to_repo}")
-        os.system(
-            "cd backend && ../scripts/git_init.sh "
-            f"{self.gitlab.backend.ssh_url_to_repo}"
-        )
-        os.system(
-            "cd frontend && ../scripts/git_init.sh "
-            f"{self.gitlab.frontend.ssh_url_to_repo}"
-        )
-
     def run(self):
         """Run the main process operations."""
         self.save_cookiecutter_conf()
         self.copy_secrets()
         self.create_subprojects()
         if self.use_gitlab:
-            os.system("./scripts/gitlabsync.sh")
-        os.system("ls -la")
+            subprocess.run("./scripts/gitlabsync.sh")
 
 main_process = MainProcess()
 main_process.run()
