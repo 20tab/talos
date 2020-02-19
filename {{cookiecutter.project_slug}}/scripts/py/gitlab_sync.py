@@ -46,6 +46,9 @@ class GitlabSync:
             private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
         )
         self.gl.auth()
+        self.group_slug = get_cookiecutter_conf()["gitlab_group_slug"]
+        self.project_slug = get_cookiecutter_conf()["project_slug"]
+        self.project_name = get_cookiecutter_conf()["project_name"]
 
     def is_group_slug_available(self, group_slug):
         """Tell if group name is available."""
