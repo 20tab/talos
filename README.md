@@ -23,14 +23,13 @@ This is the [20tab](https://www.20tab.com/) standard project [cookiecutter](http
     - [Kubernetes and GitLab connection](#kubernetes-and-gitlab-connection)
     - [Kubernetes apply](#kubernetes-apply)
       - [Warning](#warning)
-  - [Useful commands](#useful-commands)
 
 ## Conventions
 
 In the following instructions:
 
 - replace `projects` with your actual projects directory
-- replace `project_name` with your chosen project name
+- replace `My project name` with your chosen project name
 
 ## Workspace initialization
 
@@ -89,7 +88,6 @@ $ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
 section. Make sure to give it full permission. Beware that the token is shown and can
 be copied only right after creation and it is hidden thereafter.
 
-
 ## New project
 
 This section shows how to create and initialize a project.
@@ -101,16 +99,13 @@ Change directory and start a project with this template:
 ```shell
 $ cd ~/projects/
 $ cookiecutter https://github.com/20tab/20tab-standard-project
-project_name [20tab standard project]: project_name
-project_slug [project_name]:
+project_name [20tab standard project]: My project name
+project_slug [myprojectname]:
 use_gitlab [y]:
 Choose the gitlab group name [project_name]:
 Insert the usernames of all users you want to add to the group, separated by comma:
-$ cd project_name
+$ cd project_slug
 ```
-
-**Note:** in order to make the subsequent commands work, make sure to add at least the
-username of the local user to the members list.
 
 ---
 
@@ -165,27 +160,8 @@ username of the local user to the members list.
 
 #### Warning
 
-Fare attenzione ad i nomi molto lunghi:
+Non inserire stringhe più lunghe di 63 caratteri nei file `*.yaml` della cartella `k8s` lunghi per evitare il non funzionamento e messaggi tipo:
 
 ```python
-Error from server (Invalid): error when creating "k8s/development/ingress.yaml": Ingress.extensions "development-verylongprojectname2020-ingress-service" is invalid: spec.rules[0].http.backend.serviceName: Invalid value: "development-verylongprojectname2020-static-nginx-cluster-ip-service": must be no more than 63 characters
 Error from server (Invalid): error when creating "k8s/development/staticfiles.yaml": Service "development-verylongprojectname2020-static-nginx-cluster-ip-service" is invalid: metadata.name: Invalid value: "development-verylongprojectname2020-static-nginx-cluster-ip-service": must be no more than 63 characters
-```
-
-## Useful commands
-
-Comandi utili da utilizzare dopo l'avvio:
-
-```
-$ kubectl get deployments
-$ kubectl delete deployment <deployment-name>
-$ kubectl scale deployment <deployment-name> --replicas=0
-$ kubectl scale deployment <deployment-name> --replicas=1
-$ kubectl get pods
-# controlla errori di k8s
-$ kubectl describe pod <pod-name>
-# controlla errori del servizio
-$ kubectl logs -f <pod-name>
-# eseguire comandi sul pod
-$ kubectl exec -it <pod-name> bash
 ```

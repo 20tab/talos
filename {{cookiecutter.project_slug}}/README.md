@@ -25,6 +25,7 @@ This is the "{{cookiecutter.project_name}}" orchestrator.
       - [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
         - [Ubuntu](#ubuntu-1)
         - [Mac Os](#mac-os-1)
+  - [Useful commands](#useful-commands)
 
 ## Quickstart
 
@@ -184,3 +185,21 @@ $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.ke
 ```
 
 <a id="f-setup-https-locally" href="#a-setup-https-locally">1</a>. For further reference look [here](https://medium.com/@workockmoses/how-to-setup-https-for-local-development-on-ubuntu-with-self-signed-certificate-f97834064fd).
+
+## Useful commands
+
+Comandi utili da utilizzare dopo l'avvio:
+
+```
+$ kubectl get deployments
+$ kubectl delete deployment <deployment-name>
+$ kubectl scale deployment <deployment-name> --replicas=0
+$ kubectl scale deployment <deployment-name> --replicas=1
+$ kubectl get pods
+# controlla errori di k8s
+$ kubectl describe pod <pod-name>
+# controlla errori del servizio
+$ kubectl logs -f <pod-name>
+# eseguire comandi sul pod
+$ kubectl exec -it <pod-name> bash
+```
