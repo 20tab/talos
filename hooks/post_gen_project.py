@@ -83,7 +83,7 @@ class MainProcess:
         self.copy_secrets()
         self.create_subprojects()
         if self.use_gitlab:
-            subprocess.run("./scripts/gitlabsync.sh")
+            subprocess.run("./scripts/gitlab_sync.sh")
 
 
 main_process = MainProcess()
