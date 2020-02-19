@@ -46,9 +46,14 @@ class GitlabSync:
             private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
         )
         self.gl.auth()
-        self.group_slug = get_cookiecutter_conf()["gitlab_group_slug"]
-        self.project_slug = get_cookiecutter_conf()["project_slug"]
-        self.project_name = get_cookiecutter_conf()["project_name"]
+        try:
+            self.group_slug = get_cookiecutter_conf()["gitlab_group_slug"]
+            self.project_slug = get_cookiecutter_conf()["project_slug"]
+            self.project_name = get_cookiecutter_conf()["project_name"]
+        except KeyError:
+            self.group_slug = None
+            self.project_slug = None
+            self.project_name = None
 
     def is_group_slug_available(self, group_slug):
         """Tell if group name is available."""
@@ -62,6 +67,13 @@ class GitlabSync:
             ):
                 return False
         return True
+
+    def get_group(self):
+        """Get gitlab group"""
+        for p in self.gl.groups.list(search=self.group_slug):
+            if p.path == self.group_slug:
+                return p
+        return None
 
     def create_group(self, project_name, group_slug):
         """Create a GitLab group."""
