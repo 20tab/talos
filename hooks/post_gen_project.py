@@ -27,7 +27,7 @@ class MainProcess:
         conf = {{cookiecutter}}
         with open("cookiecutter.json", "w+") as f:
             f.write(json.dumps(conf, indent=2))
-            
+
     def remove(self, path):
         """Remove a file or a directory at the given path."""
         if os.path.isfile(path):
@@ -84,6 +84,7 @@ class MainProcess:
         self.create_subprojects()
         if self.use_gitlab:
             subprocess.run("./scripts/gitlabsync.sh")
+
 
 main_process = MainProcess()
 main_process.run()

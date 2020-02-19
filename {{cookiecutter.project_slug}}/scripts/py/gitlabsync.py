@@ -131,7 +131,7 @@ class GitlabSync:
                     {"user_id": user.id, "access_level": MAINTAINER_ACCESS}
                 )
                 print(f"{member} added to group {self.group.name}")
-    
+
     def update_cookiecutter_conf(self):
         """Update cookiecutter configuration file"""
         conf = {}
@@ -145,12 +145,10 @@ class GitlabSync:
         """Initialize local git repository."""
         os.system(f"./scripts/git_init.sh {self.orchestrator.ssh_url_to_repo}")
         os.system(
-            "cd backend && ../scripts/git_init.sh "
-            f"{self.backend.ssh_url_to_repo}"
+            "cd backend && ../scripts/git_init.sh " f"{self.backend.ssh_url_to_repo}"
         )
         os.system(
-            "cd frontend && ../scripts/git_init.sh "
-            f"{self.frontend.ssh_url_to_repo}"
+            "cd frontend && ../scripts/git_init.sh " f"{self.frontend.ssh_url_to_repo}"
         )
 
     def update_readme(self):
