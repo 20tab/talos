@@ -26,12 +26,7 @@ This is the [20tab](https://www.20tab.com/) standard project [cookiecutter](http
 
 In the following instructions, replace:
 
-<<<<<<< Updated upstream
-- replace `projects` with your actual projects directory
-- replace `My project name` with your chosen project name
-=======
 - `project_name` with your chosen project name
->>>>>>> Stashed changes
 
 ## Workspace initialization
 
@@ -91,9 +86,6 @@ $ doctl auth init
 
 #### Linux
 
-<<<<<<< Updated upstream
-## New project
-=======
 ```shell
 $ snap install doctl
 $ sudo snap connect doctl:kube-config
@@ -101,7 +93,6 @@ $ doctl auth init
 ```
 
 ## Usage
->>>>>>> Stashed changes
 
 This section shows how to create and initialize a project.
 
@@ -157,6 +148,7 @@ $ cd project_slug
     namespace:  11 bytes
     token:      <authentication_token>
   ```
+
 - Assicurarsi di rimuovere la spunta da gitlab-managed cluster
 - Salvare le impostazioni su gitlab
 
