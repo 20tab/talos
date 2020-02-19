@@ -32,7 +32,7 @@ This is the "{{cookiecutter.project_name}}" orchestrator.
 This section explains the steps you need to clone and work wityh this project.
 
 1. [clone](#clone) the project code
-2. set all the [environment variables](#environment-variables)
+2. set all the required [environment variables](#environment-variables)
 3. [build](#build) all the services
 4. [create a superuser](#create-a-superuser) to login the platform
 5. [run](#run) all the services
@@ -42,10 +42,9 @@ This section explains the steps you need to clone and work wityh this project.
 
 #### Clone
 
-Change directory, clone the main repo and fetch the sub-repos in such a way to have the `.git` folder inside the sub-dirs:
+Clone the repositories of the orchestrator, backend and frontend:
 
 ```shell
-$ cd ~/projects/
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{cookiecutter.project_slug}} && cd {{cookiecutter.project_slug}}
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git
@@ -54,7 +53,7 @@ $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git
 
 ### Environment variables
 
-In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env.tpl` template is provided for each of the aforementioned files.
+In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env.tpl` template is provided.
 
 Enter the newly created **project** directory and crate the `.env` file coopying from ``.env.tpl`:
 
