@@ -2,13 +2,13 @@
 
 import os
 import re
-import requests
 import shutil
+import subprocess
 import unicodedata
 import warnings
 
 from cookiecutter.main import cookiecutter
-from gitlab import Gitlab, MAINTAINER_ACCESS
+from gitlab import MAINTAINER_ACCESS, Gitlab
 
 
 class GitlabSync:
@@ -19,47 +19,60 @@ class GitlabSync:
         self.protocol = "https://"
         self.server_url = "gitlab.com"
         self.gl = Gitlab(
-           f"{self.protocol}{self.server_url}" , private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
+            f"{self.protocol}{self.server_url}",
+            private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
         )
         self.gl.auth()
 
     def is_group_slug_available(self, group_slug):
         """Tell if group name is available."""
-        resp = requests.get(f"{self.protocol}{self.server_url}")
         for p in self.gl.groups.list(search=group_slug):
             if p.path == group_slug:
                 return False
         for u in self.gl.users.list(username=group_slug):
-            if u.web_url.replace(f"{self.protocol}{self.server_url}/", "").casefold() == group_slug.casefold():
+            if (
+                u.web_url.replace(f"{self.protocol}{self.server_url}/", "").casefold()
+                == group_slug.casefold()
+            ):
                 return False
         return True
 
     def create_group(self, project_name, group_slug):
         """Create a GitLab group."""
         self.group = self.gl.groups.create({"name": project_name, "path": group_slug})
+        server_link = f"{self.protocol}{self.server_url}"
+        group_link = f"{self.protocol}{self.group.path}.{self.server_url}"
         pipeline_badge_link = "/%{project_path}/pipelines"
-        pipeline_badge_image_url = "/%{project_path}/badges/%{default_branch}/pipeline.svg"
-        pipeline_badge = self.group.badges.create({
-            "link_url": f"{self.protocol}{self.server_url}{pipeline_badge_link}", 
-            'image_url': f"{self.protocol}{self.server_url}{pipeline_badge_image_url}"
-        })
+        pipeline_badge_image_url = (
+            "/%{project_path}/badges/%{default_branch}/pipeline.svg"
+        )
+        self.group.badges.create(
+            {
+                "link_url": f"{server_link}{pipeline_badge_link}",
+                "image_url": f"{server_link}{pipeline_badge_image_url}",
+            }
+        )
         self.orchestrator = self.gl.projects.create(  # noqa
             {"name": "Orchestrator", "namespace_id": self.group.id}
         )
         self.backend = self.gl.projects.create(  # noqa
             {"name": "Backend", "namespace_id": self.group.id}
         )
-        coverage_badge_image_url = "/%{project_path}/badges/%{default_branch}/coverage.svg"
-        coverage_badge = self.group.badges.create({
-            "link_url": f"{self.protocol}{self.group.path}.{self.server_url}/{self.backend.path}", 
-            'image_url': f"{self.protocol}{self.server_url}{coverage_badge_image_url}"
-        })
+        coverage_badge_image_url = (
+            "/%{project_path}/badges/%{default_branch}/coverage.svg"
+        )
+        self.group.badges.create(
+            {
+                "link_url": f"{group_link}/{self.backend.path}",
+                "image_url": f"{server_link}{coverage_badge_image_url}",
+            }
+        )
         self.frontend = self.gl.projects.create(  # noqa
             {"name": "Frontend", "namespace_id": self.group.id}
         )
 
     def set_default_branch(self):
-        """Set default branch"""
+        """Set default branch."""
         self.orchestrator.default_branch = "develop"
         self.orchestrator.save()
         self.backend.default_branch = "develop"
@@ -68,49 +81,65 @@ class GitlabSync:
         self.frontend.save()
 
     def set_members(self):
-        """Add given members to gitlab group"""
+        """Add git user or given members to gitlab group."""
         list_members = []
+        git_user_email = subprocess.check_output(
+            ["git", "config", "user.email"], text=True
+        ).split("\n")[0]
         try:
-            local_user = os.popen("git config user.email").read().strip()
-            list_members.append(self.gl.users.list(search=local_user)[0].username)
+            gitlab_username = self.gl.users.list(search=git_user_email)[0].username
         except IndexError:
             warnings.warn("git local user doesn't exists")
-        members = input("Insert the usernames of all users you want to add to the group, separated by comma or empty to skip: ")
+        else:
+            list_members.append(gitlab_username)
+        members = input(
+            "Insert the usernames of all users you want to add to the group, "
+            "separated by comma or empty to skip: "
+        )
         if members:
             list_members.extend(members.split(","))
         for member in list_members:
             try:
                 user = self.gl.users.list(username=member.strip())[0]
-                self.group.members.create({'user_id': user.id, 'access_level': MAINTAINER_ACCESS})
-                print(f"{member} added to group {self.group.name}")
             except IndexError:
                 print(f"{member} doesn't exists. Please add him from gitlab.com")
+            else:
+                self.group.members.create(
+                    {"user_id": user.id, "access_level": MAINTAINER_ACCESS}
+                )
+                print(f"{member} added to group {self.group.name}")
+
+
+def slugify(value):
+    """
+    Transofrm text into slug.
+
+    Convert to ASCII.
+    Convert spaces to hyphens.
+    Remove characters that aren't alphanumerics, underscores, or hyphens.
+    Convert to lowercase.
+    Also strip leading and trailing whitespace.
+    """
+    value = str(value)
+    value = (
+        unicodedata.normalize("NFKD", str(value))
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    value = re.sub(r"[^\w\s-]", "", value.casefold()).strip()
+    return re.sub(r"[-\s]+", "-", value)
 
 
 class MainProcess:
-    """Main process class"""
+    """Main process class."""
 
     def __init__(self, *args, **kwargs):
-        """Create a main process instance with chosen parameters"""
+        """Create a main process instance with chosen parameters."""
         self.project_name = "{{ cookiecutter.project_name }}"
         self.project_slug = "{{ cookiecutter.project_slug }}"
         self.group_slug = self.project_slug
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "y"
         self.gitlab = None
-        
-    def slugify(value, allow_unicode=False):
-        """
-        Convert to ASCII if 'allow_unicode' is False. Convert spaces to hyphens.
-        Remove characters that aren't alphanumerics, underscores, or hyphens.
-        Convert to lowercase. Also strip leading and trailing whitespace.
-        """
-        value = str(value)
-        if allow_unicode:
-            value = unicodedata.normalize('NFKC', value)
-        else:
-            value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
-        value = re.sub(r'[^\w\s-]', '', value.lower()).strip()
-        return re.sub(r'[-\s]+', '-', value)
 
     def remove(self, path):
         """Remove a file or a directory at the given path."""
@@ -137,7 +166,7 @@ class MainProcess:
                 fd.write(text_production)
 
     def replace_gitlab_path(self):
-        """Replace __GITLAB_GROUP__ variable in README.md file"""
+        """Replace __GITLAB_GROUP__ variable in README.md file."""
         text_group = ""
         with open("README.md", "r") as f:
             text = f.read()
@@ -147,7 +176,7 @@ class MainProcess:
 
     def create_subprojects(self):
         """Create the the django and react apps."""
-        os.system("./scripts/init.sh")
+        subprocess.run("./scripts/init.sh")
         cookiecutter(
             "https://github.com/20tab/django-continuous-delivery",
             extra_context={
@@ -171,21 +200,30 @@ class MainProcess:
         )
 
     def git_init(self):
-        """Initialize local git repository"""
+        """Initialize local git repository."""
         os.system(f"./scripts/git_init.sh {self.gitlab.orchestrator.ssh_url_to_repo}")
-        os.system(f"cd backend && ../scripts/git_init.sh {self.gitlab.backend.ssh_url_to_repo}")
-        os.system(f"cd frontend && ../scripts/git_init.sh {self.gitlab.frontend.ssh_url_to_repo}")
-    
+        os.system(
+            "cd backend && ../scripts/git_init.sh "
+            f"{self.gitlab.backend.ssh_url_to_repo}"
+        )
+        os.system(
+            "cd frontend && ../scripts/git_init.sh "
+            f"{self.gitlab.frontend.ssh_url_to_repo}"
+        )
+
     def run(self):
-        # """Run the main process operations"""
+        """Run the main process operations."""
         if self.use_gitlab:
             self.gitlab = GitlabSync()
-            group_slug = input(f"Choose the gitlab group path slug [{self.group_slug}]: ") or self.group_slug
+            group_slug = (
+                input(f"Choose the gitlab group path slug [{self.group_slug}]: ")
+                or self.group_slug
+            )
             self.group_slug = self.slugify(group_slug)
             while not self.gitlab.is_group_slug_available(self.group_slug):
                 self.group_slug = input(
-                    f'A Gitlab group named "{self.group_slug}" already exists. Please choose a '
-                    "different name and try again: "
+                    f"A Gitlab group named '{self.group_slug}' already exists. "
+                    "Please choose a different name and try again: "
                 )
             self.gitlab.create_group(self.project_name, self.group_slug)
 
