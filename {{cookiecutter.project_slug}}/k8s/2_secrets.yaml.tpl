@@ -1,7 +1,8 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: __ENVIRONMENT__-{{cookiecutter.project_slug}}-secrets
+  name: secrets
+  namespace: {{cookiecutter.project_slug}}-__ENVIRONMENT__
 type: Opaque
 stringData:
   DJANGO_ADMINS: {{cookiecutter.project_slug}},errors@{{cookiecutter.project_slug}}.com

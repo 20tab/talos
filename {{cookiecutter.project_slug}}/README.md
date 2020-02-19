@@ -25,13 +25,14 @@ This is the "{{cookiecutter.project_name}}" orchestrator.
       - [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
         - [Ubuntu](#ubuntu-1)
         - [Mac Os](#mac-os-1)
+  - [Useful commands](#useful-commands)
 
 ## Quickstart
 
 This section explains the steps you need to clone and work wityh this project.
 
 1. [clone](#clone) the project code
-2. set all the [environment variables](#environment-variables)
+2. set all the required [environment variables](#environment-variables)
 3. [build](#build) all the services
 4. [create a superuser](#create-a-superuser) to login the platform
 5. [run](#run) all the services
@@ -41,10 +42,9 @@ This section explains the steps you need to clone and work wityh this project.
 
 #### Clone
 
-Change directory, clone the main repo and fetch the sub-repos in such a way to have the `.git` folder inside the sub-dirs:
+Clone the repositories of the orchestrator, backend and frontend:
 
 ```shell
-$ cd ~/projects/
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{cookiecutter.project_slug}} && cd {{cookiecutter.project_slug}}
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git
@@ -53,7 +53,7 @@ $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git
 
 ### Environment variables
 
-In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env.tpl` template is provided for each of the aforementioned files.
+In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env.tpl` template is provided.
 
 Enter the newly created **project** directory and crate the `.env` file coopying from ``.env.tpl`:
 
@@ -184,3 +184,21 @@ $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.ke
 ```
 
 <a id="f-setup-https-locally" href="#a-setup-https-locally">1</a>. For further reference look [here](https://medium.com/@workockmoses/how-to-setup-https-for-local-development-on-ubuntu-with-self-signed-certificate-f97834064fd).
+
+## Useful commands
+
+Comandi utili da utilizzare dopo l'avvio:
+
+```
+$ kubectl get deployments
+$ kubectl delete deployment <deployment-name>
+$ kubectl scale deployment <deployment-name> --replicas=0
+$ kubectl scale deployment <deployment-name> --replicas=1
+$ kubectl get pods
+# controlla errori di k8s
+$ kubectl describe pod <pod-name>
+# controlla errori del servizio
+$ kubectl logs -f <pod-name>
+# eseguire comandi sul pod
+$ kubectl exec -it <pod-name> bash
+```

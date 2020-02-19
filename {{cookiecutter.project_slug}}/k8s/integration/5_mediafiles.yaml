@@ -1,7 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: production-{{cookiecutter.project_slug}}-nginx-media-config-map
+  name: nginx-media-config-map
+  namespace: {{cookiecutter.project_slug}}-integration
 data:
   nginx.conf: |
     worker_processes        1;
@@ -25,34 +26,35 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: production-{{cookiecutter.project_slug}}-media-nginx-deployment
+  name: media-nginx-deployment
+  namespace: {{cookiecutter.project_slug}}-integration
 spec:
   replicas: 1
   selector:
     matchLabels:
-      component: production-{{cookiecutter.project_slug}}-media-nginx
+      component: media-nginx
   template:
     metadata:
       labels:
-        component: production-{{cookiecutter.project_slug}}-media-nginx
+        component: media-nginx
     spec:
       volumes:
-        - name: production-{{cookiecutter.project_slug}}-nginx-config
+        - name: nginx-config
           configMap:
-            name: production-{{cookiecutter.project_slug}}-nginx-media-config-map
-        - name: production-{{cookiecutter.project_slug}}-media-volume
+            name: nginx-media-config-map
+        - name: media-volume
           persistentVolumeClaim:
-            claimName: production-{{cookiecutter.project_slug}}-media-persistent-volume-claim
+            claimName: media-persistent-volume-claim
       containers:
         - name: nginx-media-files
           image: nginx
           ports:
             - containerPort: 80
           volumeMounts:
-            - name: production-{{cookiecutter.project_slug}}-nginx-config
+            - name: nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
-            - name: production-{{cookiecutter.project_slug}}-media-volume
+            - name: media-volume
               mountPath: /app/media
               subPath: media
 
@@ -61,11 +63,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: production-{{cookiecutter.project_slug}}-media-nginx-cluster-ip-service
+  name: media-nginx-cluster-ip-service
+  namespace: {{cookiecutter.project_slug}}-integration
 spec:
   type: ClusterIP
   selector:
-    component: production-{{cookiecutter.project_slug}}-media-nginx
+    component: media-nginx
   ports:
     - port: 80
       targetPort: 80

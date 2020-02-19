@@ -1,7 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: integration-{{cookiecutter.project_slug}}-nginx-static-config-map
+  name: nginx-static-config-map
+  namespace: {{cookiecutter.project_slug}}-development
 data:
   nginx.conf: |
     worker_processes        1;
@@ -26,34 +27,35 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: integration-{{cookiecutter.project_slug}}-static-nginx-deployment
+  name: static-nginx-deployment
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   replicas: 1
   selector:
     matchLabels:
-      component: integration-{{cookiecutter.project_slug}}-static-nginx
+      component: static-nginx
   template:
     metadata:
       labels:
-        component: integration-{{cookiecutter.project_slug}}-static-nginx
+        component: static-nginx
     spec:
       volumes:
-        - name: integration-{{cookiecutter.project_slug}}-nginx-config
+        - name: nginx-config
           configMap:
-            name: integration-{{cookiecutter.project_slug}}-nginx-static-config-map
-        - name: integration-{{cookiecutter.project_slug}}-static-volume
+            name: nginx-static-config-map
+        - name: static-volume
           persistentVolumeClaim:
-            claimName: integration-{{cookiecutter.project_slug}}-static-persistent-volume-claim
+            claimName: static-persistent-volume-claim
       containers:
         - name: nginx-static-files
           image: nginx
           ports:
             - containerPort: 80
           volumeMounts:
-            - name: integration-{{cookiecutter.project_slug}}-nginx-config
+            - name: nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
-            - name: integration-{{cookiecutter.project_slug}}-static-volume
+            - name: static-volume
               mountPath: /app/static
               subPath: static
 
@@ -62,11 +64,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: integration-{{cookiecutter.project_slug}}-static-nginx-cluster-ip-service
+  name: static-nginx-cluster-ip-service
+  namespace: {{cookiecutter.project_slug}}-development
 spec:
   type: ClusterIP
   selector:
-    component: integration-{{cookiecutter.project_slug}}-static-nginx
+    component: static-nginx
   ports:
     - port: 80
       targetPort: 80

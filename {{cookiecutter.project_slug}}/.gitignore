@@ -3,6 +3,6 @@
 .vscode
 .devcontainer
 kubeconfig.yaml
-secrets.yaml
+*secrets.yaml
 backend/
 frontend/
