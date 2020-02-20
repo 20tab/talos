@@ -76,6 +76,17 @@ section. Make sure to give it full permission. Beware that GitLab only shows the
 ### DigitalOcean
 
 Install the `doctl` command-line tootl and authenticate, if the DigitalOcean integration is needed.
+Install the `python-digitalocean` package, if the DigitalOcean integration is needed.
+
+```shell
+$ pip install --user python-digitalocean
+```
+
+Put the DigitalOcean Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
+
+```shell
+$ export DIGITALOCEAN_ASCESS_TOKEN={{digitalocean_access_token}}
+```
 
 #### Mac OS
 
@@ -118,39 +129,11 @@ $ cd project_slug
 
 - Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
 - Create a token in the **API -> Generate New Token** section or select an existing one
-- Run ./scripts/do_setup.sh
+- Run ./scripts/do_setup.sh -c <cluster_name> -r <region>
 
 ### Kubernetes and GitLab connection
 
-- Visitare la sezione kubernetes del gruppo.
-- Aggiungere il nome del cluster (mettici il cavolo che ti pare)
-- Aggiungere **API_URL**: `kubectl cluster-info | grep 'Kubernetes master' | awk '/http/ {print $NF}'`
-- Aggiungere Certificato:
-  - Lista dei secrets: `kubectl get secrets | grep 'default-token' | awk '{print $1}'` (dovrebbe essere simile a `default-token-xxxxx`)
-  - Mostra il certificato: `kubectl get secret default-token-xxxxx -o jsonpath="{['data']['ca\.crt']}" | base64 --decode`
-  - Incollare il certificato su gitlab
-- Aggiungere token:
-  - Eseguire l'apply del file `kubectl apply -f k8s/gitlab-admin-service-account.yaml`
-  - Stampa il token per il servizio creato: `kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep gitlab-admin | awk '{print $1}')`
-  - Copiare <authentication_token> dall'output:
-  ```shell
-    Name:         gitlab-admin-token-a0bc1
-    Namespace:    kube-system
-    Labels:       <none>
-    Annotations:  kubernetes.io/service-account.name=gitlab-admin
-                kubernetes.io/service-account.uid=abcd01ef-23gh-45i6-78j9-012klm34n5o6
-
-    Type:  kubernetes.io/service-account-token
-
-    Data
-    ====
-    ca.crt:     1025 bytes
-    namespace:  11 bytes
-    token:      <authentication_token>
-  ```
-
-- Assicurarsi di rimuovere la spunta da gitlab-managed cluster
-- Salvare le impostazioni su gitlab
+- Run ./scripts/add_cluster.sh
 
 ### Kubernetes apply
 
