@@ -62,7 +62,7 @@ class MainProcess:
                 "project_slug": self.project_slug,
                 "project_dirname": "backend",
                 "gitlab_group_slug": self.group_slug,
-                "static_url": "/backendstatic/",
+                "static_slug": "backendstatic",
             },
             no_input=True,
         )
