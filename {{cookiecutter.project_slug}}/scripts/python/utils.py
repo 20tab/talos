@@ -1,8 +1,7 @@
 import json
 import re
 import unicodedata
-
-from collections import OrderedDict # noqa
+from collections import OrderedDict  # noqa
 
 
 def update_cookiecutter_conf(key, value):

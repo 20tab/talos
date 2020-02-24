@@ -2,8 +2,8 @@
 
 import json
 import subprocess
+from collections import OrderedDict  # noqa
 
-from collections import OrderedDict
 from cookiecutter.main import cookiecutter
 
 

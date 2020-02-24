@@ -1,7 +1,6 @@
 import os
 
 from kubernetes import Cluster
-
 from utils import get_cookiecutter_conf, update_cookiecutter_conf
 
 
@@ -10,7 +9,7 @@ def main():
     try:
         cluster_name = get_cookiecutter_conf()["cluster_name"]
     except KeyError:
-        
+
         cluster_name = input("Please insert the cluster name: ")
         while not cluster_name:
             cluster_name = input("Please insert the cluster name: ")

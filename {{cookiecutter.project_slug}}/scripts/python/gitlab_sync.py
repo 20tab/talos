@@ -1,13 +1,11 @@
 """Define GitLab class and utilities."""
 
-import json
 import os
 import subprocess
-import unicodedata
 import warnings
 
 from gitlab import MAINTAINER_ACCESS, Gitlab
-from utils import update_cookiecutter_conf, get_cookiecutter_conf, slugify
+from utils import get_cookiecutter_conf, slugify, update_cookiecutter_conf
 
 
 class GitlabSync:
