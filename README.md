@@ -11,10 +11,10 @@ A [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github
   - [GitLab](#gitlab)
   - [DigitalOcean](#digitalocean)
 - [Quickstart](#quickstart)
-- [Work in progress](#work-in-progress)
-  - [DigitalOcean setup](#digitalocean-setup)
-  - [Kubernetes and GitLab connection](#kubernetes-and-gitlab-connection)
-  - [Kubernetes apply](#kubernetes-apply)
+- [Setup](#setup)
+  - [DigitalOcean](#digitalocean-1)
+  - [GitLab](#gitlab-1)
+  - [Kubernetes](#kubernetes-1)
 
 ## Conventions
 
@@ -85,12 +85,6 @@ Install the `doctl` command-line tootl and authenticate, if the DigitalOcean int
   $ sudo snap connect doctl:kube-config
   ```
 
-Put the DigitalOcean Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
-
-```shell
-$ export DIGITALOCEAN_ASCESS_TOKEN={{digitalocean_access_token}}
-```
-
 Use the `doctl` command-line tool to authenticate.
 
 ```shell
@@ -101,6 +95,16 @@ Install the `python-digitalocean` package, if the DigitalOcean integration is ne
 
 ```shell
 $ pip install --user python-digitalocean
+```
+
+A DigitalOcean user account is required by the setup procedure to setup the GitLab integration.
+
+Put a valid DigitalOcean Access Token of the authorized user in an environment variable (e.g. export it in the command line or add it to the bash config).
+
+**Note:** Create a token in the **API -> Generate New Token** section or select an existing one.
+
+```shell
+$ export DIGITALOCEAN_ACCESS_TOKEN={{digitalocean_access_token}}
 ```
 
 ## Quickstart
@@ -118,23 +122,23 @@ Insert the usernames of all users you want to add to the group, separated by com
 $ cd myprojectname
 ```
 
----
+## Setup
 
-## Work in progress
+### DigitalOcean
 
-### DigitalOcean setup
+1. Select an existing Kubernetes cluster on DigitalOcean or create one with **Create -> Clusters**
+2. Run `./scripts/do_setup.sh -c <cluster_name> -r <region>`
 
-- Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
-- Create a token in the **API -> Generate New Token** section or select an existing one
-- Run ./scripts/do_setup.sh -c <cluster_name> -r <region>
+### GitLab
 
-### Kubernetes and GitLab connection
+1. Run `./scripts/add_cluster.sh` to connect GitLab with the DigitalOcean hosted Kubernetes cluster
 
-- Run ./scripts/add_cluster.sh
+### Kubernetes
 
-### Kubernetes apply
-
-- Run `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com --namespace=<NAMESPACE>`
-- Modificare l'host sul file `ingress.yaml` e aggiungere il dominio tra gli allowed_hosts in `secrets.yaml`
-- Apply della cartella `kubectl apply -f k8s/development` (su tutti e tre i progetti il primo commit si deve fare su develop)
-- Git push su frontend e backend (su develop)
+1. Run
+    ```
+    kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com --namespace=<NAMESPACE>
+    ```
+2. Change the host to the `ingress.yaml` file and add the domain among the `ALLOWED_HOSTS` in `secrets.yaml`
+3. Apply of the `development` directory with `kubectl apply -f k8s/development` (on all three projects the first commit must be done on develop)
+4. Git push on frontend and backend (on develop)
