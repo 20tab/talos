@@ -1,38 +1,33 @@
-# 20tab standard project
+# 20tab standard project <!-- omit in toc -->
 
-This is the [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
+A [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
 
-## Documentation <!-- omit in toc -->
+## Index <!-- omit in toc -->
 
-- [20tab standard project](#20tab-standard-project)
-  - [Conventions](#conventions)
-  - [Workspace initialization](#workspace-initialization)
-    - [Python packages](#python-packages)
-    - [Kubernetes](#kubernetes)
-      - [MacOS](#mac-os-1)
-      - [Linux](#linux-1)
-    - [GitLab](#gitlab)
-    - [Digital Ocean](#digitalocean)
-      - [Mac OS](#mac-os-2)
-      - [Linux](#linux-2)
-  - [Usage](#usage)
-    - [Cookiecutter](#cookiecutter)
-    - [DigitalOcean setup](#digitalocean-setup)
-    - [Kubernetes and GitLab connection](#kubernetes-and-gitlab-connection)
-    - [Kubernetes apply](#kubernetes-apply)
-      - [Warning](#warning)
+- [Conventions](#conventions)
+- [Requirements](#requirements)
+  - [Cookiecutter](#cookiecutter)
+  - [Kubernetes](#kubernetes)
+  - [GitLab](#gitlab)
+  - [DigitalOcean](#digitalocean)
+- [Quickstart](#quickstart)
+- [Setup](#setup)
+  - [DigitalOcean](#digitalocean-1)
+  - [GitLab](#gitlab-1)
+  - [Kubernetes](#kubernetes-1)
 
 ## Conventions
 
 In the following instructions, replace:
 
+- `projects` with your actual projects directory
 - `project_name` with your chosen project name
 
-## Workspace initialization
+## Requirements
 
-### Python
+### Cookiecutter
 
-The `cookiecutter` package must be installed in the active python environment in order to create and initialize the project structure.
+[Cookiecutter](https://cookiecutter.readthedocs.io) must be installed in order to create and initialize the project structure.
 
 ```shell
 $ pip install --user cookiecutter
@@ -42,17 +37,17 @@ $ pip install --user cookiecutter
 
 Install the `kubectl` command-line tool, if the Kubernetes integration is needed.
 
-#### Mac OS
+- macOS
 
-```shell
-$ brew install kubectl
-```
+  ```shell
+  $ brew install kubectl
+  ```
 
-#### Linux
+- Linux
 
-```shell
-$ sudo snap install kubectl --classic
-```
+  ```shell
+  $ sudo snap install kubectl --classic
+  ```
 
 ### GitLab
 
@@ -76,68 +71,74 @@ section. Make sure to give it full permission. Beware that GitLab only shows the
 ### DigitalOcean
 
 Install the `doctl` command-line tootl and authenticate, if the DigitalOcean integration is needed.
+
+- macOS
+
+  ```shell
+  $ brew install doctl
+  ```
+
+- Linux
+
+  ```shell
+  $ snap install doctl
+  $ sudo snap connect doctl:kube-config
+  ```
+
+Use the `doctl` command-line tool to authenticate.
+
+```shell
+$ doctl auth init
+```
+
 Install the `python-digitalocean` package, if the DigitalOcean integration is needed.
 
 ```shell
 $ pip install --user python-digitalocean
 ```
 
-Put the DigitalOcean Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
+A DigitalOcean user account is required by the setup procedure to setup the GitLab integration.
+
+Put a valid DigitalOcean Access Token of the authorized user in an environment variable (e.g. export it in the command line or add it to the bash config).
+
+**Note:** Create a token in the **API -> Generate New Token** section or select an existing one.
 
 ```shell
-$ export DIGITALOCEAN_ASCESS_TOKEN={{digitalocean_access_token}}
+$ export DIGITALOCEAN_ACCESS_TOKEN={{digitalocean_access_token}}
 ```
 
-#### Mac OS
+## Quickstart
+
+Change directory and create a new project as in this example:
 
 ```shell
-$ brew install doctl
-$ doctl auth init
-```
-
-#### Linux
-
-```shell
-$ snap install doctl
-$ sudo snap connect doctl:kube-config
-$ doctl auth init
-```
-
-## Usage
-
-This section shows how to create and initialize a project.
-
-### Cookiecutter
-
-Run the Cookiecutter command in the desired location, and follow the guided procedure:
-
-```shell
+$ cd ~/projects/
 $ cookiecutter https://github.com/20tab/20tab-standard-project
-project_name [20tab standard project]: My project name
+project_name: My project name
 project_slug [myprojectname]:
 use_gitlab [y]:
-Choose the gitlab group name [project_name]:
-Insert the usernames of all users you want to add to the group, separated by comma:
-$ cd project_slug
+Choose the gitlab group path slug [myprojectname]:
+Insert the usernames of all users you want to add to the group, separated by comma or empty to skip :
+$ cd myprojectname
 ```
 
----
+## Setup
 
-# WIP
+### DigitalOcean
 
-### DigitalOcean setup
+1. Select an existing Kubernetes cluster on DigitalOcean or create one with **Create -> Clusters**
+2. Run `./scripts/do_setup.sh -c <cluster_name> -r <region>`
 
-- Create a Kubernetes cluster on DigitalOcean **Create -> Clusters**
-- Create a token in the **API -> Generate New Token** section or select an existing one
-- Run ./scripts/do_setup.sh -c <cluster_name> -r <region>
+### GitLab
 
-### Kubernetes and GitLab connection
+1. Run `./scripts/add_cluster.sh` to connect GitLab with the DigitalOcean hosted Kubernetes cluster
 
-- Run ./scripts/add_cluster.sh
+### Kubernetes
 
-### Kubernetes apply
-
-- Run `kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com --namespace=<NAMESPACE>`
-- Modificare l'host sul file `ingress.yaml` e aggiungere il dominio tra gli allowed_hosts in `secrets.yaml`
-- Apply della cartella `kubectl apply -f k8s/development` (su tutti e tre i progetti il primo commit si deve fare su develop)
-- Git push su frontend e backend (su develop)
+1. Run
+    ```
+    kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com --namespace=<NAMESPACE>
+    ```
+2. Change the host to the `ingress.yaml` file and add the domain among the `ALLOWED_HOSTS` in `secrets.yaml`
+3. Apply of the `development` directory with `kubectl apply -f k8s/development` (on all three projects the first commit must be done on develop)
+4. Git push on frontend and backend (on develop)

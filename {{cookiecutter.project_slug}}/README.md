@@ -1,31 +1,30 @@
-# {{cookiecutter.project_name}}
+# {{cookiecutter.project_name}} <!-- omit in toc -->
 
 This is the "{{cookiecutter.project_name}}" orchestrator.
 
 ## Documentation <!-- omit in toc -->
 
-- [{{cookiecutter.project_name}}](#cookiecutterproject_name)
-  - [Quickstart](#quickstart)
-    - [Git](#git)
-      - [Clone](#clone)
-    - [Environment variables](#environment-variables)
-    - [Docker](#docker)
-      - [Build](#build)
-      - [Run](#run)
-    - [Makefile shortcuts](#makefile-shortcuts)
-      - [Pull](#pull)
-      - [Django manage command](#django-manage-command)
-      - [Restart and build services](#restart-and-build-services)
-    - [Create SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-ssl-certificate-sup-ida-setup-https-locally1sup)
-    - [Create and activate a local SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-and-activate-a-local-ssl-certificate-sup-ida-setup-https-locally1sup)
-      - [Install the cert utils](#install-the-cert-utils)
-        - [Ubuntu](#ubuntu)
-        - [Mac Os](#mac-os)
-      - [Import certificates](#import-certificates)
-      - [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
-        - [Ubuntu](#ubuntu-1)
-        - [Mac Os](#mac-os-1)
-  - [Useful commands](#useful-commands)
+- [Quickstart](#quickstart)
+  - [Git](#git)
+    - [Clone](#clone)
+  - [Environment variables](#environment-variables)
+  - [Docker](#docker)
+    - [Build](#build)
+    - [Run](#run)
+  - [Makefile shortcuts](#makefile-shortcuts)
+    - [Pull](#pull)
+    - [Django manage command](#django-manage-command)
+    - [Restart and build services](#restart-and-build-services)
+  - [Create SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-ssl-certificate-sup-ida-setup-https-locally1sup)
+  - [Create and activate a local SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-and-activate-a-local-ssl-certificate-sup-ida-setup-https-locally1sup)
+    - [Install the cert utils](#install-the-cert-utils)
+      - [Ubuntu](#ubuntu)
+      - [Mac Os](#mac-os)
+    - [Import certificates](#import-certificates)
+    - [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
+      - [Ubuntu](#ubuntu-1)
+      - [Mac Os](#mac-os-1)
+- [Useful commands](#useful-commands)
 
 ## Quickstart
 
@@ -187,7 +186,7 @@ $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.ke
 
 ## Useful commands
 
-Comandi utili da utilizzare dopo l'avvio:
+Useful commands to use after startup:
 
 ```
 $ kubectl get deployments
@@ -195,10 +194,10 @@ $ kubectl delete deployment <deployment-name>
 $ kubectl scale deployment <deployment-name> --replicas=0
 $ kubectl scale deployment <deployment-name> --replicas=1
 $ kubectl get pods
-# controlla errori di k8s
+# check for k8s errors
 $ kubectl describe pod <pod-name>
-# controlla errori del servizio
+# check for service errors
 $ kubectl logs -f <pod-name>
-# eseguire comandi sul pod
+# run commands on the pod
 $ kubectl exec -it <pod-name> bash
 ```

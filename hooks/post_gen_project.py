@@ -1,12 +1,7 @@
 """Define hooks to be run after project generation."""
 
 import json
-import os
-import shutil
 import subprocess
-import warnings
-
-from collections import OrderedDict
 
 from cookiecutter.main import cookiecutter
 
@@ -23,34 +18,21 @@ class MainProcess:
         self.gitlab = None
 
     def save_cookiecutter_conf(self):
-        """Save cookiecutter configuration inside the project"""
-        conf = {{cookiecutter}}
+        """Save cookiecutter configuration inside the project."""
         with open("cookiecutter.json", "w+") as f:
-            f.write(json.dumps(conf, indent=2))
-
-    def remove(self, path):
-        """Remove a file or a directory at the given path."""
-        if os.path.isfile(path):
-            os.remove(path)
-        elif os.path.isdir(path):
-            shutil.rmtree(path)
+            f.write(json.dumps({{cookiecutter}}, indent=2))
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
+        secrets_template = ""
         with open("k8s/2_secrets.yaml.tpl", "r") as f:
-            text = f.read()
-            text_development = text.replace("__ENVIRONMENT__", "development")
-            text_integration = text.replace("__ENVIRONMENT__", "integration")
-            text_production = text.replace("__ENVIRONMENT__", "production")
-
-            with open("k8s/development/2_secrets.yaml", "w+") as fd:
-                fd.write(text_development)
-
-            with open("k8s/integration/2_secrets.yaml", "w+") as fd:
-                fd.write(text_integration)
-
-            with open("k8s/production/2_secrets.yaml", "w+") as fd:
-                fd.write(text_production)
+            secrets_template = f.read()
+        for environment in ("development", "integration", "production"):
+            secrets = secrets_template.replace("__ENVIRONMENT__", environment).replace(
+                "__CONFIGURATION__", environment.capitalize()
+            )
+            with open(f"k8s/{environment}/2_secrets.yaml", "w+") as fd:
+                fd.write(secrets)
 
     def create_subprojects(self):
         """Create the the django and react apps."""
@@ -58,10 +40,10 @@ class MainProcess:
         cookiecutter(
             "https://github.com/20tab/django-continuous-delivery",
             extra_context={
+                "gitlab_group_slug": self.group_slug,
+                "project_dirname": "backend",
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
-                "project_dirname": "backend",
-                "gitlab_group_slug": self.group_slug,
                 "static_slug": "backendstatic",
             },
             no_input=True,
@@ -69,10 +51,10 @@ class MainProcess:
         cookiecutter(
             "https://github.com/20tab/react-continuous-delivery",
             extra_context={
-                "project_name": self.project_name,
-                "project_slug": self.project_slug,
                 "gitlab_group_slug": self.group_slug,
                 "project_dirname": "frontend",
+                "project_name": self.project_name,
+                "project_slug": self.project_slug,
             },
             no_input=True,
         )
