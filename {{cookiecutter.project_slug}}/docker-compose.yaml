@@ -1,63 +1,64 @@
 version: "3.4"
 
 services:
-  postgres:
-    container_name: postgres
-    image: postgres:12
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - pg_data:/var/lib/postgresql/data
 
   backend:
-    container_name: backend
     build:
       context: ./backend
       target: dev
-    volumes:
-      - ./backend:/app
-      - static:/app/static
-      - media:/app/media
-      - ~/.ssh:/root/.ssh-localhost:ro
+    container_name: {{cookiecutter.project_slug}}_backend
     depends_on:
       - postgres
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - DJANGO_ADMINS=${DJANGO_ADMINS}
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION}
       - DJANGO_DEBUG=${DJANGO_DEBUG}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_SERVER_EMAIL=${DJANGO_SERVER_EMAIL}
-      - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION}
       - EMAIL_URL=${EMAIL_URL}
+    volumes:
+      - ./backend:/app
+      - ~/.ssh:/root/.ssh-localhost:ro
+      - media:/app/media
+      - static:/app/static
 
   frontend:
-    container_name: frontend
     build:
       context: ./frontend
       dockerfile: docker/dev.Dockerfile
+    depends_on:
+      - backend
+    container_name: {{cookiecutter.project_slug}}_frontend
     volumes:
       - ./frontend:/app
       - /app/node_modules/
-    depends_on:
-      - backend
 
   nginx:
-    container_name: nginx
     build: ./nginx
+    container_name: {{cookiecutter.project_slug}}_nginx
+    depends_on:
+      - backend
+      - frontend
     ports:
       - 8080:80
       - 8443:443
     volumes:
-      - static:/static
       - media:/media
-    depends_on:
-      - backend
-      - frontend
+      - static:/static
+
+  postgres:
+    container_name: {{cookiecutter.project_slug}}_postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+    image: postgres:12
+    volumes:
+      - pg_data:/var/lib/postgresql/data
 
 volumes:
+  media: {}
   pg_data: {}
   static: {}
-  media: {}
