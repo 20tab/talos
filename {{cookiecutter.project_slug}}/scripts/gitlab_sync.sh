@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python ./scripts/py/gitlab_sync.py
+python ./scripts/python/gitlab_sync.py
