@@ -1,38 +1,33 @@
-# 20tab standard project
+# 20tab standard project <!-- omit in toc -->
 
-This is the [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
+A [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
 
-## Documentation <!-- omit in toc -->
+## Index <!-- omit in toc -->
 
-- [20tab standard project](#20tab-standard-project)
-  - [Conventions](#conventions)
-  - [Workspace initialization](#workspace-initialization)
-    - [Python packages](#python-packages)
-    - [Kubernetes](#kubernetes)
-      - [MacOS](#mac-os-1)
-      - [Linux](#linux-1)
-    - [GitLab](#gitlab)
-    - [Digital Ocean](#digitalocean)
-      - [Mac OS](#mac-os-2)
-      - [Linux](#linux-2)
-  - [Usage](#usage)
-    - [Cookiecutter](#cookiecutter)
-    - [DigitalOcean setup](#digitalocean-setup)
-    - [Kubernetes and GitLab connection](#kubernetes-and-gitlab-connection)
-    - [Kubernetes apply](#kubernetes-apply)
-      - [Warning](#warning)
+- [Conventions](#conventions)
+- [Requirements](#requirements)
+  - [Cookiecutter](#cookiecutter)
+  - [Kubernetes](#kubernetes)
+  - [GitLab](#gitlab)
+  - [DigitalOcean](#digitalocean)
+- [Quickstart](#quickstart)
+- [Work in progress](#work-in-progress)
+  - [DigitalOcean setup](#digitalocean-setup)
+  - [Kubernetes and GitLab connection](#kubernetes-and-gitlab-connection)
+  - [Kubernetes apply](#kubernetes-apply)
 
 ## Conventions
 
 In the following instructions, replace:
 
+- `projects` with your actual projects directory
 - `project_name` with your chosen project name
 
-## Workspace initialization
+## Requirements
 
-### Python
+### Cookiecutter
 
-The `cookiecutter` package must be installed in the active python environment in order to create and initialize the project structure.
+[Cookiecutter](https://cookiecutter.readthedocs.io) must be installed in order to create and initialize the project structure.
 
 ```shell
 $ pip install --user cookiecutter
@@ -42,17 +37,17 @@ $ pip install --user cookiecutter
 
 Install the `kubectl` command-line tool, if the Kubernetes integration is needed.
 
-#### Mac OS
+- macOS
 
-```shell
-$ brew install kubectl
-```
+  ```shell
+  $ brew install kubectl
+  ```
 
-#### Linux
+- Linux
 
-```shell
-$ sudo snap install kubectl --classic
-```
+  ```shell
+  $ sudo snap install kubectl --classic
+  ```
 
 ### GitLab
 
@@ -76,11 +71,19 @@ section. Make sure to give it full permission. Beware that GitLab only shows the
 ### DigitalOcean
 
 Install the `doctl` command-line tootl and authenticate, if the DigitalOcean integration is needed.
-Install the `python-digitalocean` package, if the DigitalOcean integration is needed.
 
-```shell
-$ pip install --user python-digitalocean
-```
+- macOS
+
+  ```shell
+  $ brew install doctl
+  ```
+
+- Linux
+
+  ```shell
+  $ snap install doctl
+  $ sudo snap connect doctl:kube-config
+  ```
 
 Put the DigitalOcean Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
 
@@ -88,42 +91,36 @@ Put the DigitalOcean Access Token of the chosen user in an environment variable 
 $ export DIGITALOCEAN_ASCESS_TOKEN={{digitalocean_access_token}}
 ```
 
-#### Mac OS
+Use the `doctl` command-line tool to authenticate.
 
 ```shell
-$ brew install doctl
 $ doctl auth init
 ```
 
-#### Linux
+Install the `python-digitalocean` package, if the DigitalOcean integration is needed.
 
 ```shell
-$ snap install doctl
-$ sudo snap connect doctl:kube-config
-$ doctl auth init
+$ pip install --user python-digitalocean
 ```
 
-## Usage
+## Quickstart
 
-This section shows how to create and initialize a project.
-
-### Cookiecutter
-
-Run the Cookiecutter command in the desired location, and follow the guided procedure:
+Change directory and create a new project as in this example:
 
 ```shell
+$ cd ~/projects/
 $ cookiecutter https://github.com/20tab/20tab-standard-project
-project_name [20tab standard project]: My project name
+project_name: My project name
 project_slug [myprojectname]:
 use_gitlab [y]:
-Choose the gitlab group name [project_name]:
-Insert the usernames of all users you want to add to the group, separated by comma:
-$ cd project_slug
+Choose the gitlab group path slug [myprojectname]:
+Insert the usernames of all users you want to add to the group, separated by comma or empty to skip :
+$ cd myprojectname
 ```
 
 ---
 
-# WIP
+## Work in progress
 
 ### DigitalOcean setup
 
