@@ -1,9 +1,11 @@
+"""Define GitLab class and utilities."""
+
 import json
 import os
 import re
 import subprocess
 import unicodedata
-
+import warnings
 
 from gitlab import MAINTAINER_ACCESS, Gitlab
 
@@ -29,7 +31,7 @@ def slugify(value):
 
 
 def get_cookiecutter_conf():
-    """Get cookiecutter configuration"""
+    """Get cookiecutter configuration."""
     with open("cookiecutter.json", "r") as f:
         return json.loads(f.read())
 
@@ -69,7 +71,7 @@ class GitlabSync:
         return True
 
     def get_group(self):
-        """Get gitlab group"""
+        """Get gitlab group."""
         for p in self.gl.groups.list(search=self.group_slug):
             if p.path == self.group_slug:
                 return p
@@ -148,7 +150,7 @@ class GitlabSync:
                 print(f"{member} added to group {self.group.name}")
 
     def update_cookiecutter_conf(self):
-        """Update cookiecutter configuration file"""
+        """Update cookiecutter configuration file."""
         conf = {}
         with open("cookiecutter.json", "r") as f:
             conf = json.loads(f.read())

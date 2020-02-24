@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python ./scripts/py/add_cluster.py
+python ./scripts/python/add_cluster.py
