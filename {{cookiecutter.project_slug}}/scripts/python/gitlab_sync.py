@@ -1,39 +1,11 @@
 """Define GitLab class and utilities."""
 
-import json
 import os
-import re
 import subprocess
-import unicodedata
 import warnings
 
 from gitlab import MAINTAINER_ACCESS, Gitlab
-
-
-def slugify(value):
-    """
-    Transofrm text into slug.
-
-    Convert to ASCII.
-    Convert spaces to hyphens.
-    Remove characters that aren't alphanumerics, underscores, or hyphens.
-    Convert to lowercase.
-    Also strip leading and trailing whitespace.
-    """
-    value = str(value)
-    value = (
-        unicodedata.normalize("NFKD", str(value))
-        .encode("ascii", "ignore")
-        .decode("ascii")
-    )
-    value = re.sub(r"[^\w\s-]", "", value.casefold()).strip()
-    return re.sub(r"[-\s]+", "-", value)
-
-
-def get_cookiecutter_conf():
-    """Get cookiecutter configuration."""
-    with open("cookiecutter.json", "r") as f:
-        return json.loads(f.read())
+from utils import get_cookiecutter_conf, slugify, update_cookiecutter_conf
 
 
 class GitlabSync:
@@ -149,15 +121,6 @@ class GitlabSync:
                 )
                 print(f"{member} added to group {self.group.name}")
 
-    def update_cookiecutter_conf(self):
-        """Update cookiecutter configuration file."""
-        conf = {}
-        with open("cookiecutter.json", "r") as f:
-            conf = json.loads(f.read())
-        with open("cookiecutter.json", "w+") as f:
-            conf["gitlab_group_slug"] = self.group_slug
-            f.write(json.dumps(conf, indent=2))
-
     def git_init(self):
         """Initialize local git repository."""
         os.system(f"./scripts/git_init.sh {self.orchestrator.ssh_url_to_repo}")
@@ -194,7 +157,7 @@ class GitlabSync:
                 "Please choose a different name and try again: "
             )
         self.create_group(cookiecutter_conf["project_name"], self.group_slug)
-        self.update_cookiecutter_conf()
+        update_cookiecutter_conf("gitlab_group_slug", self.group_slug)
         self.update_readme()
         self.set_members()
         self.git_init()
