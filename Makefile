@@ -1,7 +1,7 @@
 check:
 	black --check .
-	flake8
 	isort --check-only --recursive
+	flake8
 
 dev:
 	pip install -q -U pip~=20.0.1 pip-tools~=4.5.0
@@ -9,8 +9,8 @@ dev:
 
 fix:
 	black .
-	flake8
 	isort --recursive
+	flake8
 
 pip:
 	pip install -q -U pip~=20.0.1 pip-tools~=4.5.0
