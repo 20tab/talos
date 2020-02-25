@@ -31,6 +31,8 @@ services:
     depends_on:
       - backend
     container_name: {{cookiecutter.project_slug}}_frontend
+    environment:
+      - NODE_ENV=${NODE_ENV}
     volumes:
       - ./frontend:/app
       - /app/node_modules/
