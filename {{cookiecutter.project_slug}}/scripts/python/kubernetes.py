@@ -1,3 +1,5 @@
+"""Define kubernetes cluster class."""
+
 from digitalocean.baseapi import BaseAPI
 
 

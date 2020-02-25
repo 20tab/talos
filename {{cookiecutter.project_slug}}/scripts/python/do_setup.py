@@ -1,3 +1,5 @@
+"""Define Digital Ocean setup."""
+
 import os
 
 from kubernetes import Cluster

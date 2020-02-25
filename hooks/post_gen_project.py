@@ -2,8 +2,6 @@
 
 import json
 import subprocess
-
-# OrderedDict is used by cookiecutter during jinja template render
 from collections import OrderedDict  # noqa
 
 from cookiecutter.main import cookiecutter
