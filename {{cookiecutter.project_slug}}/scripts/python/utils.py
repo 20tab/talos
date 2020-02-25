@@ -20,6 +20,19 @@ def get_cookiecutter_conf():
         return json.loads(f.read())
 
 
+def get_cluster_name():
+    """Get and update cluster name from cookiecutter.json."""
+    cluster_name = ""
+    try:
+        cluster_name = get_cookiecutter_conf()["cluster_name"]
+    except KeyError:
+        while not cluster_name:
+            cluster_name = input("Please insert the cluster name: ")
+    finally:
+        update_cookiecutter_conf("cluster_name", cluster_name)
+    return cluster_name
+
+
 def slugify(value):
     """
     Transofrm text into slug.
