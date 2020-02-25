@@ -28,9 +28,9 @@ services:
     build:
       context: ./frontend
       dockerfile: docker/dev.Dockerfile
+    container_name: {{cookiecutter.project_slug}}_frontend
     depends_on:
       - backend
-    container_name: {{cookiecutter.project_slug}}_frontend
     volumes:
       - ./frontend:/app
       - /app/node_modules/

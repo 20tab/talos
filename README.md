@@ -97,11 +97,12 @@ Install the `python-digitalocean` package, if the DigitalOcean integration is ne
 $ pip install --user python-digitalocean
 ```
 
-A DigitalOcean user account is required by the setup procedure to setup the GitLab integration.
+A DigitalOcean user account is required by the setup procedure to configure the GitLab integration.
 
-Put a valid DigitalOcean Access Token of the authorized user in an environment variable (e.g. export it in the command line or add it to the bash config).
+Put the DigitalOcean Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
 
-**Note:** Create a token in the **API -> Generate New Token** section or select an existing one.
+**Note:** the access token can be generated from the DigitalOcean settings **"API -> Generate New Token"** section.
+Beware that DigitalOcean only shows the token right after creation, and hides it thereafter.
 
 ```shell
 $ export DIGITALOCEAN_ACCESS_TOKEN={{digitalocean_access_token}}
