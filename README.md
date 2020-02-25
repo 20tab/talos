@@ -127,7 +127,7 @@ $ cd myprojectname
 ### DigitalOcean
 
 1. Select an existing Kubernetes cluster on DigitalOcean or create one with **Create -> Clusters**
-2. Run `./scripts/do_setup.sh -c <cluster_name> -r <region>`
+2. Run `./scripts/do_setup.sh`
 
 ### GitLab
 
