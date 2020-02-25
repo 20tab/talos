@@ -2,7 +2,7 @@
 
 This is the "{{cookiecutter.project_name}}" orchestrator.
 
-## Documentation <!-- omit in toc -->
+## Index <!-- omit in toc -->
 
 - [Quickstart](#quickstart)
   - [Git](#git)
