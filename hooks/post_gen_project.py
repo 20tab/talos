@@ -6,6 +6,8 @@ from collections import OrderedDict  # noqa
 
 from cookiecutter.main import cookiecutter
 
+# OrderedDict is used by cookiecutter during jinja template render
+
 
 class MainProcess:
     """Main process class."""
