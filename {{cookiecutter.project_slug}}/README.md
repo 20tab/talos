@@ -40,14 +40,17 @@ This section explains the steps you need to clone and work wityh this project.
 ### Git
 
 #### Clone
-
 Clone the repositories of the orchestrator, backend and frontend:
+{% if cookiecutter.use_gitlab == "Yes" %}
 
 ```shell
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{cookiecutter.project_slug}} && cd {{cookiecutter.project_slug}}
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git
 ```
+{% else %}
+Please, write documentation about git repository clone
+{% endif %}
 **NOTE** : We're cloning the `develop` branch for all repo.
 
 ### Environment variables
