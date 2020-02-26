@@ -1,5 +1,10 @@
 # 20tab standard project <!-- omit in toc -->
 
+.. image:: https://travis-ci.com/20tab/20tab-standard-project.svg?branch=master
+    :target: https://travis-ci.com/20tab/20tab-standard-project?branch=master
+    :alt: Build Status
+
+
 A [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
 
 ## Index <!-- omit in toc -->
