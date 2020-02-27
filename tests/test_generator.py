@@ -56,7 +56,7 @@ def get_cookicutter_conf(project_path):
         return json.loads(f.read())
 
 
-def test_project_generation_with_gitlab(cookies, context):
+def test_project_generation(cookies, context):
     """Test that project is generated and fully rendered."""
     result = cookies.bake(extra_context={**context})
     assert result.exit_code == 0
@@ -65,7 +65,8 @@ def test_project_generation_with_gitlab(cookies, context):
     assert result.project.isdir()
     project_dir_path = str(result.project)
     cookicutter_conf = get_cookicutter_conf(project_dir_path)
-    assert "gitlab_group_slug" not in cookicutter_conf.keys()
+    assert "gitlab_group_slug" in cookicutter_conf.keys()
+    assert cookicutter_conf["gitlab_group_slug"] is None
     assert "project_slug" in cookicutter_conf.keys()
 
     paths = build_files_list(str(result.project))
