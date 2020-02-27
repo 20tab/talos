@@ -5,7 +5,7 @@ import subprocess
 import warnings
 
 from gitlab import MAINTAINER_ACCESS, Gitlab
-from utils import get_cookiecutter_conf, slugify, update_cookiecutter_conf
+from utils import get_cookiecutter_conf
 
 
 class GitlabSync:
@@ -38,7 +38,9 @@ class GitlabSync:
 
     def create_group(self):
         """Create a GitLab group."""
-        self.group = self.gl.groups.create({"name": self.project_name, "path": self.group_slug})
+        self.group = self.gl.groups.create(
+            {"name": self.project_name, "path": self.group_slug}
+        )
         server_link = f"{self.protocol}{self.server_url}"
         group_link = f"{self.protocol}{self.group.path}.{self.server_url}"
         pipeline_badge_link = "/%{project_path}/pipelines"

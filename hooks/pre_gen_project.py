@@ -4,11 +4,11 @@ import json
 import os
 import re
 import unicodedata
-
-from collections import OrderedDict # noqa
-# OrderedDict is used by cookiecutter during jinja template render
+from collections import OrderedDict  # noqa
 
 from gitlab import Gitlab
+
+# OrderedDict is used by cookiecutter during jinja template render
 
 
 def slugify(value):
@@ -32,6 +32,8 @@ def slugify(value):
 
 
 class MainProcess:
+    """Main process class."""
+
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
         self.project_name = "{{ cookiecutter.project_name }}"
@@ -39,8 +41,7 @@ class MainProcess:
         self.group_slug = self.project_slug
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "Yes"
         self.gl = Gitlab(
-            "https://gitlab.com",
-            private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
+            "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
         )
         self.gl.auth()
 
@@ -65,9 +66,9 @@ class MainProcess:
         )
         self.group_slug = slugify(group_slug)
         while len(self.group_slug) > 30:
-            self.group_slug = slugify(input(
-                "Please choose a name shorter than 30 characters: "
-            ))
+            self.group_slug = slugify(
+                input("Please choose a name shorter than 30 characters: ")
+            )
         while not self.is_group_slug_available(self.group_slug):
             self.group_slug = input(
                 f"A Gitlab group named '{self.group_slug}' already exists. "
@@ -76,12 +77,12 @@ class MainProcess:
 
     def run(self):
         """Run main process."""
-        configuration = {{cookiecutter}}
-        configuration['gitlab_group_slug'] = None
-        configuration['use_gitlab'] = self.use_gitlab
+        configuration = {{cookiecutter}}  # noqa
+        configuration["gitlab_group_slug"] = None
+        configuration["use_gitlab"] = self.use_gitlab
         if self.use_gitlab:
             self.set_gitlab_group_slug()
-            configuration['gitlab_group_slug'] = self.group_slug
+            configuration["gitlab_group_slug"] = self.group_slug
 
         with open("cookiecutter.json", "w+") as f:
             f.write(json.dumps(configuration, indent=2))

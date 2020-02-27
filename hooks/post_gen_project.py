@@ -18,10 +18,10 @@ class MainProcess:
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
         cookiecutter_conf = get_cookiecutter_conf()
-        self.project_name = cookiecutter_conf['project_name']
-        self.project_slug = cookiecutter_conf['project_slug']
-        self.group_slug = cookiecutter_conf['gitlab_group_slug']
-        self.use_gitlab = cookiecutter_conf['use_gitlab']
+        self.project_name = cookiecutter_conf["project_name"]
+        self.project_slug = cookiecutter_conf["project_slug"]
+        self.group_slug = cookiecutter_conf["gitlab_group_slug"]
+        self.use_gitlab = cookiecutter_conf["use_gitlab"]
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
