@@ -29,19 +29,6 @@ class GitlabSync:
             self.project_slug = None
             self.project_name = None
 
-    def is_group_slug_available(self, group_slug):
-        """Tell if group name is available."""
-        for p in self.gl.groups.list(search=group_slug):
-            if p.path == group_slug:
-                return False
-        for u in self.gl.users.list(username=group_slug):
-            if (
-                u.web_url.replace(f"{self.protocol}{self.server_url}/", "").casefold()
-                == group_slug.casefold()
-            ):
-                return False
-        return True
-
     def get_group(self):
         """Get gitlab group."""
         for p in self.gl.groups.list(search=self.group_slug):
@@ -49,9 +36,9 @@ class GitlabSync:
                 return p
         return None
 
-    def create_group(self, project_name, group_slug):
+    def create_group(self):
         """Create a GitLab group."""
-        self.group = self.gl.groups.create({"name": project_name, "path": group_slug})
+        self.group = self.gl.groups.create({"name": self.project_name, "path": self.group_slug})
         server_link = f"{self.protocol}{self.server_url}"
         group_link = f"{self.protocol}{self.group.path}.{self.server_url}"
         pipeline_badge_link = "/%{project_path}/pipelines"
@@ -144,20 +131,7 @@ class GitlabSync:
 
     def run(self):
         """Run the main process operations."""
-        cookiecutter_conf = get_cookiecutter_conf()
-        default_group_slug = cookiecutter_conf["project_slug"]
-        group_slug = (
-            input(f"Choose the gitlab group path slug [{default_group_slug}]: ")
-            or default_group_slug
-        )
-        self.group_slug = slugify(group_slug)
-        while not self.is_group_slug_available(self.group_slug):
-            self.group_slug = input(
-                f"A Gitlab group named '{self.group_slug}' already exists. "
-                "Please choose a different name and try again: "
-            )
-        self.create_group(cookiecutter_conf["project_name"], self.group_slug)
-        update_cookiecutter_conf("gitlab_group_slug", self.group_slug)
+        self.create_group()
         self.update_readme()
         self.set_members()
         self.git_init()

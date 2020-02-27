@@ -16,17 +16,7 @@ PATTERNS = {
 
 
 @pytest.fixture
-def context_use_gitlab():
-    """It's a context using gitlab."""
-    return {
-        "project_name": "MyTestProject",
-        "project_slug": "mytestproject",
-        "use_gitlab": "Yes",
-    }
-
-
-@pytest.fixture
-def context_not_use_gitlab():
+def context():
     """It's a context not using gitlab."""
     return {
         "project_name": "MyTestProject",
@@ -66,12 +56,12 @@ def get_cookicutter_conf(project_path):
         return json.loads(f.read())
 
 
-def test_project_generation(cookies, context_not_use_gitlab):
+def test_project_generation_with_gitlab(cookies, context):
     """Test that project is generated and fully rendered."""
-    result = cookies.bake(extra_context={**context_not_use_gitlab})
+    result = cookies.bake(extra_context={**context})
     assert result.exit_code == 0
     assert result.exception is None
-    assert result.project.basename == context_not_use_gitlab["project_slug"]
+    assert result.project.basename == context["project_slug"]
     assert result.project.isdir()
     project_dir_path = str(result.project)
     cookicutter_conf = get_cookicutter_conf(project_dir_path)

@@ -35,21 +35,21 @@ def get_cluster_name():
     return cluster_name
 
 
-def slugify(value):
-    """
-    Transofrm text into slug.
+# def slugify(value):
+#     """
+#     Transofrm text into slug.
 
-    Convert to ASCII.
-    Convert spaces to hyphens.
-    Remove characters that aren't alphanumerics, underscores, or hyphens.
-    Convert to lowercase.
-    Also strip leading and trailing whitespace.
-    """
-    value = str(value)
-    value = (
-        unicodedata.normalize("NFKD", str(value))
-        .encode("ascii", "ignore")
-        .decode("ascii")
-    )
-    value = re.sub(r"[^\w\s-]", "", value.casefold()).strip()
-    return re.sub(r"[-\s]+", "-", value)
+#     Convert to ASCII.
+#     Convert spaces to hyphens.
+#     Remove characters that aren't alphanumerics, underscores, or hyphens.
+#     Convert to lowercase.
+#     Also strip leading and trailing whitespace.
+#     """
+#     value = str(value)
+#     value = (
+#         unicodedata.normalize("NFKD", str(value))
+#         .encode("ascii", "ignore")
+#         .decode("ascii")
+#     )
+#     value = re.sub(r"[^\w\s-]", "", value.casefold()).strip()
+#     return re.sub(r"[-\s]+", "-", value)
