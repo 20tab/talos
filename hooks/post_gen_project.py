@@ -2,9 +2,14 @@
 
 import json
 import subprocess
-from collections import OrderedDict  # noqa
 
 from cookiecutter.main import cookiecutter
+
+
+def get_cookiecutter_conf():
+    """Get cookiecutter configuration."""
+    with open("cookiecutter.json", "r") as f:
+        return json.loads(f.read())
 
 
 class MainProcess:
@@ -12,16 +17,11 @@ class MainProcess:
 
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
-        self.project_name = "{{ cookiecutter.project_name }}"
-        self.project_slug = "{{ cookiecutter.project_slug }}"
-        self.group_slug = self.project_slug
-        self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "Yes"
-        self.gitlab = None
-
-    def save_cookiecutter_conf(self):
-        """Save cookiecutter configuration inside the project."""
-        with open("cookiecutter.json", "w+") as f:
-            f.write(json.dumps({{cookiecutter}}, indent=2))
+        cookiecutter_conf = get_cookiecutter_conf()
+        self.project_name = cookiecutter_conf["project_name"]
+        self.project_slug = cookiecutter_conf["project_slug"]
+        self.group_slug = cookiecutter_conf["gitlab_group_slug"]
+        self.use_gitlab = cookiecutter_conf["use_gitlab"]
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
@@ -62,12 +62,12 @@ class MainProcess:
 
     def run(self):
         """Run the main process operations."""
-        self.save_cookiecutter_conf()
         self.copy_secrets()
         self.create_subprojects()
         if self.use_gitlab:
             subprocess.run("./scripts/gitlab_sync.sh")
 
 
-main_process = MainProcess()
-main_process.run()
+if __name__ == "__main__":
+    main_process = MainProcess()
+    main_process.run()
