@@ -11,8 +11,8 @@ install: pip install -r requirements.ini
 # command to run tests, e.g. python setup.py test
 script: 
   - black .
-	- isort --recursive
-	- flake8
+  - isort --recursive
+  - flake8
   - pytest
 after_success:
   - codecov
