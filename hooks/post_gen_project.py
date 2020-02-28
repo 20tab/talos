@@ -68,5 +68,6 @@ class MainProcess:
             subprocess.run("./scripts/gitlab_sync.sh")
 
 
-main_process = MainProcess()
-main_process.run()
+if __name__ == "__main__":
+    main_process = MainProcess()
+    main_process.run()

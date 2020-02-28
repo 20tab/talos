@@ -87,6 +87,6 @@ class MainProcess:
         with open("cookiecutter.json", "w+") as f:
             f.write(json.dumps(configuration, indent=2))
 
-
-main_process = MainProcess()
-main_process.run()
+if __name__ == "__main__":
+    main_process = MainProcess()
+    main_process.run()
