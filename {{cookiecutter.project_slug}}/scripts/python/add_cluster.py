@@ -31,9 +31,9 @@ def main():
                 value = couple[1].strip()
                 if key == "token":
                     token = value
-            except KeyError as e:
+            except KeyError:
                 continue
-            except IndexError as e:
+            except IndexError:
                 continue
 
     if token:
@@ -50,7 +50,9 @@ def main():
         )
         os.remove("do_token.yaml")
     else:
-        print("Token not found. Please check do_token.yaml file into the projects' root.")
+        print(
+            "Token not found. Please check do_token.yaml file into the projects' root."
+        )
 
 
 if __name__ == "__main__":

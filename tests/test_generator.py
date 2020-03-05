@@ -92,6 +92,7 @@ def get_cookicutter_conf(project_path):
 #     assert paths
 #     check_paths(paths)
 
+
 def test_dummy():
     """Define dummy test to execute travis pipeline."""
     assert True
