@@ -42,7 +42,7 @@ class GitlabSync:
             {"name": self.project_name, "path": self.group_slug}
         )
         server_link = f"{self.protocol}{self.server_url}"
-        group_link = f"{self.protocol}{self.group.path}.{self.server_url}"
+        group_link = f"{self.protocol}{self.group.path}.gitlab.io"
         pipeline_badge_link = "/%{project_path}/pipelines"
         pipeline_badge_image_url = (
             "/%{project_path}/badges/%{default_branch}/pipeline.svg"
