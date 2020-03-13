@@ -6,7 +6,10 @@ import re
 import unicodedata
 from collections import OrderedDict  # noqa
 
-from gitlab import Gitlab
+try:
+    import gitlab  # noqa
+except ModuleNotFoundError:  # pragma: no cover
+    pass
 
 # OrderedDict is used by cookiecutter during jinja template render
 
@@ -40,10 +43,11 @@ class MainProcess:
         self.project_slug = "{{ cookiecutter.project_slug }}"
         self.group_slug = self.project_slug
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "Yes"
-        self.gl = Gitlab(
-            "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
-        )
-        self.gl.auth()
+        if self.use_gitlab == "Yes":
+            self.gl = gitlab.Gitlab(
+                "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
+            )
+            self.gl.auth()
 
     def is_group_slug_available(self, group_slug):
         """Tell if group name is available."""
