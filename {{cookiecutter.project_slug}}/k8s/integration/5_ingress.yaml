@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: integration.{{cookiecutter.project_slug}}.com
+    - host: test.{{cookiecutter.project_slug}}.com
       http:
         paths:
           - path: /
