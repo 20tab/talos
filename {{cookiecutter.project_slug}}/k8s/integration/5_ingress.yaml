@@ -2,26 +2,26 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: ingress-service
-  namespace: {{cookiecutter.project_slug}}-production
+  namespace: {{cookiecutter.project_slug}}-integration
   annotations:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: www.{{cookiecutter.project_slug}}.com
+    - host: test.{{cookiecutter.project_slug}}.com
       http:
         paths:
           - path: /
             backend:
               serviceName: frontend-cluster-ip-service
               servicePort: 3000
-          - path: /backendstatic/
+          - path: /static/
             backend:
-              serviceName: static-nginx-cluster-ip-service
-              servicePort: 80
+              serviceName: backend-cluster-ip-service
+              servicePort: 8000
           - path: /media/
             backend:
-              serviceName: media-nginx-cluster-ip-service
-              servicePort: 80
+              serviceName: backend-cluster-ip-service
+              servicePort: 8000
           - path: /api/
             backend:
               serviceName: backend-cluster-ip-service

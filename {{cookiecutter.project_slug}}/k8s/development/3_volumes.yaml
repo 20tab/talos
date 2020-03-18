@@ -15,20 +15,6 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: static-persistent-volume-claim
-  namespace: {{cookiecutter.project_slug}}-development
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-
----
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
   name: media-persistent-volume-claim
   namespace: {{cookiecutter.project_slug}}-development
 spec:

@@ -18,12 +18,8 @@ This is the "{{cookiecutter.project_name}}" orchestrator.
   - [Create SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-ssl-certificate-sup-ida-setup-https-locally1sup)
   - [Create and activate a local SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-and-activate-a-local-ssl-certificate-sup-ida-setup-https-locally1sup)
     - [Install the cert utils](#install-the-cert-utils)
-      - [Ubuntu](#ubuntu)
-      - [Mac Os](#mac-os)
     - [Import certificates](#import-certificates)
     - [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
-      - [Ubuntu](#ubuntu-1)
-      - [Mac Os](#mac-os-1)
 - [Useful commands](#useful-commands)
 
 ## Quickstart
@@ -40,6 +36,7 @@ This section explains the steps you need to clone and work wityh this project.
 ### Git
 
 #### Clone
+
 Clone the repositories of the orchestrator, backend and frontend:
 {% if cookiecutter.use_gitlab == "Yes" %}
 
@@ -145,15 +142,15 @@ $ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.c
 
 #### Install the cert utils
 
-##### Ubuntu
-```shell
-$ sudo apt-get install libnss3-tools
-```
+- Linux
+    ```shell
+    $ sudo apt-get install libnss3-tools
+    ```
 
-##### Mac Os
-```shell
-$ brew install nss
-```
+- macOs
+    ```shell
+    $ brew install nss
+    ```
 
 #### Import certificates
 
@@ -175,15 +172,15 @@ $ certutil -d $HOME/.pki/nssdb -N
 
 #### Trust the self-signed server certificate
 
-##### Ubuntu
-```shell
-$ certutil -d sql:$HOME/.pki/nssdb -A -t "P,," -n 'dev cert' -i localhost.crt
-```
+- Linux
+    ```shell
+    $ certutil -d sql:$HOME/.pki/nssdb -A -t "P,," -n 'dev cert' -i localhost.crt
+    ```
 
-##### Mac Os
-```shell
-$ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.crt
-```
+- macOS
+    ```shell
+    $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.crt
+    ```
 
 <a id="f-setup-https-locally" href="#a-setup-https-locally">1</a>. For further reference look [here](https://medium.com/@workockmoses/how-to-setup-https-for-local-development-on-ubuntu-with-self-signed-certificate-f97834064fd).
 

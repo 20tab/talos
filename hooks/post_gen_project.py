@@ -45,7 +45,6 @@ class MainProcess:
                 "project_dirname": "backend",
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
-                "static_slug": "backendstatic",
             },
             no_input=True,
         )
