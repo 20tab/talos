@@ -1,11 +1,12 @@
-DJANGO_ADMINS={{cookiecutter.project_slug}},errors@{{cookiecutter.project_slug}}.com
+DJANGO_ADMINS=20tab,errors@20tab.com
 DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
 DJANGO_CONFIGURATION=Local
 DJANGO_DEBUG=True
+DJANGO_DEFAULT_FROM_EMAIL=info@{{cookiecutter.domain_url}}
 DJANGO_SECRET_KEY=secretkey
-DJANGO_SERVER_EMAIL=info@{{cookiecutter.project_slug}}.com
+DJANGO_SERVER_EMAIL=server@{{cookiecutter.domain_url}}
 EMAIL_URL=console:///
+NODE_ENV=development
 POSTGRES_DB={{cookiecutter.project_slug}}
 POSTGRES_PASSWORD=postgres
 POSTGRES_USER=postgres
-NODE_ENV=development
