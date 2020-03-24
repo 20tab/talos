@@ -14,7 +14,11 @@ spec:
             backend:
               serviceName: frontend-cluster-ip-service
               servicePort: 3000
-          - path: /static/
+          - path: /api/
+            backend:
+              serviceName: backend-cluster-ip-service
+              servicePort: 8000
+          - path: /admin/
             backend:
               serviceName: backend-cluster-ip-service
               servicePort: 8000
@@ -22,11 +26,7 @@ spec:
             backend:
               serviceName: backend-cluster-ip-service
               servicePort: 8000
-          - path: /api/
-            backend:
-              serviceName: backend-cluster-ip-service
-              servicePort: 8000
-          - path: /admin/
+          - path: /static/
             backend:
               serviceName: backend-cluster-ip-service
               servicePort: 8000
