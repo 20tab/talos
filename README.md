@@ -2,7 +2,6 @@
 
 [![Build Status](https://travis-ci.com/20tab/20tab-standard-project.svg?branch=master)](https://travis-ci.com/20tab/20tab-standard-project?branch=master)
 
-
 A [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
 
 ## Index <!-- omit in toc -->
@@ -118,11 +117,14 @@ Change directory and create a new project as in this example:
 ```shell
 $ cd ~/projects/
 $ cookiecutter https://github.com/20tab/20tab-standard-project
+You've downloaded /home/paulox/.cookiecutters/20tab-standard-project before. Is it okay to delete and re-download it? [yes]: yes
 project_name: My project name
 project_slug [myprojectname]:
-use_gitlab [y]:
-Choose the gitlab group path slug [myprojectname]:
-Insert the usernames of all users you want to add to the group, separated by comma or empty to skip :
+domain_url [myprojectname.com]:
+Select use_gitlab:
+1 - Yes
+2 - No
+Choose from 1, 2 [1]:
 $ cd myprojectname
 ```
 

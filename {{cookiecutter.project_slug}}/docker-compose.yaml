@@ -15,6 +15,7 @@ services:
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
       - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION}
       - DJANGO_DEBUG=${DJANGO_DEBUG}
+      - DJANGO_DEFAULT_FROM_EMAIL=${DJANGO_DEFAULT_FROM_EMAIL}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_SERVER_EMAIL=${DJANGO_SERVER_EMAIL}
       - EMAIL_URL=${EMAIL_URL}
@@ -22,7 +23,6 @@ services:
       - ./backend:/app
       - ~/.ssh:/root/.ssh-localhost:ro
       - media:/app/media
-      - static:/app/static
 
   frontend:
     build:
@@ -44,11 +44,8 @@ services:
       - backend
       - frontend
     ports:
-      - 8080:80
-      - 8443:443
-    volumes:
-      - media:/media
-      - static:/static
+      - ${LOCAL_HTTP_PORT}:80
+      - ${LOCAL_HTTPS_PORT}:443
 
   postgres:
     container_name: {{cookiecutter.project_slug}}_postgres
@@ -63,4 +60,3 @@ services:
 volumes:
   media: {}
   pg_data: {}
-  static: {}
