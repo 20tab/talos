@@ -9,18 +9,3 @@ spec:
   resources:
     requests:
       storage: 1Gi
-{% if cookiecutter.use_media_volume == "Yes" %}
----
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: media-persistent-volume-claim
-  namespace: {{cookiecutter.project_slug}}-production
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-{% endif %}
