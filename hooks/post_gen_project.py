@@ -23,6 +23,7 @@ class MainProcess:
         self.project_name = cookiecutter_conf["project_name"]
         self.project_slug = cookiecutter_conf["project_slug"]
         self.use_gitlab = cookiecutter_conf["use_gitlab"]
+        self.use_media_volume = cookiecutter_conf["use_media_volume"]
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
@@ -67,6 +68,7 @@ class MainProcess:
                 "project_dirname": "backend",
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
+                "use_media_volume": self.use_media_volume
             },
             no_input=True,
         )
