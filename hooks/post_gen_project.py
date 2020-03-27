@@ -23,6 +23,7 @@ class MainProcess:
         self.project_name = cookiecutter_conf["project_name"]
         self.project_slug = cookiecutter_conf["project_slug"]
         self.use_gitlab = cookiecutter_conf["use_gitlab"]
+        self.use_media_volume = cookiecutter_conf["use_media_volume"]
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
@@ -60,13 +61,15 @@ class MainProcess:
         """Create the the django and react apps."""
         subprocess.run("./scripts/init.sh")
         cookiecutter(
-            "https://github.com/20tab/django-continuous-delivery",
+            # "https://github.com/20tab/django-continuous-delivery",
+            "/Users/rafleze/projects/django-continuous-delivery",
             extra_context={
                 "domain_url": self.domain_url,
                 "gitlab_group_slug": self.gitlab_group_slug,
                 "project_dirname": "backend",
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
+                "use_media_volume": self.use_media_volume
             },
             no_input=True,
         )

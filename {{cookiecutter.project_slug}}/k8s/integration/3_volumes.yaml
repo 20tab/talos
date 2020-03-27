@@ -9,7 +9,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
-
+{% if cookiecutter.use_media_volume == "Yes" %}
 ---
 
 apiVersion: v1
@@ -23,3 +23,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
+{% endif %}
