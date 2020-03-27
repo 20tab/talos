@@ -61,8 +61,7 @@ class MainProcess:
         """Create the the django and react apps."""
         subprocess.run("./scripts/init.sh")
         cookiecutter(
-            # "https://github.com/20tab/django-continuous-delivery",
-            "/Users/rafleze/projects/django-continuous-delivery",
+            "https://github.com/20tab/django-continuous-delivery",
             extra_context={
                 "domain_url": self.domain_url,
                 "gitlab_group_slug": self.gitlab_group_slug,
