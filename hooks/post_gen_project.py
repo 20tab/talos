@@ -68,7 +68,7 @@ class MainProcess:
                 "project_dirname": "backend",
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
-                "use_media_volume": self.use_media_volume
+                "use_media_volume": self.use_media_volume,
             },
             no_input=True,
         )

@@ -45,7 +45,7 @@ class MainProcess:
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "Yes"
         if self.use_gitlab == "Yes":
             self.gl = gitlab.Gitlab(
-                "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
+                "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
             )
             self.gl.auth()
 
