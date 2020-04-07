@@ -26,7 +26,7 @@ spec:
             backend:
               serviceName: backend-cluster-ip-service
               servicePort: 8000
-          - path: /admin/
+          - path: /static/
             backend:
               serviceName: backend-cluster-ip-service
               servicePort: 8000
