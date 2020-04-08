@@ -43,7 +43,7 @@ class MainProcess:
         self.project_slug = "{{ cookiecutter.project_slug }}"
         self.group_slug = self.project_slug
         self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "Yes"
-        if self.use_gitlab == "Yes":
+        if self.use_gitlab:
             self.gl = gitlab.Gitlab(
                 "https://gitlab.com", private_token=os.environ["GITLAB_PRIVATE_TOKEN"]
             )
