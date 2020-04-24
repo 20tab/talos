@@ -23,7 +23,7 @@ def main():
     certificate_bytes = base64.b64decode(certificate_str)
     certificate = certificate_bytes.decode()
     token = None
-    with open("do_token.yaml", "r") as f:
+    with open("do_token.yaml") as f:
         for line in f.readlines():
             couple = line.split(":")
             try:

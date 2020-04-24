@@ -125,7 +125,7 @@ class GitlabSync:
         placeholder = "__GITLAB_GROUP__"
         filename = "README.md"
         filedata = ""
-        with open(filename, "r") as f:
+        with open(filename) as f:
             filedata = f.read()
         filedata = filedata.replace(placeholder, self.group_slug)
         with open(filename, "w+") as f:
