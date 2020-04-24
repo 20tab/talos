@@ -33,6 +33,9 @@ services:
       - backend
     environment:
       - NODE_ENV=${NODE_ENV}
+      - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION}
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER}
+      - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
     volumes:
       - ./frontend:/app
       - /app/node_modules/

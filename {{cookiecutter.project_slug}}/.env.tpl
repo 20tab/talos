@@ -12,3 +12,5 @@ NODE_ENV=development
 POSTGRES_DB={{cookiecutter.project_slug}}
 POSTGRES_PASSWORD=postgres
 POSTGRES_USER=postgres
+BASIC_AUTH_USER=user
+BASIC_AUTH_PASSWORD=password
