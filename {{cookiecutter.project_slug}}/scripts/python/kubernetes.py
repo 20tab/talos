@@ -76,7 +76,7 @@ class Cluster(BaseAPI):
         self.status = None
 
         # This will load also the values passed
-        super(Cluster, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def get_object(cls, api_token, cluster_id):
@@ -117,4 +117,4 @@ class Cluster(BaseAPI):
 
     def __str__(self):
         """Return cluster string representation."""
-        return "<Cluster: %s %s>" % (self.id, self.name)
+        return f"<Cluster: {self.id} {self.name}>"

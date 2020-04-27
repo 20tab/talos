@@ -6,7 +6,7 @@ import json
 def update_cookiecutter_conf(key, value):
     """Update cookiecutter configuration file."""
     conf = {}
-    with open("cookiecutter.json", "r") as f:
+    with open("cookiecutter.json") as f:
         conf = json.loads(f.read())
     with open("cookiecutter.json", "w+") as f:
         conf[key] = value
@@ -15,7 +15,7 @@ def update_cookiecutter_conf(key, value):
 
 def get_cookiecutter_conf():
     """Get cookiecutter configuration."""
-    with open("cookiecutter.json", "r") as f:
+    with open("cookiecutter.json") as f:
         return json.loads(f.read())
 
 

@@ -8,7 +8,7 @@ from cookiecutter.main import cookiecutter
 
 def get_cookiecutter_conf():
     """Get cookiecutter configuration."""
-    with open("cookiecutter.json", "r") as f:
+    with open("cookiecutter.json") as f:
         return json.loads(f.read())
 
 
@@ -45,7 +45,7 @@ class MainProcess:
                 "subdomain": "www",
             },
         }
-        with open("k8s/2_secrets.yaml.tpl", "r") as f:
+        with open("k8s/2_secrets.yaml.tpl") as f:
             secrets_template = f.read()
         for environment, values in environments.items():
             secrets = (
