@@ -4,7 +4,7 @@ check:
 	flake8
 
 dev:
-	pip install -q -U pip~=20.0.0 pip-tools~=5.0.0
+	pip install -q -U pip~=20.1.0 pip-tools~=5.1.0
 	pip-sync requirements.txt
 
 fix:
@@ -13,5 +13,5 @@ fix:
 	flake8
 
 pip:
-	pip install -q -U pip~=20.0.0 pip-tools~=5.0.0
+	pip install -q -U pip~=20.1.0 pip-tools~=5.1.0
 	pip-compile $(p) -U -q -o requirements.txt requirements.ini
