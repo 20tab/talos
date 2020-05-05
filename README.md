@@ -1,37 +1,24 @@
-# 20tab standard project <!-- omit in toc -->
+# 20tab standard project
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 [![Build Status](https://travis-ci.com/20tab/20tab-standard-project.svg?branch=master)](https://travis-ci.com/20tab/20tab-standard-project?branch=master)
 
-A [20tab](https://www.20tab.com/) standard project [cookiecutter](https://github.com/cookiecutter/cookiecutter) template.
+> A [20tab](https://www.20tab.com/) standard project cookiecutter template.
 
-## Index <!-- omit in toc -->
-
-- [Conventions](#conventions)
-- [Requirements](#requirements)
-  - [Cookiecutter](#cookiecutter)
-  - [Kubernetes](#kubernetes)
-  - [GitLab](#gitlab)
-  - [DigitalOcean](#digitalocean)
-- [Quickstart](#quickstart)
-- [Setup](#setup)
-  - [DigitalOcean](#digitalocean-1)
-  - [GitLab](#gitlab-1)
-  - [Kubernetes](#kubernetes-1)
-
-## Conventions
+## 📝 Conventions
 
 In the following instructions, replace:
 
 - `projects` with your actual projects directory
 - `project_name` with your chosen project name
 
-## Requirements
+## 🧩 Requirements
 
 ### Cookiecutter
 
 [Cookiecutter](https://cookiecutter.readthedocs.io) must be installed in order to create and initialize the project structure.
 
-```shell
+```console
 $ pip install --user cookiecutter
 ```
 
@@ -41,13 +28,13 @@ Install the `kubectl` command-line tool, if the Kubernetes integration is needed
 
 - macOS
 
-  ```shell
+  ```console
   $ brew install kubectl
   ```
 
 - Linux
 
-  ```shell
+  ```console
   $ sudo snap install kubectl --classic
   ```
 
@@ -55,7 +42,7 @@ Install the `kubectl` command-line tool, if the Kubernetes integration is needed
 
 Install the `python-gitlab` package, if the GitLab integration is needed.
 
-```shell
+```console
 $ pip install --user python-gitlab
 ```
 
@@ -63,7 +50,7 @@ A GitLab user account is required by the setup procedure to create the repositor
 
 Put the GitLab Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
 
-```shell
+```console
 $ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
 ```
 
@@ -76,26 +63,26 @@ Install the `doctl` command-line tootl and authenticate, if the DigitalOcean int
 
 - macOS
 
-  ```shell
+  ```console
   $ brew install doctl
   ```
 
 - Linux
 
-  ```shell
+  ```console
   $ snap install doctl
   $ sudo snap connect doctl:kube-config
   ```
 
 Use the `doctl` command-line tool to authenticate.
 
-```shell
+```console
 $ doctl auth init
 ```
 
 Install the `python-digitalocean` package, if the DigitalOcean integration is needed.
 
-```shell
+```console
 $ pip install --user python-digitalocean
 ```
 
@@ -106,15 +93,15 @@ Put the DigitalOcean Access Token of the chosen user in an environment variable 
 **Note:** the access token can be generated from the DigitalOcean settings **"API -> Generate New Token"** section.
 Beware that DigitalOcean only shows the token right after creation, and hides it thereafter.
 
-```shell
+```console
 $ export DIGITALOCEAN_ACCESS_TOKEN={{digitalocean_access_token}}
 ```
 
-## Quickstart
+## 🚀️ Quickstart
 
 Change directory and create a new project as in this example:
 
-```shell
+```console
 $ cd ~/projects/
 $ cookiecutter https://github.com/20tab/20tab-standard-project
 You've downloaded /home/paulox/.cookiecutters/20tab-standard-project before. Is it okay to delete and re-download it? [yes]: yes
@@ -148,7 +135,7 @@ $ cd myprojectname
 1. Change the host to the `ingress.yaml` file and add the domain among the `ALLOWED_HOSTS` in `secrets.yaml`
 2. Apply of the `development` directory with `kubectl apply -f k8s/development` (on all three projects the first commit must be done on develop)
 3. Run
-    ```
-    kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com --namespace=<NAMESPACE>
+    ```console
+    $ kubectl create secret docker-registry regcred --docker-server=http://registry.gitlab.com --docker-username=gitlab-20tab --docker-password=<PASSWORD> --docker-email=gitlab@20tab.com --namespace=<NAMESPACE>
     ```
 4. Git push on frontend and backend (on develop)

@@ -58,7 +58,7 @@ def check_paths(paths):
         if is_binary(path) or path.endswith(".tpl") or path.endswith(".py"):
             continue
 
-        for line in open(path, "r"):
+        for line in open(path):
             for k, pattern in PATTERNS.items():
                 re_obj = re.compile(pattern)
                 match = re_obj.search(line)
@@ -70,13 +70,13 @@ def get_cookicutter_conf(project_path):
     """Retrieve cookiecutter.json file."""
     path = f"{project_path}/cookiecutter.json"
     assert os.path.exists(path)
-    with open(path, "r") as f:
+    with open(path) as f:
         return json.loads(f.read())
 
 
 # def test_project_generation(cookies, context, mockedgitlab, mocker):
 #     """Test that project is generated and fully rendered."""
-#     TODO: check how mock works into cookiecutter
+#     # TODO: check how mock works into cookiecutter
 #     result = cookies.bake(extra_context={**context})
 #     assert result.exit_code == 0
 #     assert result.exception is None
@@ -87,7 +87,6 @@ def get_cookicutter_conf(project_path):
 #     assert "gitlab_group_slug" in cookicutter_conf.keys()
 #     assert cookicutter_conf["gitlab_group_slug"] is None
 #     assert "project_slug" in cookicutter_conf.keys()
-
 #     paths = build_files_list(str(result.project))
 #     assert paths
 #     check_paths(paths)

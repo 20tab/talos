@@ -1,15 +1,11 @@
+#!/usr/bin/env python
 """Define hooks to be run after project generation."""
 
 import json
 import subprocess
+from pathlib import Path
 
 from cookiecutter.main import cookiecutter
-
-
-def get_cookiecutter_conf():
-    """Get cookiecutter configuration."""
-    with open("cookiecutter.json") as f:
-        return json.loads(f.read())
 
 
 class MainProcess:
@@ -17,7 +13,7 @@ class MainProcess:
 
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
-        cookiecutter_conf = get_cookiecutter_conf()
+        cookiecutter_conf = json.loads(Path("cookiecutter.json").read_text())
         self.domain_url = cookiecutter_conf["domain_url"]
         self.gitlab_group_slug = cookiecutter_conf["gitlab_group_slug"]
         self.project_name = cookiecutter_conf["project_name"]
@@ -45,8 +41,7 @@ class MainProcess:
                 "subdomain": "www",
             },
         }
-        with open("k8s/2_secrets.yaml.tpl") as f:
-            secrets_template = f.read()
+        secrets_template = Path("k8s/2_secrets.yaml.tpl").read_text()
         for environment, values in environments.items():
             secrets = (
                 secrets_template.replace("__CONFIGURATION__", values["configuration"])
@@ -54,8 +49,7 @@ class MainProcess:
                 .replace("__ENVIRONMENT__", environment)
                 .replace("__SUBDOMAIN__", values["subdomain"])
             )
-            with open(f"k8s/{environment}/2_secrets.yaml", "w+") as fd:
-                fd.write(secrets)
+            Path(f"k8s/{environment}/2_secrets.yaml").write_text(secrets)
 
     def create_subprojects(self):
         """Create the the django and react apps."""
