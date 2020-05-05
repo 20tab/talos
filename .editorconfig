@@ -1,0 +1,32 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Matches multiple files with brace expansion notation
+# Set default charset
+[*.{css,html,js,json,jsx,md,py,scss,yml}]
+charset = utf-8
+indent_style = space
+
+# 4 space indentation
+[*.py]
+indent_size = 4
+max_line_length = 88
+
+[*.md]
+indent_size = 4
+
+# 2 space indentation
+[*.{html,js,json,jsx,css,scss,yml}]
+indent_size = 2
+
+# Tab indentation (no size specified)
+[Makefile]
+indent_style = tab
