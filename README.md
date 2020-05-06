@@ -107,6 +107,7 @@ Install the `doctl` command-line tootl and authenticate, if the DigitalOcean int
 
   ```console
   $ snap install doctl
+  $ mkdir -p .kube
   $ sudo snap connect doctl:kube-config
   ```
 
@@ -137,12 +138,19 @@ $ export DIGITALOCEAN_ACCESS_TOKEN={{digitalocean_access_token}}
 
 #### DigitalOcean
 
-1. Select an existing Kubernetes cluster on DigitalOcean or create one with **Create -> Clusters**
-2. Run `./scripts/do_setup.sh`
+To connect the project with the DigitalOcean hosted Kubernetes cluster, select an existing Kubernetes cluster on DigitalOcean or create one with **Create -> Clusters** and the execute the script:
+
+```console
+./scripts/do_setup.sh
+```
 
 #### GitLab
 
-1. Run `./scripts/add_cluster.sh` to connect GitLab with the DigitalOcean hosted Kubernetes cluster
+If you have not done so in the previous step, run the command to connect GitLab with the DigitalOcean hosted Kubernetes cluster:
+
+```console
+./scripts/add_cluster.sh
+```
 
 #### Kubernetes
 
