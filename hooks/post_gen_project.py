@@ -2,11 +2,17 @@
 """Define hooks to be run after project generation."""
 
 import json
-import subprocess
+import os  # noqa
+import sys  # noqa
 from pathlib import Path
 from shutil import copyfile
 
 from cookiecutter.main import cookiecutter
+
+try:
+    import gitlab  # noqa
+except ModuleNotFoundError:  # pragma: no cover
+    pass
 
 
 class MainProcess:
@@ -87,7 +93,7 @@ class MainProcess:
         self.copy_secrets()
         self.create_subprojects()
         if self.use_gitlab:
-            subprocess.run("./scripts/gitlab_sync.sh")
+            exec(Path("./scripts/python/gitlab_sync.py").read_text())
 
 
 if __name__ == "__main__":

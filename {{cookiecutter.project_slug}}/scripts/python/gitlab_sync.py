@@ -1,33 +1,43 @@
 """Define GitLab class and utilities."""
 
+import json
 import os
-import subprocess
-import warnings
+import sys
+from pathlib import Path
 
-from gitlab import MAINTAINER_ACCESS, Gitlab
-from utils import get_cookiecutter_conf
+import gitlab
 
 
 class GitlabSync:
     """A GitLab interface."""
 
+    CONFIG = "cookiecutter.json"
+    OWNER = "GITLAB_OWNER_USERNAME"
+    TOKEN = "GITLAB_PRIVATE_TOKEN"
+    URL = "https://gitlab.com"
+
     def __init__(self, *args, **kwargs):
         """Initialize the instance."""
-        self.protocol = "https://"
-        self.server_url = "gitlab.com"
-        self.gl = Gitlab(
-            f"{self.protocol}{self.server_url}",
-            private_token=os.environ["GITLAB_PRIVATE_TOKEN"],
-        )
-        self.gl.auth()
         try:
-            self.group_slug = get_cookiecutter_conf()["gitlab_group_slug"]
-            self.project_slug = get_cookiecutter_conf()["project_slug"]
-            self.project_name = get_cookiecutter_conf()["project_name"]
+            private_token = os.environ[self.TOKEN]
         except KeyError:
-            self.group_slug = None
-            self.project_slug = None
-            self.project_name = None
+            sys.exit(f"The environment variable '{self.TOKEN}' is missing.")
+        try:
+            self.gl = gitlab.Gitlab(self.URL, private_token=private_token)
+        except NameError:
+            sys.exit("The 'python-gitlab' package is missing.")
+        try:
+            self.gl.auth()
+        except gitlab.exceptions.GitlabAuthenticationError:
+            sys.exit(f"The environment variable '{self.TOKEN}' is not correct.")
+        file_path = Path(self.CONFIG)
+        file_content = json.loads(file_path.read_text())
+        try:
+            self.group_slug = file_content["gitlab_group_slug"]
+            self.project_slug = file_content["project_slug"]
+            self.project_name = file_content["project_name"]
+        except KeyError:
+            sys.exit(f"File {file_path} is empty or incomplete.")
 
     def get_group(self):
         """Get gitlab group."""
@@ -41,16 +51,15 @@ class GitlabSync:
         self.group = self.gl.groups.create(
             {"name": self.project_name, "path": self.group_slug}
         )
-        server_link = f"{self.protocol}{self.server_url}"
-        group_link = f"{self.protocol}{self.group.path}.gitlab.io"
+        group_link = f"https://{self.group.path}.gitlab.io"
         pipeline_badge_link = "/%{project_path}/pipelines"
         pipeline_badge_image_url = (
             "/%{project_path}/badges/%{default_branch}/pipeline.svg"
         )
         self.group.badges.create(
             {
-                "link_url": f"{server_link}{pipeline_badge_link}",
-                "image_url": f"{server_link}{pipeline_badge_image_url}",
+                "link_url": f"{self.URL}{pipeline_badge_link}",
+                "image_url": f"{self.URL}{pipeline_badge_image_url}",
             }
         )
         self.orchestrator = self.gl.projects.create(  # noqa
@@ -65,7 +74,7 @@ class GitlabSync:
         self.group.badges.create(
             {
                 "link_url": f"{group_link}/{self.backend.path}",
-                "image_url": f"{server_link}{coverage_badge_image_url}",
+                "image_url": f"{self.URL}{coverage_badge_image_url}",
             }
         )
         self.frontend = self.gl.projects.create(  # noqa
@@ -81,34 +90,39 @@ class GitlabSync:
         self.frontend.default_branch = "develop"
         self.frontend.save()
 
-    def set_members(self):
-        """Add git user or given members to gitlab group."""
-        list_members = []
-        git_user_email = subprocess.check_output(
-            ["git", "config", "user.email"], text=True
-        ).split("\n")[0]
+    def set_owner(self):
+        """Add gitlab user as owner to gitlab group."""
         try:
-            gitlab_username = self.gl.users.list(search=git_user_email)[0].username
-        except IndexError:
-            warnings.warn("git local user doesn't exists")
+            owner = os.environ[self.OWNER]
+        except KeyError:
+            print(f"The environment variable '{self.OWNER}' is missing.")
         else:
-            list_members.append(gitlab_username)
+            try:
+                user = self.gl.users.list(username=owner.strip())[0]
+            except IndexError:
+                print(f"Owner {owner} doesn't exists on gitlab.")
+            else:
+                self.group.members.create(
+                    {"user_id": user.id, "access_level": gitlab.OWNER_ACCESS}
+                )
+                print(f"Owner '{owner}' added to group '{self.group.name}'.")
+
+    def set_members(self):
+        """Add given gitlab users as mantainer to gitlab group."""
         members = input(
-            "Insert the usernames of all users you want to add to the group, "
-            "separated by comma or empty to skip: "
+            "Insert the gitlab usernames of all mantainer you want to add to the group "
+            "(separated by comma or empty to skip): "
         )
-        if members:
-            list_members.extend(members.split(","))
-        for member in list_members:
+        for member in members.split(","):
             try:
                 user = self.gl.users.list(username=member.strip())[0]
             except IndexError:
                 print(f"{member} doesn't exists. Please add him from gitlab.com")
             else:
                 self.group.members.create(
-                    {"user_id": user.id, "access_level": MAINTAINER_ACCESS}
+                    {"user_id": user.id, "access_level": gitlab.MAINTAINER_ACCESS}
                 )
-                print(f"{member} added to group {self.group.name}")
+                print(f"Member '{member}' added to group '{self.group.name}'")
 
     def git_init(self):
         """Initialize local git repository."""
@@ -122,19 +136,16 @@ class GitlabSync:
 
     def update_readme(self):
         """Update README.md replacing the Gitlab group placeholder with group slug."""
-        placeholder = "__GITLAB_GROUP__"
-        filename = "README.md"
-        filedata = ""
-        with open(filename) as f:
-            filedata = f.read()
-        filedata = filedata.replace(placeholder, self.group_slug)
-        with open(filename, "w+") as f:
-            f.write(filedata)
+        filepath = Path("README.md")
+        filedata = filepath.read_text()
+        filedata = filedata.replace("__GITLAB_GROUP__", self.group_slug)
+        filepath.write_text(filedata)
 
     def run(self):
         """Run the main process operations."""
         self.create_group()
         self.update_readme()
+        self.set_owner()
         self.set_members()
         self.git_init()
         self.set_default_branch()
