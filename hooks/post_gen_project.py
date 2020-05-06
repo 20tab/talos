@@ -4,6 +4,7 @@
 import json
 import subprocess
 from pathlib import Path
+from shutil import copyfile
 
 from cookiecutter.main import cookiecutter
 
@@ -20,6 +21,10 @@ class MainProcess:
         self.project_slug = cookiecutter_conf["project_slug"]
         self.use_gitlab = cookiecutter_conf["use_gitlab"]
         self.use_media_volume = cookiecutter_conf["use_media_volume"]
+
+    def create_env_file(self):
+        """Create env file from the template."""
+        copyfile(Path(".env.tpl"), Path(".env"))
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
@@ -53,7 +58,6 @@ class MainProcess:
 
     def create_subprojects(self):
         """Create the the django and react apps."""
-        subprocess.run("./scripts/init.sh")
         cookiecutter(
             "https://github.com/20tab/django-continuous-delivery",
             extra_context={
@@ -79,6 +83,7 @@ class MainProcess:
 
     def run(self):
         """Run the main process operations."""
+        self.create_env_file()
         self.copy_secrets()
         self.create_subprojects()
         if self.use_gitlab:
