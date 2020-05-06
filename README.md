@@ -7,14 +7,14 @@
 
 ## 📝 Conventions
 
-In the following instructions, replace:
+In the following instructions:
 
-- `projects` with your actual projects directory
-- `project_name` with your chosen project name
+- replace `projects` with your actual projects directory
+- replace `My project name` with your chosen project name
 
 ## 🧩 Requirements
 
-### Cookiecutter
+### 🍪 Cookiecutter
 
 [Cookiecutter](https://cookiecutter.readthedocs.io) must be installed in order to create and initialize the project structure.
 
@@ -22,23 +22,7 @@ In the following instructions, replace:
 $ pip install --user cookiecutter
 ```
 
-### Kubernetes
-
-Install the `kubectl` command-line tool, if the Kubernetes integration is needed.
-
-- macOS
-
-  ```console
-  $ brew install kubectl
-  ```
-
-- Linux
-
-  ```console
-  $ sudo snap install kubectl --classic
-  ```
-
-### GitLab
+### 🦝 GitLab
 
 Install the `python-gitlab` package, if the GitLab integration is needed.
 
@@ -57,7 +41,47 @@ $ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
 **Note:** the access token can be generated from the GitLab settings "Access Tokens"
 section. Make sure to give it full permission. Beware that GitLab only shows the token right after creation, and hides it thereafter.
 
-### DigitalOcean
+## 🚀️ Quickstart
+
+Change directory and create a new project as in this example:
+
+```console
+$ cd ~/projects/
+$ cookiecutter https://github.com/20tab/20tab-standard-project
+project_name: My project name
+project_slug [myprojectname]:
+domain_url [myprojectname.com]:
+Select use_gitlab:
+1 - Yes
+2 - No
+Choose from 1, 2 [1]:
+Select use_media_volume:
+1 - Yes
+2 - No
+Choose from 1, 2 [1]:
+```
+
+## Setup
+
+### Requirements
+
+#### Kubernetes
+
+Install the `kubectl` command-line tool, if the Kubernetes integration is needed.
+
+- macOS
+
+  ```console
+  $ brew install kubectl
+  ```
+
+- Linux
+
+  ```console
+  $ sudo snap install kubectl --classic
+  ```
+
+#### DigitalOcean
 
 Install the `doctl` command-line tootl and authenticate, if the DigitalOcean integration is needed.
 
@@ -97,40 +121,18 @@ Beware that DigitalOcean only shows the token right after creation, and hides it
 $ export DIGITALOCEAN_ACCESS_TOKEN={{digitalocean_access_token}}
 ```
 
-## 🚀️ Quickstart
+### Steps
 
-Change directory and create a new project as in this example:
-
-```console
-$ cd ~/projects/
-$ cookiecutter https://github.com/20tab/20tab-standard-project
-You've downloaded /home/paulox/.cookiecutters/20tab-standard-project before. Is it okay to delete and re-download it? [yes]: yes
-project_name: My project name
-project_slug [myprojectname]:
-domain_url [myprojectname.com]:
-Select use_gitlab:
-1 - Yes
-2 - No
-Choose from 1, 2 [1]:
-Select use_media_volume:
-1 - Yes
-2 - No
-Choose from 1, 2 [1]:
-$ cd myprojectname
-```
-
-## Setup
-
-### DigitalOcean
+#### DigitalOcean
 
 1. Select an existing Kubernetes cluster on DigitalOcean or create one with **Create -> Clusters**
 2. Run `./scripts/do_setup.sh`
 
-### GitLab
+#### GitLab
 
 1. Run `./scripts/add_cluster.sh` to connect GitLab with the DigitalOcean hosted Kubernetes cluster
 
-### Kubernetes
+#### Kubernetes
 
 1. Change the host to the `ingress.yaml` file and add the domain among the `ALLOWED_HOSTS` in `secrets.yaml`
 2. Apply of the `development` directory with `kubectl apply -f k8s/development` (on all three projects the first commit must be done on develop)
