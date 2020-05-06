@@ -45,7 +45,7 @@ parso==0.7.0              # via jedi
 pathspec==0.8.0           # via black
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
-pip-tools==5.1.1          # via -r requirements.ini
+pip-tools==5.1.2          # via -r requirements.ini
 pluggy==0.13.1            # via pytest
 poyo==0.5.0               # via cookiecutter
 pre-commit==2.3.0         # via -r requirements.ini
@@ -64,11 +64,11 @@ python-dateutil==2.8.1    # via arrow
 python-digitalocean==1.15.0  # via -r requirements.ini
 python-gitlab==2.2.0      # via -r requirements.ini
 python-slugify==4.0.0     # via cookiecutter
-pyupgrade==2.4.0          # via -r requirements.ini
+pyupgrade==2.4.1          # via -r requirements.ini
 pyyaml==5.3.1             # via pre-commit
 regex==2020.4.4           # via black
 requests==2.23.0          # via codecov, cookiecutter, python-digitalocean, python-gitlab
-rope==0.16.0              # via -r requirements.ini
+rope==0.17.0              # via -r requirements.ini
 six==1.14.0               # via cookiecutter, packaging, pip-tools, python-dateutil, traitlets, virtualenv
 snowballstemmer==2.0.0    # via pydocstyle
 testfixtures==6.14.1      # via flake8-isort
