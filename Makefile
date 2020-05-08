@@ -9,7 +9,7 @@ dev:
 
 fix:
 	black .
-	isort --recursive
+	isort --recursive -y
 	flake8
 
 pip:

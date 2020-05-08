@@ -61,7 +61,7 @@ class GitlabSync:
         )
         self.group.badges.create(
             {
-                "link_url": f"{self.URL}/%{{project_path}}/pipelines",
+                "link_url": f"{self.URL}/" "%{project_path}/pipelines",
                 "image_url": (
                     f"{self.URL}"
                     "/%{project_path}/badges/%{default_branch}/pipeline.svg"
