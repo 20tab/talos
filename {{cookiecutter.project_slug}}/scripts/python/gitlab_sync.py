@@ -12,7 +12,6 @@ class GitlabSync:
     """A GitLab interface."""
 
     CONFIG = "cookiecutter.json"
-    OWNER = "GITLAB_OWNER_USERNAME"
     TOKEN = "GITLAB_PRIVATE_TOKEN"
     URL = "https://gitlab.com"
 
@@ -47,38 +46,36 @@ class GitlabSync:
         return None
 
     def create_group(self):
-        """Create a GitLab group."""
+        """Create a GitLab group and sub-projects with badges."""
         self.group = self.gl.groups.create(
             {"name": self.project_name, "path": self.group_slug}
         )
-        group_link = f"https://{self.group.path}.gitlab.io"
-        pipeline_badge_link = "/%{project_path}/pipelines"
-        pipeline_badge_image_url = (
-            "/%{project_path}/badges/%{default_branch}/pipeline.svg"
-        )
-        self.group.badges.create(
-            {
-                "link_url": f"{self.URL}{pipeline_badge_link}",
-                "image_url": f"{self.URL}{pipeline_badge_image_url}",
-            }
-        )
-        self.orchestrator = self.gl.projects.create(  # noqa
-            {"name": "Orchestrator", "namespace_id": self.group.id}
-        )
-        self.backend = self.gl.projects.create(  # noqa
+        self.backend = self.gl.projects.create(
             {"name": "Backend", "namespace_id": self.group.id}
         )
-        coverage_badge_image_url = (
-            "/%{project_path}/badges/%{default_branch}/coverage.svg"
+        self.frontend = self.gl.projects.create(
+            {"name": "Frontend", "namespace_id": self.group.id}
+        )
+        self.orchestrator = self.gl.projects.create(
+            {"name": "Orchestrator", "namespace_id": self.group.id}
         )
         self.group.badges.create(
             {
-                "link_url": f"{group_link}/{self.backend.path}",
-                "image_url": f"{self.URL}{coverage_badge_image_url}",
+                "link_url": f"{self.URL}/%{{project_path}}/pipelines",
+                "image_url": (
+                    f"{self.URL}"
+                    "/%{project_path}/badges/%{default_branch}/pipeline.svg"
+                ),
             }
         )
-        self.frontend = self.gl.projects.create(  # noqa
-            {"name": "Frontend", "namespace_id": self.group.id}
+        self.group.badges.create(
+            {
+                "link_url": f"https://{self.group.path}.gitlab.io/{self.backend.path}",
+                "image_url": (
+                    f"{self.URL}"
+                    "/%{project_path}/badges/%{default_branch}/coverage.svg"
+                ),
+            }
         )
 
     def set_default_branch(self):
@@ -90,17 +87,16 @@ class GitlabSync:
         self.frontend.default_branch = "develop"
         self.frontend.save()
 
-    def set_owner(self):
-        """Add gitlab user as owner to gitlab group."""
-        try:
-            owner = os.environ[self.OWNER]
-        except KeyError:
-            print(f"The environment variable '{self.OWNER}' is missing.")
-        else:
+    def set_owners(self):
+        """Add given Gitlab usernames as owner to the gitlab group."""
+        owners = input(
+            "Insert a comma separated list of usernames to set as group owners: "
+        )
+        for owner in owners.split(","):
             try:
                 user = self.gl.users.list(username=owner.strip())[0]
             except IndexError:
-                print(f"Owner {owner} doesn't exists on gitlab.")
+                print(f"Username '{owner}' doesn't exists. Please add him in Gitlab.")
             else:
                 self.group.members.create(
                     {"user_id": user.id, "access_level": gitlab.OWNER_ACCESS}
@@ -108,21 +104,20 @@ class GitlabSync:
                 print(f"Owner '{owner}' added to group '{self.group.name}'.")
 
     def set_members(self):
-        """Add given gitlab users as mantainer to gitlab group."""
+        """Add given Gitlab usernames as mantainer to the gitlab group."""
         members = input(
-            "Insert the gitlab usernames of all mantainer you want to add to the group "
-            "(separated by comma or empty to skip): "
+            "Insert a comma separated list of usernames to set as group mantainers: "
         )
         for member in members.split(","):
             try:
                 user = self.gl.users.list(username=member.strip())[0]
             except IndexError:
-                print(f"{member} doesn't exists. Please add him from gitlab.com")
+                print(f"Username '{member}' doesn't exists. Please add him in Gitlab.")
             else:
                 self.group.members.create(
                     {"user_id": user.id, "access_level": gitlab.MAINTAINER_ACCESS}
                 )
-                print(f"Member '{member}' added to group '{self.group.name}'")
+                print(f"Member '{member}' added to group '{self.group.name}'.")
 
     def git_init(self):
         """Initialize local git repository."""
@@ -145,7 +140,7 @@ class GitlabSync:
         """Run the main process operations."""
         self.create_group()
         self.update_readme()
-        self.set_owner()
+        self.set_owners()
         self.set_members()
         self.git_init()
         self.set_default_branch()
