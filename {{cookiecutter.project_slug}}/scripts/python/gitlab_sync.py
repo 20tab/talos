@@ -90,8 +90,7 @@ class GitlabSync:
     def set_owners(self):
         """Add given Gitlab usernames as owner to the gitlab group."""
         owners = input(
-            "Insert the gitlab username of all owners you want to add to the group "
-            "(separated by comma or empty to skip): "
+            "Insert a comma separated list of usernames to set as group owners: "
         )
         for owner in owners.split(","):
             try:
@@ -107,8 +106,7 @@ class GitlabSync:
     def set_members(self):
         """Add given Gitlab usernames as mantainer to the gitlab group."""
         members = input(
-            "Insert the gitlab username of all mantainers you want to add to the group "
-            "(separated by comma or empty to skip): "
+            "Insert a comma separated list of usernames to set as group mantainers: "
         )
         for member in members.split(","):
             try:
