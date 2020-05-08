@@ -47,38 +47,36 @@ class GitlabSync:
         return None
 
     def create_group(self):
-        """Create a GitLab group."""
+        """Create a GitLab group and sub-projects with badges."""
         self.group = self.gl.groups.create(
             {"name": self.project_name, "path": self.group_slug}
         )
-        group_link = f"https://{self.group.path}.gitlab.io"
-        pipeline_badge_link = "/%{project_path}/pipelines"
-        pipeline_badge_image_url = (
-            "/%{project_path}/badges/%{default_branch}/pipeline.svg"
-        )
-        self.group.badges.create(
-            {
-                "link_url": f"{self.URL}{pipeline_badge_link}",
-                "image_url": f"{self.URL}{pipeline_badge_image_url}",
-            }
-        )
-        self.orchestrator = self.gl.projects.create(  # noqa
-            {"name": "Orchestrator", "namespace_id": self.group.id}
-        )
-        self.backend = self.gl.projects.create(  # noqa
+        self.backend = self.gl.projects.create(
             {"name": "Backend", "namespace_id": self.group.id}
         )
-        coverage_badge_image_url = (
-            "/%{project_path}/badges/%{default_branch}/coverage.svg"
+        self.frontend = self.gl.projects.create(
+            {"name": "Frontend", "namespace_id": self.group.id}
+        )
+        self.orchestrator = self.gl.projects.create(
+            {"name": "Orchestrator", "namespace_id": self.group.id}
         )
         self.group.badges.create(
             {
-                "link_url": f"{group_link}/{self.backend.path}",
-                "image_url": f"{self.URL}{coverage_badge_image_url}",
+                "link_url": f"{self.URL}/%{{project_path}}/pipelines",
+                "image_url": (
+                    f"{self.URL}"
+                    "/%{project_path}/badges/%{default_branch}/pipeline.svg"
+                ),
             }
         )
-        self.frontend = self.gl.projects.create(  # noqa
-            {"name": "Frontend", "namespace_id": self.group.id}
+        self.group.badges.create(
+            {
+                "link_url": f"https://{self.group.path}.gitlab.io/{self.backend.path}",
+                "image_url": (
+                    f"{self.URL}"
+                    "/%{project_path}/badges/%{default_branch}/coverage.svg"
+                ),
+            }
         )
 
     def set_default_branch(self):
