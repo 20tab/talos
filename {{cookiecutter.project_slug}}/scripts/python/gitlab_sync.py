@@ -12,7 +12,6 @@ class GitlabSync:
     """A GitLab interface."""
 
     CONFIG = "cookiecutter.json"
-    OWNER = "GITLAB_OWNER_USERNAME"
     TOKEN = "GITLAB_PRIVATE_TOKEN"
     URL = "https://gitlab.com"
 
@@ -88,17 +87,17 @@ class GitlabSync:
         self.frontend.default_branch = "develop"
         self.frontend.save()
 
-    def set_owner(self):
-        """Add gitlab user as owner to gitlab group."""
-        try:
-            owner = os.environ[self.OWNER]
-        except KeyError:
-            print(f"The environment variable '{self.OWNER}' is missing.")
-        else:
+    def set_owners(self):
+        """Add given Gitlab usernames as owner to the gitlab group."""
+        owners = input(
+            "Insert the gitlab username of all owners you want to add to the group "
+            "(separated by comma or empty to skip): "
+        )
+        for owner in owners.split(","):
             try:
                 user = self.gl.users.list(username=owner.strip())[0]
             except IndexError:
-                print(f"Owner {owner} doesn't exists on gitlab.")
+                print(f"Username '{owner}' doesn't exists. Please add him in Gitlab.")
             else:
                 self.group.members.create(
                     {"user_id": user.id, "access_level": gitlab.OWNER_ACCESS}
@@ -106,21 +105,21 @@ class GitlabSync:
                 print(f"Owner '{owner}' added to group '{self.group.name}'.")
 
     def set_members(self):
-        """Add given gitlab users as mantainer to gitlab group."""
+        """Add given Gitlab usernames as mantainer to the gitlab group."""
         members = input(
-            "Insert the gitlab usernames of all mantainer you want to add to the group "
+            "Insert the gitlab username of all mantainers you want to add to the group "
             "(separated by comma or empty to skip): "
         )
         for member in members.split(","):
             try:
                 user = self.gl.users.list(username=member.strip())[0]
             except IndexError:
-                print(f"{member} doesn't exists. Please add him from gitlab.com")
+                print(f"Username '{member}' doesn't exists. Please add him in Gitlab.")
             else:
                 self.group.members.create(
                     {"user_id": user.id, "access_level": gitlab.MAINTAINER_ACCESS}
                 )
-                print(f"Member '{member}' added to group '{self.group.name}'")
+                print(f"Member '{member}' added to group '{self.group.name}'.")
 
     def git_init(self):
         """Initialize local git repository."""
@@ -143,7 +142,7 @@ class GitlabSync:
         """Run the main process operations."""
         self.create_group()
         self.update_readme()
-        self.set_owner()
+        self.set_owners()
         self.set_members()
         self.git_init()
         self.set_default_branch()

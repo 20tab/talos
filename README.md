@@ -45,14 +45,6 @@ $ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
 **Note:** the access token can be generated from the GitLab settings "Access Tokens"
 section. Make sure to give it full permission. Beware that GitLab only shows the token right after creation, and hides it thereafter.
 
-#### Owner
-
-Put the username of the default owner of the Gilab group in an environment variable (e.g. export it in the command line or add it to the bash config).
-
-```console
-$ export GITLAB_OWNER_USERNAME={{gitlab_owner_username}}
-```
-
 ## 🚀️ Quickstart
 
 Change directory and create a new project as in this example:
