@@ -68,7 +68,7 @@ Put the DigitalOcean Access Token of the chosen user in an environment variable 
 Beware that DigitalOcean only shows the token right after creation, and hides it thereafter.
 
 ```console
-$ export DIGITALOCEAN_ACCESS_TOKEN={{digitalocean_access_token}}
+$ export DIGITALOCEAN_ACCESS_TOKEN=<your_digitalocean_access_token>
 ```
 
 ## 👣 Steps

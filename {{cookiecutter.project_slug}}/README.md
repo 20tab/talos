@@ -40,7 +40,7 @@ This section explains the steps you need to clone and work wityh this project.
 Clone the repositories of the orchestrator, backend and frontend:
 {% if cookiecutter.use_gitlab == "Yes" %}
 
-```shell
+```console
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{cookiecutter.project_slug}} && cd {{cookiecutter.project_slug}}
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git
@@ -56,7 +56,7 @@ In order for the project to run correctly, a number of environment variables mus
 
 Enter the newly created **project** directory and crate the `.env` file coopying from ``.env.tpl`:
 
-```shell
+```console
 $ cd ~/projects/{{cookiecutter.project_slug}}
 $ cp .env.tpl .env
 ```
@@ -67,13 +67,13 @@ All the following Docker commands are supposed to be run from the orchestrator d
 
 #### Build
 
-```shell
+```console
 $ docker-compose build
 ```
 
 #### Run
 
-```shell
+```console
 $ docker-compose up
 ```
 **NOTE**: It can be daemonized adding the `-d` flag.
@@ -84,7 +84,7 @@ $ docker-compose up
 
 Pull the main git repo and the sub-repos:
 
-```shell
+```console
 $ make pull
 ```
 
@@ -92,19 +92,19 @@ $ make pull
 
 Use the Django `manage.py` command shell:
 
-```shell
+```console
 $ make django
 ```
 
 You can pass the specific command:
 
-```shell
+```console
 $ make django p=check
 ```
 
 You can pass the container name:
 
-```shell
+```console
 $ make django p=shell c=backend_2
 ```
 
@@ -112,29 +112,29 @@ $ make django p=shell c=backend_2
 
 Restart and build all services:
 
-```shell
+```console
 $ make rebuild
 ```
 
 You can pass the service name:
 
-```shell
+```console
 $ make rebuild s=backend
 ```
 
 ### Create SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
 
 Move to the `nginx` directory:
-```shell
+```console
 $ cd nginx
 ```
 
 Create the certificate related files:
-```shell
+```console
 $ openssl req -config localhost.conf -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout localhost.key -days 1024 -out localhost.crt
 ```
 
-```shell
+```console
 $ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.crt
 ```
 
@@ -143,29 +143,29 @@ $ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.c
 #### Install the cert utils
 
 - Linux
-    ```shell
+    ```console
     $ sudo apt-get install libnss3-tools
     ```
 
 - macOs
-    ```shell
+    ```console
     $ brew install nss
     ```
 
 #### Import certificates
 
 Move to the `nginx` directory
-```shell
+```console
 $ cd nginx
 ```
 
 Import certificate into shared database (password: `localhost`):
-```shell
+```console
 $ pk12util -d sql:$HOME/.pki/nssdb -i localhost.pfx
 ```
 
 **NOTE**: In the event of a `PR_FILE_NOT_FOUND_ERROR` or `SEC_ERROR_BAD_DATABASE` error, run the following commands and try again:
-```shell
+```console
 $ mkdir -p $HOME/.pki/nssdb
 $ certutil -d $HOME/.pki/nssdb -N
 ```
@@ -173,12 +173,12 @@ $ certutil -d $HOME/.pki/nssdb -N
 #### Trust the self-signed server certificate
 
 - Linux
-    ```shell
+    ```console
     $ certutil -d sql:$HOME/.pki/nssdb -A -t "P,," -n 'dev cert' -i localhost.crt
     ```
 
 - macOS
-    ```shell
+    ```console
     $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.crt
     ```
 
