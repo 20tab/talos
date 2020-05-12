@@ -22,6 +22,22 @@ In the following instructions:
 $ python3 -m pip install cookiecutter
 ```
 
+### 🔀 Git
+
+Install the `git` command-line, if the GitLab integration is needed.
+
+- 🍏 macOS
+
+  ```console
+  $ brew install git
+  ```
+
+- 🐧 GNU/Linux
+
+  ```console
+  $ sudo apt install git
+  ```
+
 ### 🦝 GitLab
 
 #### 📦 Install
