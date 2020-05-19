@@ -1,9 +1,25 @@
 """Define Digital Ocean setup."""
 
+import json
 import os
+from pathlib import Path
 
 from kubernetes import Cluster
-from utils import get_cluster_name
+
+
+def get_cluster_name():
+    """Get and update cluster name from cookiecutter.json."""
+    cookiecutter_path = Path("cookiecutter.json")
+    configuration = json.loads(cookiecutter_path.read_text())
+    try:
+        cluster_name = configuration["cluster_name"]
+    except KeyError:
+        while not cluster_name:
+            cluster_name = input("Please insert the cluster name: ")
+    finally:
+        configuration["cluster_name"] = cluster_name
+        cookiecutter_path.write_text(json.dumps(configuration, indent=2))
+    return cluster_name
 
 
 def main():
