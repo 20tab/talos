@@ -1,16 +1,23 @@
 """Define Cluster class and utilities."""
 
 import base64
+import json
 import os
+import sys
+from pathlib import Path
 
 from gitlab_sync import GitlabSync
 from kubernetes import Cluster
-from utils import get_cluster_name
 
 
 def main():
     """Define main function."""
-    cluster_name = get_cluster_name()
+    try:
+        cluster_name = json.loads(Path("cookiecutter.json").read_text())["cluster_name"]
+    except KeyError:
+        sys.exit(
+            "cluster_name is missing in cookiecutter.json have you run do_setup.sh ?"
+        )
 
     cluster = Cluster()
     cluster.load_by_name(cluster_name)

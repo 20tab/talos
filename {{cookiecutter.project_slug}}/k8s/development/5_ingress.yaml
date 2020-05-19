@@ -22,10 +22,12 @@ spec:
             backend:
               serviceName: backend-cluster-ip-service
               servicePort: 8000
+          {% if cookiecutter.use_media_volume == "Yes" %}
           - path: /media/
             backend:
               serviceName: backend-cluster-ip-service
               servicePort: 8000
+          {% endif %}
           - path: /static/
             backend:
               serviceName: backend-cluster-ip-service

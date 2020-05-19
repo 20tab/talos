@@ -22,7 +22,7 @@ services:
     volumes:
       - ./backend:/app
       - ~/.ssh:/root/.ssh-localhost:ro
-      - media:/app/media
+      {% if cookiecutter.use_media_volume == "Yes" %}- media:/app/media{% endif %}
 
   frontend:
     build:
@@ -61,5 +61,5 @@ services:
       - pg_data:/var/lib/postgresql/data
 
 volumes:
-  media: {}
+  {% if cookiecutter.use_media_volume == "Yes" %}media: {}{% endif %}
   pg_data: {}
