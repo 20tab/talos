@@ -3,11 +3,10 @@
 
 import json
 import os  # noqa
-import string
+import secrets
+import shutil
 import sys  # noqa
 from pathlib import Path
-from secrets import choice
-from shutil import copyfile
 
 from cookiecutter.main import cookiecutter
 
@@ -15,10 +14,6 @@ try:
     import gitlab  # noqa
 except ModuleNotFoundError:  # pragma: no cover
     pass
-
-
-SECRETSEQ = "".join((string.ascii_letters, string.digits, string.punctuation))
-PASSWORDSEQ = "".join((string.ascii_letters, string.digits))
 
 
 class MainProcess:
@@ -36,7 +31,7 @@ class MainProcess:
 
     def create_env_file(self):
         """Create env file from the template."""
-        copyfile(Path(".env.tpl"), Path(".env"))
+        shutil.copyfile(Path(".env.tpl"), Path(".env"))
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
@@ -60,15 +55,15 @@ class MainProcess:
         }
         secrets_template = Path("k8s/2_secrets.yaml.tpl").read_text()
         for environment, values in environments.items():
-            secrets = (
+            secrets_text = (
                 secrets_template.replace("__CONFIGURATION__", values["configuration"])
                 .replace("__DEBUG__", values["debug"])
                 .replace("__ENVIRONMENT__", environment)
                 .replace("__SUBDOMAIN__", values["subdomain"])
-                .replace("__SECRETKEY__", "".join(choice(SECRETSEQ) for _ in range(50)))
-                .replace("__PASSWORD__", "".join(choice(PASSWORDSEQ) for _ in range(8)))
+                .replace("__SECRETKEY__", secrets.token_urlsafe(40))
+                .replace("__PASSWORD__", secrets.token_urlsafe(8))
             )
-            Path(f"k8s/{environment}/2_secrets.yaml").write_text(secrets)
+            Path(f"k8s/{environment}/2_secrets.yaml").write_text(secrets_text)
 
     def create_subprojects(self):
         """Create the the django and react apps."""
