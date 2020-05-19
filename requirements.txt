@@ -14,7 +14,7 @@ certifi==2020.4.5.1       # via requests
 cfgv==3.1.0               # via pre-commit
 chardet==3.0.4            # via binaryornot, requests
 click==7.1.2              # via black, cookiecutter, pip-tools
-codecov==2.0.22           # via -r requirements.ini
+codecov==2.1.0            # via -r requirements.ini
 cookiecutter==1.7.2       # via -r requirements.ini, pytest-cookies
 coverage==5.1             # via codecov
 decorator==4.4.2          # via ipython, traitlets
@@ -37,9 +37,9 @@ jinja2==2.11.2            # via cookiecutter, jinja2-time
 jsonpickle==1.4.1         # via python-digitalocean
 markupsafe==1.1.1         # via cookiecutter, jinja2
 mccabe==0.6.1             # via flake8
-more-itertools==8.2.0     # via pytest
+more-itertools==8.3.0     # via pytest
 nodeenv==1.3.5            # via pre-commit
-packaging==20.3           # via pytest
+packaging==20.4           # via pytest
 parso==0.7.0              # via jedi
 pathspec==0.8.0           # via black
 pexpect==4.8.0            # via ipython
@@ -63,9 +63,9 @@ python-dateutil==2.8.1    # via arrow
 python-digitalocean==1.15.0  # via -r requirements.ini
 python-gitlab==2.2.0      # via -r requirements.ini
 python-slugify==4.0.0     # via cookiecutter
-pyupgrade==2.4.1          # via -r requirements.ini
+pyupgrade==2.4.3          # via -r requirements.ini
 pyyaml==5.3.1             # via pre-commit
-regex==2020.5.7           # via black
+regex==2020.5.14          # via black
 requests==2.23.0          # via codecov, cookiecutter, python-digitalocean, python-gitlab
 rope==0.17.0              # via -r requirements.ini
 six==1.14.0               # via cookiecutter, packaging, pip-tools, python-dateutil, traitlets, virtualenv
@@ -73,7 +73,7 @@ snowballstemmer==2.0.0    # via pydocstyle
 testfixtures==6.14.1      # via flake8-isort
 text-unidecode==1.3       # via python-slugify
 tokenize-rt==4.0.0        # via pyupgrade
-toml==0.10.0              # via black, isort, pre-commit
+toml==0.10.1              # via black, isort, pre-commit
 traitlets==4.3.3          # via ipython
 typed-ast==1.4.1          # via black
 urllib3==1.25.9           # via requests
