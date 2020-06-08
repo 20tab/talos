@@ -4,7 +4,6 @@
 import json
 import os  # noqa
 import secrets
-import shutil
 import sys  # noqa
 from pathlib import Path
 
@@ -31,7 +30,7 @@ class MainProcess:
 
     def create_env_file(self):
         """Create env file from the template."""
-        shutil.copyfile(Path(".env.tpl"), Path(".env"))
+        Path(".env").write_text(Path(".env.tpl").read_text())
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""

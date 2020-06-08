@@ -21,8 +21,8 @@ services:
       - EMAIL_URL=${EMAIL_URL}
     volumes:
       - ./backend:/app
-      - ~/.ssh:/root/.ssh-localhost:ro
-      {% if cookiecutter.use_media_volume == "Yes" %}- media:/app/media{% endif %}
+      - ~/.ssh:/root/.ssh-localhost:ro{% if cookiecutter.use_media_volume == "Yes" %}
+      - media:/app/media{% endif %}
 
   frontend:
     build:
@@ -32,10 +32,10 @@ services:
     depends_on:
       - backend
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION}
-      - BASIC_AUTH_USER=${BASIC_AUTH_USER}
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER}
+      - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION}
+      - NODE_ENV=${NODE_ENV}
     volumes:
       - ./frontend:/app
       - /app/node_modules/
@@ -60,6 +60,6 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
-volumes:
-  {% if cookiecutter.use_media_volume == "Yes" %}media: {}{% endif %}
+volumes:{% if cookiecutter.use_media_volume == "Yes" %}
+  media: {}{% endif %}
   pg_data: {}
