@@ -19,3 +19,4 @@ stringData:
   POSTGRES_DB: {{cookiecutter.project_slug}}
   POSTGRES_PASSWORD: postgres
   POSTGRES_USER: postgres
+  SENTRY_DSN: __SENTRY_DSN__
