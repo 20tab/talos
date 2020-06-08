@@ -6,6 +6,10 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
 spec:
+  tls:
+    - hosts:
+      - www.{{cookiecutter.domain_url}}
+      secretName: ssl-cert
   rules:
     - host: www.{{cookiecutter.domain_url}}
       http:
@@ -21,13 +25,11 @@ spec:
           - path: /admin/
             backend:
               serviceName: backend-cluster-ip-service
-              servicePort: 8000
-          {% if cookiecutter.use_media_volume == "Yes" %}
+              servicePort: 8000{% if cookiecutter.use_media_volume == "Yes" %}
           - path: /media/
             backend:
               serviceName: backend-cluster-ip-service
-              servicePort: 8000
-          {% endif %}
+              servicePort: 8000{% endif %}
           - path: /static/
             backend:
               serviceName: backend-cluster-ip-service
