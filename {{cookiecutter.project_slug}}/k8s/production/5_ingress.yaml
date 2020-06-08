@@ -6,10 +6,6 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
 spec:
-  tls:
-    - hosts:
-      - www.{{cookiecutter.domain_url}}
-      secretName: ssl-cert
   rules:
     - host: www.{{cookiecutter.domain_url}}
       http:
