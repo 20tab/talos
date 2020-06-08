@@ -5,6 +5,8 @@ metadata:
   namespace: {{cookiecutter.project_slug}}-__ENVIRONMENT__
 type: Opaque
 stringData:
+  BASIC_AUTH_PASSWORD: __PASSWORD__
+  BASIC_AUTH_USER: {{cookiecutter.project_slug}}
   DJANGO_ADMINS: 20tab,errors@20tab.com;admin,errors@{{cookiecutter.domain_url}}
   DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost,__SUBDOMAIN__.{{cookiecutter.domain_url}}
   DJANGO_CONFIGURATION: __CONFIGURATION__
@@ -17,5 +19,3 @@ stringData:
   POSTGRES_DB: {{cookiecutter.project_slug}}
   POSTGRES_PASSWORD: postgres
   POSTGRES_USER: postgres
-  BASIC_AUTH_USER: {{cookiecutter.project_slug}}
-  BASIC_AUTH_PASSWORD: __PASSWORD__

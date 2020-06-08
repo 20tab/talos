@@ -1,3 +1,5 @@
+BASIC_AUTH_PASSWORD=password
+BASIC_AUTH_USER=user
 DJANGO_ADMINS=20tab,errors@20tab.com
 DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
 DJANGO_CONFIGURATION=Local
@@ -12,5 +14,3 @@ NODE_ENV=development
 POSTGRES_DB={{cookiecutter.project_slug}}
 POSTGRES_PASSWORD=postgres
 POSTGRES_USER=postgres
-BASIC_AUTH_USER=user
-BASIC_AUTH_PASSWORD=password
