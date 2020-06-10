@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Define GitLab class and utilities."""
 
 import json

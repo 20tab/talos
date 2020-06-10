@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Define Cluster class and utilities."""
 
 import base64

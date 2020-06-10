@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Define Digital Ocean setup."""
 
 import json
