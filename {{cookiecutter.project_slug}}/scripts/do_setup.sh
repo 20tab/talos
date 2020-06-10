@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 doctl auth init
 python3 ./scripts/python/do_setup.py
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-0.32.0/deploy/static/provider/do/deploy.yaml
