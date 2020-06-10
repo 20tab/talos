@@ -1,1 +1,1 @@
-"""20tab standard project python modules."""
+"""{{cookiecutter.project_name}} python scripts."""
