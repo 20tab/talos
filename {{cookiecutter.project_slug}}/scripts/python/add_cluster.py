@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Define Cluster class and utilities."""
 
 import base64
@@ -16,7 +17,8 @@ def main():
         cluster_name = json.loads(Path("cookiecutter.json").read_text())["cluster_name"]
     except KeyError:
         sys.exit(
-            "cluster_name is missing in cookiecutter.json have you run do_setup.sh ?"
+            "'cluster_name' value is missing in 'cookiecutter.json'. "
+            "Add it and excute `add_cluster.py` again!"
         )
 
     cluster = Cluster()

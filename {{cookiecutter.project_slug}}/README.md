@@ -39,7 +39,6 @@ This section explains the steps you need to clone and work wityh this project.
 
 Clone the repositories of the orchestrator, backend and frontend:
 {% if cookiecutter.use_gitlab == "Yes" %}
-
 ```console
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{cookiecutter.project_slug}} && cd {{cookiecutter.project_slug}}
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git

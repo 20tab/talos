@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Define Digital Ocean setup."""
 
 import json
@@ -11,6 +12,7 @@ def get_cluster_name():
     """Get and update cluster name from cookiecutter.json."""
     cookiecutter_path = Path("cookiecutter.json")
     configuration = json.loads(cookiecutter_path.read_text())
+    cluster_name = ""
     try:
         cluster_name = configuration["cluster_name"]
     except KeyError:
