@@ -1,11 +1,11 @@
-BASIC_AUTH_PASSWORD=password
-BASIC_AUTH_USER=user
+BASIC_AUTH_PASSWORD=__PASSWORD__
+BASIC_AUTH_USER={{cookiecutter.project_slug}}
 DJANGO_ADMINS=20tab,errors@20tab.com
 DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
 DJANGO_CONFIGURATION=Local
 DJANGO_DEBUG=True
 DJANGO_DEFAULT_FROM_EMAIL=info@{{cookiecutter.domain_url}}
-DJANGO_SECRET_KEY=secretkey
+DJANGO_SECRET_KEY=__SECRETKEY__
 DJANGO_SERVER_EMAIL=server@{{cookiecutter.domain_url}}
 EMAIL_URL=console:///
 LOCAL_HTTP_PORT=8080

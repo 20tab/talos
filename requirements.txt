@@ -5,80 +5,77 @@
 #    pip-compile --output-file=requirements.txt requirements.ini
 #
 appdirs==1.4.4            # via black, virtualenv
-arrow==0.13.2             # via jinja2-time, pytest-cookies
+arrow==0.15.8             # via jinja2-time
 attrs==19.3.0             # via black, flake8-bugbear, pytest
-backcall==0.1.0           # via ipython
-binaryornot==0.4.4        # via -r requirements.ini, cookiecutter
+backcall==0.2.0           # via ipython
+binaryornot==0.4.4        # via cookiecutter
 black==19.10b0            # via -r requirements.ini
-certifi==2020.4.5.2       # via requests
+certifi==2020.6.20        # via requests
 cfgv==3.1.0               # via pre-commit
 chardet==3.0.4            # via binaryornot, requests
 click==7.1.2              # via black, cookiecutter, pip-tools
-codecov==2.1.4            # via -r requirements.ini
-cookiecutter==1.7.2       # via -r requirements.ini, pytest-cookies
-coverage==5.1             # via codecov
+cookiecutter==1.7.2       # via -r requirements.ini
 decorator==4.4.2          # via ipython, traitlets
-distlib==0.3.0            # via virtualenv
+distlib==0.3.1            # via virtualenv
 filelock==3.0.12          # via virtualenv
 flake8-bugbear==20.1.4    # via -r requirements.ini
 flake8-docstrings==1.5.0  # via -r requirements.ini
-flake8-isort==3.0.0       # via -r requirements.ini
-flake8==3.8.2             # via -r requirements.ini, flake8-bugbear, flake8-docstrings, flake8-isort
-identify==1.4.19          # via pre-commit
-idna==2.9                 # via requests
-importlib-metadata==1.6.1  # via jsonpickle
-ipdb==0.13.2              # via -r requirements.ini
+flake8-isort==3.0.1       # via -r requirements.ini
+flake8==3.8.3             # via -r requirements.ini, flake8-bugbear, flake8-docstrings, flake8-isort
+identify==1.4.25          # via pre-commit
+idna==2.10                # via requests
+importlib-metadata==1.7.0  # via jsonpickle
+iniconfig==1.0.0          # via pytest
+ipdb==0.13.3              # via -r requirements.ini
 ipython-genutils==0.2.0   # via traitlets
-ipython==7.15.0           # via ipdb
+ipython==7.16.1           # via ipdb
 isort[pyproject]==4.3.21  # via -r requirements.ini, flake8-isort
-jedi==0.17.0              # via -r requirements.ini, ipython
+jedi==0.17.2              # via -r requirements.ini, ipython
 jinja2-time==0.2.0        # via cookiecutter
 jinja2==2.11.2            # via cookiecutter, jinja2-time
 jsonpickle==1.4.1         # via python-digitalocean
 markupsafe==1.1.1         # via cookiecutter, jinja2
 mccabe==0.6.1             # via flake8
-more-itertools==8.3.0     # via pytest
+more-itertools==8.4.0     # via pytest
 nodeenv==1.4.0            # via pre-commit
 packaging==20.4           # via pytest
-parso==0.7.0              # via jedi
+parso==0.7.1              # via jedi
 pathspec==0.8.0           # via black
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
-pip-tools==5.2.0          # via -r requirements.ini
+pip-tools==5.3.0          # via -r requirements.ini
 pluggy==0.13.1            # via pytest
 poyo==0.5.0               # via cookiecutter
-pre-commit==2.4.0         # via -r requirements.ini
+pre-commit==2.6.0         # via -r requirements.ini
 prompt-toolkit==3.0.5     # via ipython
 ptyprocess==0.6.0         # via pexpect
-py==1.8.1                 # via pytest
+py==1.9.0                 # via pytest
 pycodestyle==2.6.0        # via flake8
 pydocstyle==5.0.2         # via flake8-docstrings
 pyflakes==2.2.0           # via flake8
 pygments==2.6.1           # via ipython
 pyparsing==2.4.7          # via packaging
-pytest-cookies==0.5.1     # via -r requirements.ini
-pytest-mock==3.1.1        # via -r requirements.ini
-pytest==5.4.3             # via pytest-cookies, pytest-mock
+pytest==6.0.0             # via -r requirements.ini
 python-dateutil==2.8.1    # via arrow
 python-digitalocean==1.15.0  # via -r requirements.ini
-python-gitlab==2.2.0      # via -r requirements.ini
-python-slugify==4.0.0     # via cookiecutter
-pyupgrade==2.5.0          # via -r requirements.ini
+python-gitlab==2.4.0      # via -r requirements.ini
+python-slugify==4.0.1     # via cookiecutter
+pyupgrade==2.7.2          # via -r requirements.ini
 pyyaml==5.3.1             # via pre-commit
-regex==2020.6.8           # via black
-requests==2.23.0          # via codecov, cookiecutter, python-digitalocean, python-gitlab
+regex==2020.7.14          # via black
+requests==2.24.0          # via cookiecutter, python-digitalocean, python-gitlab
 rope==0.17.0              # via -r requirements.ini
 six==1.15.0               # via cookiecutter, packaging, pip-tools, python-dateutil, traitlets, virtualenv
 snowballstemmer==2.0.0    # via pydocstyle
 testfixtures==6.14.1      # via flake8-isort
 text-unidecode==1.3       # via python-slugify
 tokenize-rt==4.0.0        # via pyupgrade
-toml==0.10.1              # via black, isort, pre-commit
+toml==0.10.1              # via black, isort, pre-commit, pytest
 traitlets==4.3.3          # via ipython
 typed-ast==1.4.1          # via black
-urllib3==1.25.9           # via requests
-virtualenv==20.0.21       # via pre-commit
-wcwidth==0.2.4            # via prompt-toolkit, pytest
+urllib3==1.25.10          # via requests
+virtualenv==20.0.28       # via pre-commit
+wcwidth==0.2.5            # via prompt-toolkit
 zipp==3.1.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

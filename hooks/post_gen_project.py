@@ -30,7 +30,11 @@ class MainProcess:
 
     def create_env_file(self):
         """Create env file from the template."""
-        Path(".env").write_text(Path(".env.tpl").read_text())
+        env_template = Path(".env.tpl").read_text()
+        env_text = env_template.replace(
+            "__SECRETKEY__", secrets.token_urlsafe(40)
+        ).replace("__PASSWORD__", secrets.token_urlsafe(8))
+        Path(".env").write_text(env_text)
 
     def copy_secrets(self):
         """Copy the Kubernetes secrets manifest."""
