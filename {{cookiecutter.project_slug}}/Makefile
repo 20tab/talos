@@ -1,4 +1,4 @@
-c = backend
+c = {{cookiecutter.project_slug}}_backend
 p = shell
 django:
 	docker exec -it $(c) python manage.py $(p)
