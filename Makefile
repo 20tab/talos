@@ -1,6 +1,6 @@
 check:
 	black --check .
-	isort --check-only --recursive
+	isort --check-only .
 	flake8
 
 dev:
@@ -9,7 +9,7 @@ dev:
 
 fix:
 	black .
-	isort --recursive -y
+	isort .
 	flake8
 
 pip:

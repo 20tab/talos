@@ -1,5 +1,5 @@
 os: linux
-dist: xenial
+dist: focal
 language: python
 
 python:
@@ -10,6 +10,6 @@ install:
 
 script:
   - black --check .
-  - isort --check-only --recursive
+  - isort --check-only .
   - flake8
   - pytest
