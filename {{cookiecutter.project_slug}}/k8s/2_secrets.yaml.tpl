@@ -19,4 +19,9 @@ stringData:
   POSTGRES_DB: {{cookiecutter.project_slug}}
   POSTGRES_PASSWORD: postgres
   POSTGRES_USER: postgres
+  S3_ACCESS_KEY_ID: __ S3_ACCESS_KEY_ID__
+  S3_ACCESS_KEY_SECRET: __S3_ACCESS_KEY_SECRET__
+  S3_BUCKET_NAME: {{cookiecutter.project_slug}}
+  S3_DEFAULT_ACL: public-read
+  S3_HOST: __REGION__.digitaloceanspaces.com
   SENTRY_DSN: __SENTRY_DSN__

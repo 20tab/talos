@@ -1,0 +1,66 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: postgres-backup-cron
+  namespace: {{cookiecutter.project_slug}}-production
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+            - name: regcred
+          containers:
+          - name: postgres-backup-script
+            image: registry.gitlab.com/deliverytools/postgresql-backup-to-s3:latest
+            env:
+            - name: DJANGO_CONFIGURATION
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: DJANGO_CONFIGURATION
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: POSTGRES_DB
+            - name: PGHOST
+              value: "postgres-cluster-ip-service"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: POSTGRES_USER
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: S3_ACCESS_KEY_ID
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: S3_ACCESS_KEY_SECRET
+            - name: S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: S3_BUCKET_NAME
+            - name: S3_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: S3_HOST
+            - name: S3_BACKUP_PATH
+              value: "$(DJANGO_CONFIGURATION)/backup"
+            args:
+            - ./pg_dump_to_s3.sh
+          restartPolicy: OnFailure
