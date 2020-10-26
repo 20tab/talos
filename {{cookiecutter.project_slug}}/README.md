@@ -51,13 +51,13 @@ Please, write documentation about git repository clone
 
 ### Environment variables
 
-In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env.tpl` template is provided.
+In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env_template` template is provided.
 
-Enter the newly created **project** directory and create the `.env` file copying from `.env.tpl`:
+Enter the newly created **project** directory and crate the `.env` file coopying from `.env_template`:
 
 ```console
 $ cd ~/projects/{{cookiecutter.project_slug}}
-$ cp .env.tpl .env
+$ cp .env_template .env
 ```
 
 ### Docker
