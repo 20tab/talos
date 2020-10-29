@@ -18,6 +18,10 @@ except ModuleNotFoundError:  # pragma: no cover
 class MainProcess:
     """Main process class."""
 
+    BACKEND_CD = "https://github.com/20tab/django-continuous-delivery"
+    FRONTEND_CD = "https://github.com/20tab/react-continuous-delivery"
+    FRONTEND_TS_CD = "https://github.com/20tab/react-ts-continuous-delivery"
+
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
         cookiecutter_conf = json.loads(Path("cookiecutter.json").read_text())
@@ -68,10 +72,10 @@ class MainProcess:
             )
             Path(f"k8s/{environment}/2_secrets.yaml").write_text(secrets_text)
 
-    def create_subprojects(self):
+    def create_subprojects(self, backend_cd_url, frontend_cd_url):
         """Create the the django and react apps."""
         cookiecutter(
-            "https://github.com/20tab/django-continuous-delivery",
+            backend_cd_url,
             extra_context={
                 "domain_url": self.domain_url,
                 "gitlab_group_slug": self.gitlab_group_slug,
@@ -83,7 +87,7 @@ class MainProcess:
             no_input=True,
         )
         cookiecutter(
-            "https://github.com/20tab/react-continuous-delivery",
+            frontend_cd_url,
             extra_context={
                 "gitlab_group_slug": self.gitlab_group_slug,
                 "project_dirname": "frontend",
@@ -97,7 +101,14 @@ class MainProcess:
         """Run the main process operations."""
         self.create_env_file()
         self.copy_secrets()
-        self.create_subprojects()
+        USE_TYPESCRIPT = input("Do you want the frontend with TypeScript?[Y/n]: ")
+        _backend_cd = self.BACKEND_CD
+        _frontend_cd = None
+        if USE_TYPESCRIPT == "" or USE_TYPESCRIPT == "Y" or USE_TYPESCRIPT == "y":
+            _frontend_cd = self.FRONTEND_TS_CD
+        elif USE_TYPESCRIPT == "N" or USE_TYPESCRIPT == "n":
+            _frontend_cd = self.FRONTEND_CD
+        self.create_subprojects(_backend_cd, _frontend_cd)
         if self.use_gitlab:
             exec(Path("./scripts/python/gitlab_sync.py").read_text())
 
