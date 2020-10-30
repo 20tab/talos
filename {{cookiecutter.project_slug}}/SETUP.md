@@ -96,7 +96,7 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
 1. Change the host to the `k8s/develop/5_ingress.yaml` file and add the domain among the `ALLOWED_HOSTS` in `k8s/develop/2_secrets.yaml`
 2. Check or change other variables in `k8s/develop/2_secrets.yaml`
 3. Apply of the `development` directory with `kubectl apply -f k8s/development` (on all three projects the first commit must be done on `develop` GIT branch)
-4. Connect Kubernetes to GitLab registry to download the built images (*get `<NAMESPACE>` from `k8s/develop/1_namespace.yaml`*):
+4. Create secret to allow the connection from Kubernetes to GitLab registry to download the built images (*get `<NAMESPACE>` from `k8s/develop/1_namespace.yaml`*):
 
     ```console
     $ kubectl create secret docker-registry regcred --docker-server=<DOCKER_REGISTRY_SERVER> --docker-username=<DOCKER_USER> --docker-password=<DOCKER_PASSWORD> --docker-email=<DOCKER_EMAIL> --namespace=<NAMESPACE>
