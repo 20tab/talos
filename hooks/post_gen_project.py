@@ -30,7 +30,7 @@ class MainProcess:
 
     def create_env_file(self):
         """Create env file from the template."""
-        env_template = Path(".env.tpl").read_text()
+        env_template = Path(".env_template").read_text()
         env_text = env_template.replace(
             "__SECRETKEY__", secrets.token_urlsafe(40)
         ).replace("__PASSWORD__", secrets.token_urlsafe(8))
@@ -56,7 +56,7 @@ class MainProcess:
                 "subdomain": "www",
             },
         }
-        secrets_template = Path("k8s/2_secrets.yaml.tpl").read_text()
+        secrets_template = Path("k8s/2_secrets.yaml_template").read_text()
         for environment, values in environments.items():
             secrets_text = (
                 secrets_template.replace("__CONFIGURATION__", values["configuration"])
