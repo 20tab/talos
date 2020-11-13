@@ -1,5 +1,5 @@
 version: "3.4"
-
+{% set frontends = ["React", "React (TypeScript)"] %}
 services:
 
   backend:
@@ -23,7 +23,7 @@ services:
       - ./backend:/app
       - ~/.ssh:/root/.ssh-localhost:ro{% if cookiecutter.use_media_volume == "Yes" %}
       - media:/app/media{% endif %}
-
+{% if cookiecutter.which_frontend in frontends %}
   frontend:
     build:
       context: ./frontend
@@ -38,14 +38,13 @@ services:
       - NODE_ENV=${NODE_ENV}
     volumes:
       - ./frontend:/app
-      - /app/node_modules/
-
+      - /app/node_modules/{% endif %}
   nginx:
     build: ./nginx
     container_name: {{cookiecutter.project_slug}}_nginx
     depends_on:
-      - backend
-      - frontend
+      - backend{% if cookiecutter.which_frontend in frontends %}
+      - frontend{% endif %}
     ports:
       - ${LOCAL_HTTP_PORT}:80
       - ${LOCAL_HTTPS_PORT}:443

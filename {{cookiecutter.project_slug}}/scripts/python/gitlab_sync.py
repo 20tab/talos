@@ -8,11 +8,14 @@ from pathlib import Path
 
 import gitlab
 
+FRONTENDS = ["React", "React (TypeScript)"]
+
 
 class GitlabSync:
     """A GitLab interface."""
 
     CONFIG = "cookiecutter.json"
+    HAS_FRONTEND = "{{ cookiecutter.which_frontend }}" in FRONTENDS
     TOKEN = "GITLAB_PRIVATE_TOKEN"
     URL = "https://gitlab.com"
 
@@ -54,9 +57,10 @@ class GitlabSync:
         self.backend = self.gl.projects.create(
             {"name": "Backend", "namespace_id": self.group.id}
         )
-        self.frontend = self.gl.projects.create(
-            {"name": "Frontend", "namespace_id": self.group.id}
-        )
+        if self.HAS_FRONTEND:
+            self.frontend = self.gl.projects.create(
+                {"name": "Frontend", "namespace_id": self.group.id}
+            )
         self.orchestrator = self.gl.projects.create(
             {"name": "Orchestrator", "namespace_id": self.group.id}
         )
@@ -85,8 +89,9 @@ class GitlabSync:
         self.orchestrator.save()
         self.backend.default_branch = "develop"
         self.backend.save()
-        self.frontend.default_branch = "develop"
-        self.frontend.save()
+        if self.HAS_FRONTEND:
+            self.frontend.default_branch = "develop"
+            self.frontend.save()
 
     def set_owners(self):
         """Add given Gitlab usernames as owner to the gitlab group."""
@@ -126,9 +131,11 @@ class GitlabSync:
         os.system(
             "cd backend && ../scripts/git_init.sh " f"{self.backend.ssh_url_to_repo}"
         )
-        os.system(
-            "cd frontend && ../scripts/git_init.sh " f"{self.frontend.ssh_url_to_repo}"
-        )
+        if self.HAS_FRONTEND:
+            os.system(
+                "cd frontend && ../scripts/git_init.sh "
+                f"{self.frontend.ssh_url_to_repo}"
+            )
 
     def update_readme(self):
         """Update README.md replacing the Gitlab group placeholder with group slug."""

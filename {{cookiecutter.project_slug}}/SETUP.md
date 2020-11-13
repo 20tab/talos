@@ -92,7 +92,7 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
 ```
 
 ### ☸️ Kubernetes
-
+{% set frontends = ["React", "React (TypeScript)"] %}
 1. Change the host to the `k8s/develop/5_ingress.yaml` file and add the domain among the `ALLOWED_HOSTS` in `k8s/develop/2_secrets.yaml`
 2. Check or change other variables in `k8s/develop/2_secrets.yaml`
 3. Apply of the `development` directory with `kubectl apply -f k8s/development` (on all three projects the first commit must be done on `develop` GIT branch)
@@ -101,4 +101,4 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
     ```console
     $ kubectl create secret docker-registry regcred --docker-server=<DOCKER_REGISTRY_SERVER> --docker-username=<DOCKER_USER> --docker-password=<DOCKER_PASSWORD> --docker-email=<DOCKER_EMAIL> --namespace=<NAMESPACE>
     ```
-5. Push a commit to the `develop` branch of `frontend` (e.g. `src/client/index.html`) and `backend` (e.g. `{{cookiecutter.project_slug}}/settings.py`) to start the first CI/CD pipeline.
+5. Push a commit to the `develop` branch of {% if cookiecutter.which_frontend in frontends %}`frontend` (e.g. `src/client/index.html`) and {% endif %}`backend` (e.g. `{{cookiecutter.project_slug}}/settings.py`) to start the first CI/CD pipeline.

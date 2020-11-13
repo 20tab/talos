@@ -36,13 +36,15 @@ This section explains the steps you need to clone and work wityh this project.
 ### Git
 
 #### Clone
-
-Clone the repositories of the orchestrator, backend and frontend:
+{% set frontends = ["React", "React (TypeScript)"] %}
+Clone the repositories of the orchestrator{% if cookiecutter.which_frontend in frontends %}, frontend{% endif %} and backend:
 {% if cookiecutter.use_gitlab == "Yes" %}
 ```console
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{cookiecutter.project_slug}} && cd {{cookiecutter.project_slug}}
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git
+$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{cookiecutter.project_slug}}
+$ cd {{cookiecutter.project_slug}}
+$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git backend{% if cookiecutter.which_frontend in frontends %}
+$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git frontend{% endif %}
+$ cd ..
 ```
 {% else %}
 Please, write documentation about git repository clone
@@ -53,7 +55,7 @@ Please, write documentation about git repository clone
 
 In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env_template` template is provided.
 
-Enter the newly created **project** directory and crate the `.env` file coopying from `.env_template`:
+Enter the newly created **project** directory and create the `.env` file copying from `.env_template`:
 
 ```console
 $ cd ~/projects/{{cookiecutter.project_slug}}

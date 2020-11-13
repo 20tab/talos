@@ -18,6 +18,13 @@ except ModuleNotFoundError:  # pragma: no cover
 class MainProcess:
     """Main process class."""
 
+    BACKEND_URL = "https://github.com/20tab/django-continuous-delivery"
+    FRONTEND_URLS = {
+        "None": "",
+        "React": "https://github.com/20tab/react-continuous-delivery",
+        "React (TypeScript)": "https://github.com/20tab/react-ts-continuous-delivery",
+    }
+
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
         cookiecutter_conf = json.loads(Path("cookiecutter.json").read_text())
@@ -42,7 +49,7 @@ class MainProcess:
         environments = {
             "development": {
                 "configuration": "Development",
-                "debug": "True",
+                "debug": "False",
                 "subdomain": "dev",
             },
             "integration": {
@@ -68,10 +75,10 @@ class MainProcess:
             )
             Path(f"k8s/{environment}/2_secrets.yaml").write_text(secrets_text)
 
-    def create_subprojects(self):
+    def create_subprojects(self, backend_url, frontend_url):
         """Create the the django and react apps."""
         cookiecutter(
-            "https://github.com/20tab/django-continuous-delivery",
+            backend_url,
             extra_context={
                 "domain_url": self.domain_url,
                 "gitlab_group_slug": self.gitlab_group_slug,
@@ -82,22 +89,25 @@ class MainProcess:
             },
             no_input=True,
         )
-        cookiecutter(
-            "https://github.com/20tab/react-continuous-delivery",
-            extra_context={
-                "gitlab_group_slug": self.gitlab_group_slug,
-                "project_dirname": "frontend",
-                "project_name": self.project_name,
-                "project_slug": self.project_slug,
-            },
-            no_input=True,
-        )
+        if frontend_url:
+            cookiecutter(
+                frontend_url,
+                extra_context={
+                    "gitlab_group_slug": self.gitlab_group_slug,
+                    "project_dirname": "frontend",
+                    "project_name": self.project_name,
+                    "project_slug": self.project_slug,
+                },
+                no_input=True,
+            )
 
     def run(self):
         """Run the main process operations."""
         self.create_env_file()
         self.copy_secrets()
-        self.create_subprojects()
+        backend_url = self.BACKEND_URL
+        frontend_url = self.FRONTEND_URLS["{{ cookiecutter.which_frontend }}"]
+        self.create_subprojects(backend_url, frontend_url)
         if self.use_gitlab:
             exec(Path("./scripts/python/gitlab_sync.py").read_text())
 
