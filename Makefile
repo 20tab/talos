@@ -1,6 +1,6 @@
 check:
 	black --check .
-	isort --check-only .
+	isort --check .
 	flake8
 
 dev:
