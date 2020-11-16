@@ -13,7 +13,7 @@ spec:
         paths:
           - path: /
             backend:
-              serviceName: frontend-cluster-ip-service
+              serviceName: {% if cookiecutter.which_frontend in ["React", "React (TypeScript)"] %}frontend-cluster-ip-service
               servicePort: 3000
           - path: /api/
             backend:
@@ -25,5 +25,5 @@ spec:
               servicePort: 8000
           - path: /static/
             backend:
-              serviceName: backend-cluster-ip-service
+              serviceName: {% endif %}backend-cluster-ip-service
               servicePort: 8000

@@ -4,7 +4,10 @@ django:
 	docker exec -it $(c) python manage.py $(p)
 
 pull:
-	git checkout develop && git pull && cd backend && git checkout develop && git pull && cd ../frontend && git checkout develop && git pull && cd ..
+	git checkout develop && git pull && \
+	cd backend && git checkout develop && git pull && \{% if cookiecutter.which_frontend in ["React", "React (TypeScript)"] %}
+	cd ../frontend && git checkout develop && git pull && \{% endif %}
+	cd ..
 
 s =
 rebuild:

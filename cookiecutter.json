@@ -2,6 +2,7 @@
     "project_name": null,
     "project_slug": "{{ cookiecutter.project_name | slugify(separator='') }}",
     "domain_url": "{{ cookiecutter.project_name | slugify(separator='') }}.com",
+    "which_frontend": ["React", "React (TypeScript)", "None"],
     "use_gitlab": ["Yes", "No"],
     "use_media_volume": ["Yes", "No"],
     "_extensions": [
