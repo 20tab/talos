@@ -22,15 +22,15 @@ except ModuleNotFoundError:  # pragma: no cover
 class MainProcess:
     """Main process class."""
 
-    URL = "https://gitlab.com"
     TOKEN = "GITLAB_PRIVATE_TOKEN"
+    URL = "https://gitlab.com"
 
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
-        self.project_name = "{{ cookiecutter.project_name }}"
-        self.project_slug = "{{ cookiecutter.project_slug }}"
+        self.project_name = "{{cookiecutter.project_name}}"
+        self.project_slug = "{{cookiecutter.project_slug}}"
         self.group_slug = self.project_slug
-        self.use_gitlab = "{{ cookiecutter.use_gitlab }}" == "Yes"
+        self.use_gitlab = "{{cookiecutter.use_gitlab}}" == "Yes"
         if self.use_gitlab:
             try:
                 private_token = os.environ[self.TOKEN]

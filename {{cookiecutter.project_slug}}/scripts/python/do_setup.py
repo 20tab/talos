@@ -11,16 +11,16 @@ from kubernetes import Cluster
 def get_cluster_name():
     """Get and update cluster name from cookiecutter.json."""
     cookiecutter_path = Path("cookiecutter.json")
-    configuration = json.loads(cookiecutter_path.read_text())
+    cookiecutter_dict = json.loads(cookiecutter_path.read_text())
     cluster_name = ""
     try:
-        cluster_name = configuration["cluster_name"]
+        cluster_name = cookiecutter_dict["cluster_name"]
     except KeyError:
         while not cluster_name:
             cluster_name = input("Please insert the cluster name: ")
     finally:
-        configuration["cluster_name"] = cluster_name
-        cookiecutter_path.write_text(json.dumps(configuration, indent=2))
+        cookiecutter_dict["cluster_name"] = cluster_name
+        cookiecutter_path.write_text(json.dumps(cookiecutter_dict, indent=2))
     return cluster_name
 
 

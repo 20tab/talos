@@ -8,14 +8,11 @@ from pathlib import Path
 
 import gitlab
 
-FRONTENDS = ["React", "React (TypeScript)"]
-
 
 class GitlabSync:
     """A GitLab interface."""
 
-    CONFIG = "cookiecutter.json"
-    HAS_FRONTEND = "{{ cookiecutter.which_frontend }}" in FRONTENDS
+    COOKIECUTTER = "cookiecutter.json"
     TOKEN = "GITLAB_PRIVATE_TOKEN"
     URL = "https://gitlab.com"
 
@@ -33,14 +30,15 @@ class GitlabSync:
             self.gl.auth()
         except gitlab.exceptions.GitlabAuthenticationError:
             sys.exit(f"The environment variable '{self.TOKEN}' is not correct.")
-        file_path = Path(self.CONFIG)
-        file_content = json.loads(file_path.read_text())
+        cookiecutter_path = Path(self.COOKIECUTTER)
+        cookiecutter_dict = json.loads(cookiecutter_path.read_text())
         try:
-            self.group_slug = file_content["gitlab_group_slug"]
-            self.project_slug = file_content["project_slug"]
-            self.project_name = file_content["project_name"]
+            self.group_slug = cookiecutter_dict["gitlab_group_slug"]
+            self.project_slug = cookiecutter_dict["project_slug"]
+            self.project_name = cookiecutter_dict["project_name"]
+            self.has_frontend = cookiecutter_dict["has_frontend"]
         except KeyError:
-            sys.exit(f"File {file_path} is empty or incomplete.")
+            sys.exit(f"File {cookiecutter_path} is empty or incomplete.")
 
     def get_group(self):
         """Get gitlab group."""
@@ -54,16 +52,16 @@ class GitlabSync:
         self.group = self.gl.groups.create(
             {"name": self.project_name, "path": self.group_slug}
         )
-        self.backend = self.gl.projects.create(
-            {"name": "Backend", "namespace_id": self.group.id}
-        )
-        if self.HAS_FRONTEND:
-            self.frontend = self.gl.projects.create(
-                {"name": "Frontend", "namespace_id": self.group.id}
-            )
         self.orchestrator = self.gl.projects.create(
             {"name": "Orchestrator", "namespace_id": self.group.id}
         )
+        self.backend = self.gl.projects.create(
+            {"name": "Backend", "namespace_id": self.group.id}
+        )
+        if self.has_frontend:
+            self.frontend = self.gl.projects.create(
+                {"name": "Frontend", "namespace_id": self.group.id}
+            )
         self.group.badges.create(
             {
                 "link_url": f"{self.URL}/" "%{project_path}/pipelines",
@@ -89,7 +87,7 @@ class GitlabSync:
         self.orchestrator.save()
         self.backend.default_branch = "develop"
         self.backend.save()
-        if self.HAS_FRONTEND:
+        if self.has_frontend:
             self.frontend.default_branch = "develop"
             self.frontend.save()
 
@@ -131,7 +129,7 @@ class GitlabSync:
         os.system(
             "cd backend && ../scripts/git_init.sh " f"{self.backend.ssh_url_to_repo}"
         )
-        if self.HAS_FRONTEND:
+        if self.has_frontend:
             os.system(
                 "cd frontend && ../scripts/git_init.sh "
                 f"{self.frontend.ssh_url_to_repo}"
@@ -139,19 +137,19 @@ class GitlabSync:
 
     def update_readme(self):
         """Update README.md replacing the Gitlab group placeholder with group slug."""
-        filepath = Path("README.md")
-        filedata = filepath.read_text()
-        filedata = filedata.replace("__GITLAB_GROUP__", self.group_slug)
-        filepath.write_text(filedata)
+        readme_path = Path("README.md")
+        readme_text = readme_path.read_text()
+        readme_text = readme_text.replace("__GITLAB_GROUP__", self.group_slug)
+        readme_path.write_text(readme_text)
 
     def run(self):
         """Run the main process operations."""
-        self.create_group()
         self.update_readme()
+        self.create_group()
+        self.set_default_branch()
         self.set_owners()
         self.set_members()
         self.git_init()
-        self.set_default_branch()
 
 
 if __name__ == "__main__":
