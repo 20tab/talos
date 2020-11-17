@@ -27,13 +27,18 @@ class MainProcess:
 
     def __init__(self, *args, **kwargs):
         """Create a main process instance with chosen parameters."""
-        cookiecutter_conf = json.loads(Path("cookiecutter.json").read_text())
-        self.domain_url = cookiecutter_conf["domain_url"]
-        self.gitlab_group_slug = cookiecutter_conf["gitlab_group_slug"]
-        self.project_name = cookiecutter_conf["project_name"]
-        self.project_slug = cookiecutter_conf["project_slug"]
-        self.use_gitlab = cookiecutter_conf["use_gitlab"]
-        self.use_media_volume = cookiecutter_conf["use_media_volume"]
+        cookiecutter_path = Path("cookiecutter.json")
+        cookiecutter_dict = json.loads(cookiecutter_path.read_text())
+        self.domain_url = cookiecutter_dict["domain_url"]
+        self.gitlab_group_slug = cookiecutter_dict["gitlab_group_slug"]
+        self.project_name = cookiecutter_dict["project_name"]
+        self.project_slug = cookiecutter_dict["project_slug"]
+        self.use_gitlab = cookiecutter_dict["use_gitlab"]
+        self.use_media_volume = cookiecutter_dict["use_media_volume"]
+        self.backend_url = self.BACKEND_URL
+        self.frontend_url = self.FRONTEND_URLS[cookiecutter_dict["which_frontend"]]
+        cookiecutter_dict["has_frontend"] = bool(self.frontend_url)
+        cookiecutter_path.write_text(json.dumps(cookiecutter_dict, indent=2))
 
     def create_env_file(self):
         """Create env file from the template."""
@@ -75,10 +80,10 @@ class MainProcess:
             )
             Path(f"k8s/{environment}/2_secrets.yaml").write_text(secrets_text)
 
-    def create_subprojects(self, backend_url, frontend_url):
-        """Create the the django and react apps."""
+    def create_subprojects(self):
+        """Create subprojects."""
         cookiecutter(
-            backend_url,
+            self.backend_url,
             extra_context={
                 "domain_url": self.domain_url,
                 "gitlab_group_slug": self.gitlab_group_slug,
@@ -89,9 +94,9 @@ class MainProcess:
             },
             no_input=True,
         )
-        if frontend_url:
+        if self.frontend_url:
             cookiecutter(
-                frontend_url,
+                self.frontend_url,
                 extra_context={
                     "gitlab_group_slug": self.gitlab_group_slug,
                     "project_dirname": "frontend",
@@ -105,9 +110,7 @@ class MainProcess:
         """Run the main process operations."""
         self.create_env_file()
         self.copy_secrets()
-        backend_url = self.BACKEND_URL
-        frontend_url = self.FRONTEND_URLS["{{ cookiecutter.which_frontend }}"]
-        self.create_subprojects(backend_url, frontend_url)
+        self.create_subprojects()
         if self.use_gitlab:
             exec(Path("./scripts/python/gitlab_sync.py").read_text())
 
