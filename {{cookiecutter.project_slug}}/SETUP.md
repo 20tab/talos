@@ -99,6 +99,6 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
 4. Create secret to allow the connection from Kubernetes to GitLab registry to download the built images (*get `<NAMESPACE>` from `k8s/develop/1_namespace.yaml`*):
 
     ```console
-    $ kubectl create secret docker-registry regcred --docker-server=<DOCKER_REGISTRY_SERVER> --docker-username=<DOCKER_USER> --docker-password=<DOCKER_PASSWORD> --docker-email=<DOCKER_EMAIL> --namespace=<NAMESPACE>
+    $ ./scripts/k8s_setup.sh
     ```
 5. Push a commit to the `develop` branch of {% if cookiecutter.which_frontend in frontends %}`frontend` (e.g. `src/client/index.html`) and {% endif %}`backend` (e.g. `{{cookiecutter.project_slug}}/settings.py`) to start the first CI/CD pipeline.
