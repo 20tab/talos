@@ -85,6 +85,9 @@ class MainProcess:
         cookiecutter(
             self.backend_url,
             extra_context={
+                "database_url": (
+                    f"postgres://postgres:postgres@postgres:5432/{self.project_slug}"
+                ),
                 "domain_url": self.domain_url,
                 "gitlab_group_slug": self.gitlab_group_slug,
                 "project_dirname": "backend",
