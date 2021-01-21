@@ -52,6 +52,8 @@ $ python3 -m pip install python-gitlab
 
 A GitLab user account is required by the setup procedure to create the repositories, and by Kubernetes to pull the images from the Docker registry.
 
+Make sure you have a local SSH key and have it associated with your GitLab account in the "SSH Keys" section in the settings.
+
 Put the GitLab Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
 
 ```console
@@ -72,9 +74,9 @@ project_name: My Project Name
 project_slug [myprojectname]:
 domain_url [myprojectname.com]:
 Select which_frontend:
-1 - React
+1 - None
 2 - React (TypeScript)
-3 - None
+3 - React
 Choose from 1, 2, 3 [1]:
 Select use_gitlab:
 1 - Yes
