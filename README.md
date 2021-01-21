@@ -72,9 +72,9 @@ project_name: My Project Name
 project_slug [myprojectname]:
 domain_url [myprojectname.com]:
 Select which_frontend:
-1 - React
+1 - None
 2 - React (TypeScript)
-3 - None
+3 - React
 Choose from 1, 2, 3 [1]:
 Select use_gitlab:
 1 - Yes
