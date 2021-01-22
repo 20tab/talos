@@ -71,7 +71,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: fluentd
-        image: fluent/fluentd-kubernetes-daemonset:v1.4-debian-forward-1
+        image: fluent/fluentd-kubernetes-daemonset:v1-debian-forward
         env:
           - name: LOKI_URL
             valueFrom:
