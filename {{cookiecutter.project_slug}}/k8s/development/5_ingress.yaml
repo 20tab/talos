@@ -4,7 +4,7 @@ metadata:
   name: ingress-service
   namespace: {{cookiecutter.project_slug}}-development
   annotations:
-    kubernetes.io/ingress.class: nginx{% if cookiecutter.use_media_volume == "Yes" %}
+    kubernetes.io/ingress.class: nginx{% if cookiecutter.use_media == "Yes" %}
     nginx.ingress.kubernetes.io/proxy-body-size: 10m{% endif %}
 spec:
   rules:

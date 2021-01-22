@@ -146,10 +146,10 @@ class GitlabSync:
         """Run the main process operations."""
         self.update_readme()
         self.create_group()
+        self.git_init()
         self.set_default_branch()
         self.set_owners()
         self.set_members()
-        self.git_init()
 
 
 if __name__ == "__main__":

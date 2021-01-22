@@ -80,7 +80,7 @@ Select use_gitlab:
 1 - Yes
 2 - No
 Choose from 1, 2 [1]:
-Select use_media_volume:
+Select use_media:
 1 - Yes
 2 - No
 Choose from 1, 2 [1]:

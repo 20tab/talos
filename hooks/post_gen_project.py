@@ -34,7 +34,7 @@ class MainProcess:
         self.project_name = cookiecutter_dict["project_name"]
         self.project_slug = cookiecutter_dict["project_slug"]
         self.use_gitlab = cookiecutter_dict["use_gitlab"]
-        self.use_media_volume = cookiecutter_dict["use_media_volume"]
+        self.use_media = cookiecutter_dict["use_media"]
         self.backend_url = self.BACKEND_URL
         self.frontend_url = self.FRONTEND_URLS[cookiecutter_dict["which_frontend"]]
         cookiecutter_dict["has_frontend"] = bool(self.frontend_url)
@@ -85,12 +85,15 @@ class MainProcess:
         cookiecutter(
             self.backend_url,
             extra_context={
+                "database_url": (
+                    f"postgres://postgres:postgres@postgres:5432/{self.project_slug}"
+                ),
                 "domain_url": self.domain_url,
                 "gitlab_group_slug": self.gitlab_group_slug,
                 "project_dirname": "backend",
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
-                "use_media_volume": self.use_media_volume,
+                "use_media": self.use_media,
             },
             no_input=True,
         )
