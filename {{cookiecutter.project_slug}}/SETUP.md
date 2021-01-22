@@ -102,3 +102,12 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
     $ ./scripts/k8s_setup.sh
     ```
 5. Push a commit to the `develop` branch of {% if cookiecutter.which_frontend in frontends %}`frontend` (e.g. `src/client/index.html`) and {% endif %}`backend` (e.g. `{{cookiecutter.project_slug}}/settings.py`) to start the first CI/CD pipeline.
+
+### 📃 Graphana logs
+1. Make you sure to have a Graphana/Loki instance.
+2. Create fluentd secret file from `k8s/cluster/fluentd/1_fluentd-secrets.yaml_template`.
+    ```console
+    $ cp k8s/cluster/fluentd/1_fluentd-secrets.yaml_template k8s/cluster/fluentd/1_fluentd-secrets.yaml
+    ```
+3. Change variables in `k8s/cluster/fluentd/1_fluentd-secrets.yaml` (E.g. `LOKI_URL` will be `http://<IP>:3100`).
+4. Apply fluentd folder `kubectl apply -f k8s/cluster/fluentd`.
