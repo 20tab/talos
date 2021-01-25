@@ -34,8 +34,10 @@ services:
     environment:
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
       - BASIC_AUTH_USER=${BASIC_AUTH_USER}
-      - REACT_ENVIRONMENT=${DJANGO_CONFIGURATION}
+      - INTERNAL_API_URL=${INTERNAL_API_URL}
+      - NEXT_PUBLIC_API_URL=${API_URL}
       - NODE_ENV=${NODE_ENV}
+      - REACT_ENVIRONMENT=${DJANGO_CONFIGURATION}
     volumes:
       - ./frontend:/app
       - /app/node_modules/{% endif %}
