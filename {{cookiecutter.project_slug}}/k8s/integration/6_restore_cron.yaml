@@ -4,36 +4,33 @@ metadata:
   name: cronjob-user
 
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: cronjob-user
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["delete", "get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete", "get", "list"]
 
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: cronjob-user
 subjects:
-- kind: ServiceAccount
-  name: cronjob-user
+  - kind: ServiceAccount
+    name: cronjob-user
 roleRef:
   kind: Role
   name: cronjob-user
   apiGroup: rbac.authorization.k8s.io
 
 ---
-
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: restore-dump-cronjob
+  name: postgresql-restore-cron
   namespace: {{cookiecutter.project_slug}}-integration
 spec:
   schedule: "0 1 * * *"
@@ -45,59 +42,68 @@ spec:
           imagePullSecrets:
             - name: regcred
           containers:
-          - name: restore-dump-cronjob
-            image: registry.gitlab.com/deliverytools/postgresql-restore-from-s3:latest
-            env:
-            - name: DJANGO_CONFIGURATION
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: DJANGO_CONFIGURATION
-            - name: PGDATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: POSTGRES_DB
-            - name: PGHOST
-              value: "postgres-cluster-ip-service"
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: POSTGRES_PASSWORD
-            - name: PGPORT
-              value: "5432"
-            - name: PGUSER
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: POSTGRES_USER
-            - name: S3_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: S3_ACCESS_KEY_ID
-            - name: S3_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: S3_ACCESS_KEY_SECRET
-            - name: S3_BUCKET_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: S3_BUCKET_NAME
-            - name: S3_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: S3_HOST
-            - name: S3_BACKUP_PATH
-              value: "Production/backup"
-            - name: S3_MEDIA_SRC_PATH
-              value: "Production/media"
-            - name: S3_MEDIA_DEST_PATH
-              value: "Integration/media"
-            args:
-            - ./pg_restore_from_s3.sh
+            - name: postgresql-restore-from-s3
+              image: registry.gitlab.com/deliverytools/postgresql_dump_restore_to_from_s3:latest
+              env:
+                #backend
+                - name: DJANGO_CONFIGURATION
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: DJANGO_CONFIGURATION
+                # postgres
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: POSTGRES_DB
+                - name: PGHOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: POSTGRES_HOST
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: POSTGRES_PASSWORD
+                - name: PGPORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: POSTGRES_PORT
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: POSTGRES_USER
+                # s3
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: AWS_SECRET_ACCESS_KEY
+                - name: AWS_STORAGE_BUCKET_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: AWS_STORAGE_BUCKET_NAME
+                - name: AWS_S3_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: AWS_S3_HOST
+                - name: AWS_S3_BACKUP_PATH
+                  value: "Production/backup"
+                - name: S3_MEDIA_SRC_PATH
+                  value: "Production/media"
+                - name: S3_MEDIA_DEST_PATH
+                  value: "Integration/media"
+              args:
+                - /pg_restore_from_s3.sh
           restartPolicy: OnFailure
