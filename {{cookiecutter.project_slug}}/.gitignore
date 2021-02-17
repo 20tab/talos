@@ -146,7 +146,7 @@ dmypy.json
 [._]*.un~
 
 # VisualStudioCode
-.devcontainer/
+.devcontainer*
 .vscode/
 
 # macOS
