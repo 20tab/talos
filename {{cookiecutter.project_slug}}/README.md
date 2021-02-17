@@ -123,41 +123,33 @@ You can pass the service name:
 $ make rebuild s=backend
 ```
 
-### Create SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
+### Create and activate a local SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
 
 Move to the `nginx` directory:
 ```console
 $ cd nginx
 ```
 
-Create the certificate related files:
+Install the certificate utils:
+
+- Linux
+    ```console
+    $ sudo apt-get install openssl libnss3-tools
+    ```
+
+- macOs
+    ```console
+    $ brew install openssl nss
+    ```
+    **NOTE** : Follow all steps at the end of the installation (can be displayed again via `brew info <package-name>`).
+
+Create the certificate files:
 ```console
 $ openssl req -config localhost.conf -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout localhost.key -days 1024 -out localhost.crt
 ```
 
 ```console
 $ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.crt
-```
-
-### Create and activate a local SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
-
-#### Install the cert utils
-
-- Linux
-    ```console
-    $ sudo apt-get install libnss3-tools
-    ```
-
-- macOs
-    ```console
-    $ brew install nss
-    ```
-
-#### Import certificates
-
-Move to the `nginx` directory
-```console
-$ cd nginx
 ```
 
 Import certificate into shared database (password: `localhost`):
@@ -171,7 +163,7 @@ $ mkdir -p $HOME/.pki/nssdb
 $ certutil -d $HOME/.pki/nssdb -N
 ```
 
-#### Trust the self-signed server certificate
+Trust the self-signed server certificate:
 
 - Linux
     ```console
