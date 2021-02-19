@@ -19,7 +19,6 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_SERVER_EMAIL=${DJANGO_SERVER_EMAIL}
       - EMAIL_URL=${EMAIL_URL}
-      - UWSGI_PY_AUTO_RELOAD=${UWSGI_PY_AUTO_RELOAD}
     volumes:
       - ./backend:/app
       - ~/.ssh:/root/.ssh-localhost:ro{% if cookiecutter.use_media == "Yes" %}
