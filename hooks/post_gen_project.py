@@ -54,17 +54,14 @@ class MainProcess:
         environments = {
             "development": {
                 "configuration": "Development",
-                "debug": "False",
                 "subdomain": "dev",
             },
             "integration": {
                 "configuration": "Integration",
-                "debug": "False",
                 "subdomain": "test",
             },
             "production": {
                 "configuration": "Production",
-                "debug": "False",
                 "subdomain": "www",
             },
         }
@@ -72,7 +69,6 @@ class MainProcess:
         for environment, values in environments.items():
             secrets_text = (
                 secrets_template.replace("__CONFIGURATION__", values["configuration"])
-                .replace("__DEBUG__", values["debug"])
                 .replace("__ENVIRONMENT__", environment)
                 .replace("__SUBDOMAIN__", values["subdomain"])
                 .replace("__SECRETKEY__", secrets.token_urlsafe(40))
