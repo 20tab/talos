@@ -15,7 +15,7 @@ spec:
             - name: postgresql-dump-to-s3
               image: registry.gitlab.com/deliverytools/postgresql_dump_restore_to_from_s3:latest
               env:
-                #backend
+                # backend
                 - name: DJANGO_CONFIGURATION
                   valueFrom:
                     secretKeyRef:
