@@ -13,40 +13,19 @@ spec:
             - name: regcred
           containers:
             - name: postgresql-dump-to-s3
-              image: registry.gitlab.com/deliverytools/postgresql_dump_restore_to_from_s3:latest
+              image: registry.gitlab.com/deliverytools/pg-dump-restore-to-from-s3:latest
               env:
                 # backend
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: DATABASE_URL
                 - name: DJANGO_CONFIGURATION
                   valueFrom:
                     secretKeyRef:
                       name: secrets
                       key: DJANGO_CONFIGURATION
-                # postgres
-                - name: PGDATABASE
-                  valueFrom:
-                    secretKeyRef:
-                      name: secrets
-                      key: POSTGRES_DB
-                - name: PGHOST
-                  valueFrom:
-                    secretKeyRef:
-                      name: secrets
-                      key: POSTGRES_HOST
-                - name: PGPASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: secrets
-                      key: POSTGRES_PASSWORD
-                - name: PGPORT
-                  valueFrom:
-                    secretKeyRef:
-                      name: secrets
-                      key: POSTGRES_PORT
-                - name: PGUSER
-                  valueFrom:
-                    secretKeyRef:
-                      name: secrets
-                      key: POSTGRES_USER
                 # s3
                 - name: AWS_ACCESS_KEY_ID
                   valueFrom:

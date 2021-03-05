@@ -4,13 +4,14 @@ services:
 
   backend:
     build:
+      args:
+        USER: ${USER}
       context: ./backend
-      target: dev
-    container_name: {{cookiecutter.project_slug}}_backend
+      target: local
     depends_on:
       - postgres
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - DATABASE_URL=${DATABASE_URL}
       - DJANGO_ADMINS=${DJANGO_ADMINS}
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
       - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION}
@@ -19,21 +20,20 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_SERVER_EMAIL=${DJANGO_SERVER_EMAIL}
       - EMAIL_URL=${EMAIL_URL}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    user: ${USER}
     volumes:
-      - ./backend:/app
-      - ~/.ssh:/root/.ssh-localhost:ro{% if cookiecutter.use_media == "Yes" %}
+      - ./backend:/app{% if cookiecutter.use_media == "Yes" %}
       - media:/app/media{% endif %}
 {% if cookiecutter.which_frontend in frontends %}
   frontend:
     build:
       context: ./frontend
       dockerfile: docker/dev.Dockerfile
-    container_name: {{cookiecutter.project_slug}}_frontend
     depends_on:
       - backend
     environment:
-      - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
-      - BASIC_AUTH_USER=${BASIC_AUTH_USER}
       - INTERNAL_API_URL=${INTERNAL_API_URL}
       - NEXT_PUBLIC_API_URL=${API_URL}
       - NODE_ENV=${NODE_ENV}
@@ -41,23 +41,24 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules/{% endif %}
+
   nginx:
     build: ./nginx
-    container_name: {{cookiecutter.project_slug}}_nginx
     depends_on:
       - backend{% if cookiecutter.which_frontend in frontends %}
       - frontend{% endif %}
     ports:
-      - ${LOCAL_HTTP_PORT}:80
-      - ${LOCAL_HTTPS_PORT}:443
+      - ${LOCAL_HTTP_PORT:-8080}:80
+      - ${LOCAL_HTTPS_PORT:-8443}:443
 
   postgres:
-    container_name: {{cookiecutter.project_slug}}_postgres
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB={{cookiecutter.project_slug}}
+      - POSTGRES_INITDB_ARGS=--no-sync
+      - POSTGRES_PASSWORD=postgres
     image: postgres:12
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
 
