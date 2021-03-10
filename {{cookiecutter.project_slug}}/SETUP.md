@@ -47,7 +47,8 @@ Install the `doctl` command-line tootl and authenticate:
 Use the `doctl` command-line tool to authenticate:
 
 ```console
-$ doctl auth init
+$ doctl auth init --context {{cookiecutter.project_slug}}
+$ doctl auth switch --context {{cookiecutter.project_slug}}
 ```
 
 #### 🐍 Python package
