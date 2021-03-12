@@ -2,7 +2,7 @@
 
 # Bash "strict mode", to help catch problems and bugs in the shell script
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
-# set -euo pipefail
+set -euo pipefail
 
 doctl auth init
 python3 ./scripts/python/do_setup.py
