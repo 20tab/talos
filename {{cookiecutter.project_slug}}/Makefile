@@ -12,6 +12,3 @@ pull:
 s =
 rebuild:
 	docker-compose stop $(s) && docker-compose rm -f $(s) && docker-compose up -d --build $(s)
-
-touchbackend:
-	docker exec -it $(c) touch uwsgiconf/docker.ini
