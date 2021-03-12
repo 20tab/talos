@@ -3,12 +3,11 @@
 
 import base64
 import json
-import os
 import sys
 from pathlib import Path
 
 from gitlab_sync import GitlabSync
-from kubernetes import Cluster
+from kubernetes import client, config
 
 
 def main():
@@ -20,48 +19,40 @@ def main():
             "'cluster_name' value is missing in 'cookiecutter.json'. "
             "Add it and excute `add_cluster.py` again!"
         )
-
-    cluster = Cluster()
-    cluster.load_by_name(cluster_name)
-    credentials = cluster.load_credentials()
-
-    gl = GitlabSync()
-    group = gl.get_group()
-
-    certificate_str = credentials["certificate_authority_data"]
-    certificate_bytes = base64.b64decode(certificate_str)
-    certificate = certificate_bytes.decode()
-    token = None
-    with open("do_token.yaml") as f:
-        for line in f.readlines():
-            couple = line.split(":")
-            try:
-                key = couple[0].strip()
-                value = couple[1].strip()
-                if key == "token":
-                    token = value
-            except KeyError:
-                continue
-            except IndexError:
-                continue
-
+    # extract certificate
+    config.load_kube_config()
+    configuration = client.Configuration.get_default_copy()
+    certificate = Path(configuration.ssl_ca_cert).read_text()
+    # extract token
+    v1 = client.CoreV1Api()
+    service_accounts = v1.list_namespaced_service_account(
+        "kube-system", field_selector="metadata.name=gitlab"
+    ).to_dict()
+    token_name = service_accounts["items"][0]["secrets"][0]["name"]
+    secrets = v1.list_namespaced_secret(
+        "kube-system", field_selector=f"metadata.name={token_name}"
+    ).to_dict()
+    token_str = secrets["items"][0]["data"]["token"]
+    token_bytes = base64.b64decode(token_str)
+    token = token_bytes.decode()
+    # add cluster
     if token:
-        cluster = group.clusters.create(
+        gl = GitlabSync()
+        group = gl.get_group()
+        group.clusters.create(
             {
                 "name": cluster_name,
                 "platform_kubernetes_attributes": {
-                    "api_url": credentials["server"],
+                    "api_url": configuration.host,
                     "token": token,
                     "ca_cert": certificate,
                 },
                 "managed": False,
             }
         )
-        os.remove("do_token.yaml")
+        print(f"Cluster {cluster_name!r} added to the GiLab group.")
     else:
-        print(
-            "Token not found. Please check do_token.yaml file into the projects' root."
-        )
+        print("Token not found. Check if gitlab-admin-service-account.yaml is applied.")
 
 
 if __name__ == "__main__":
