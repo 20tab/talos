@@ -1,5 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# Bash "strict mode", to help catch problems and bugs in the shell script
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+# set -euo pipefail
 
 kubectl apply -f k8s/cluster/gitlab-admin-service-account.yaml
-kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep gitlab | awk '{print $1}') > do_token.yaml
 python3 ./scripts/python/add_cluster.py

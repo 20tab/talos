@@ -53,14 +53,18 @@ class GitlabSync:
             {"name": self.project_name, "path": self.group_slug}
         )
         self.orchestrator = self.gl.projects.create(
-            {"name": "Orchestrator", "namespace_id": self.group.id}
+            {
+                "name": "Orchestrator",
+                "path": "orchestrator",
+                "namespace_id": self.group.id,
+            }
         )
         self.backend = self.gl.projects.create(
-            {"name": "Backend", "namespace_id": self.group.id}
+            {"name": "Backend", "path": "backend", "namespace_id": self.group.id}
         )
         if self.has_frontend:
             self.frontend = self.gl.projects.create(
-                {"name": "Frontend", "namespace_id": self.group.id}
+                {"name": "Frontend", "path": "frontend", "namespace_id": self.group.id}
             )
         self.group.badges.create(
             {

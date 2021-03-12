@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from kubernetes import Cluster
+from do_clusters import Cluster
 
 
 def get_cluster_name():

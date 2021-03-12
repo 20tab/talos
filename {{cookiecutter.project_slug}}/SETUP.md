@@ -51,12 +51,12 @@ $ doctl auth init --context {{cookiecutter.project_slug}}
 $ doctl auth switch --context {{cookiecutter.project_slug}}
 ```
 
-#### 🐍 Python package
+#### 🐍 Python packages
 
-Install the `python-digitalocean` package:
+Install the `python-digitalocean` and `kubernetes` packages:
 
 ```console
-$ python3 -m pip install python-digitalocean
+$ python3 -m pip install python-digitalocean kubernetes
 ```
 
 #### ✅ Token
@@ -100,7 +100,7 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
 4. Create secret to allow the connection from Kubernetes to GitLab registry to download the built images (*get `<NAMESPACE>` from `k8s/develop/1_namespace.yaml`*):
 
     ```console
-    $ ./scripts/k8s_setup.sh
+    $ python3 ./scripts/python/add_registry.py
     ```
 5. Push a commit to the `develop` branch of {% if cookiecutter.which_frontend in frontends %}`frontend` (e.g. `src/client/index.html`) and {% endif %}`backend` (e.g. `{{cookiecutter.project_slug}}/settings.py`) to start the first CI/CD pipeline.
 
