@@ -30,7 +30,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: docker/dev.Dockerfile
+      dockerfile: docker/local.Dockerfile
     depends_on:
       - backend
     environment:
