@@ -20,12 +20,9 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_SERVER_EMAIL=${DJANGO_SERVER_EMAIL}
       - EMAIL_URL=${EMAIL_URL}
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
     user: ${USER}
     volumes:
-      - ./backend:/app{% if cookiecutter.use_media == "Yes" %}
-      - media:/app/media{% endif %}
+      - ./backend:/app
 {% if cookiecutter.which_frontend in frontends %}
   frontend:
     build:
@@ -57,11 +54,8 @@ services:
       - POSTGRES_INITDB_ARGS=--no-sync
       - POSTGRES_PASSWORD=postgres
     image: postgres:12
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
 
-volumes:{% if cookiecutter.use_media == "Yes" %}
-  media: {}{% endif %}
+volumes:
   pg_data: {}
