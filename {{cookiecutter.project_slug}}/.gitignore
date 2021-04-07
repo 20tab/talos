@@ -160,3 +160,6 @@ kubeconfig.yaml
 *secrets.yaml
 backend/{% if cookiecutter.which_frontend in ["React", "React (TypeScript)"] %}
 frontend/{% endif %}
+
+# Locals
+*.local.yaml
