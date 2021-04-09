@@ -7,7 +7,7 @@ services:
       args:
         USER: ${USER}
       context: ./backend
-      target: local
+      target: ${BACKEND_TARGET:-local}
     depends_on:
       - postgres
     environment:
