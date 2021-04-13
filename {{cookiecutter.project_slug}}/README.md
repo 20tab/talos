@@ -81,6 +81,14 @@ $ docker-compose up
 
 ### Makefile shortcuts
 
+#### Self documentation of Makefile commands
+
+To show the Makefile self documentation help:
+
+```shell
+$ make
+```
+
 #### Pull
 
 Pull the main git repo and the sub-repos:
