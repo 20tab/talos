@@ -50,7 +50,7 @@ def main():
                 "managed": False,
             }
         )
-        print(f"Cluster {cluster_name!r} added to the GiLab group.")
+        print(f"Cluster {cluster_name!r} added to the GitLab group.")
     else:
         print("Token not found. Check if gitlab-admin-service-account.yaml is applied.")
 

@@ -5,7 +5,5 @@
     "which_frontend": ["None", "React (TypeScript)", "React"],
     "use_gitlab": ["Yes", "No"],
     "use_media": ["Yes", "No"],
-    "_extensions": [
-        "cookiecutter.extensions.SlugifyExtension"
-    ]
+    "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }

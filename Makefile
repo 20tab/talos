@@ -4,8 +4,7 @@ check:
 	flake8
 	mypy .
 
-dev:
-	python3 -m pip install -q -U pip~=21.0.0 pip-tools~=6.0.0
+dev: pip_update
 	pip-sync requirements.txt
 
 fix:
@@ -17,6 +16,8 @@ fix:
 outdated:
 	python3 -m pip list --outdated
 
-pip:
-	python3 -m pip install -q -U pip~=21.0.0 pip-tools~=6.0.0
+pip: pip_update
 	pip-compile -q -U -o requirements.txt requirements.in
+
+pip_update:
+	python3 -m pip install -q -U pip~=21.1.0 pip-tools~=6.1.0 setuptools~=57.0.0 wheel~=0.36.0

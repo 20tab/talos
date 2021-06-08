@@ -7,10 +7,11 @@ services:
       args:
         USER: ${USER}
       context: ./backend
-      target: ${BACKEND_TARGET:-local}
+      target: ${BACKEND_BUILD_TARGET:-local}
     depends_on:
       - postgres
     environment:
+      - CACHE_URL
       - DATABASE_URL
       - DJANGO_ADMINS
       - DJANGO_ALLOWED_HOSTS
@@ -19,6 +20,7 @@ services:
       - DJANGO_DEFAULT_FROM_EMAIL
       - DJANGO_SECRET_KEY
       - DJANGO_SERVER_EMAIL
+      - DJANGO_SESSION_COOKIE_DOMAIN
       - EMAIL_URL
     user: ${USER}
     volumes:
@@ -31,13 +33,12 @@ services:
     depends_on:
       - backend
     environment:
-      - INTERNAL_API_URL=${INTERNAL_API_URL}
+      - INTERNAL_API_URL
       - NEXT_PUBLIC_API_URL=${API_URL}
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV
       - REACT_ENVIRONMENT=${DJANGO_CONFIGURATION}
     volumes:
-      - ./frontend:/app
-      - /app/node_modules/{% endif %}
+      - ./frontend:/app{% endif %}
 
   nginx:
     build: ./nginx
@@ -53,7 +54,7 @@ services:
       - POSTGRES_DB={{cookiecutter.project_slug}}
       - POSTGRES_INITDB_ARGS=--no-sync
       - POSTGRES_PASSWORD=postgres
-    image: postgres:12
+    image: postgres:13
     volumes:
       - pg_data:/var/lib/postgresql/data
 
