@@ -1,5 +1,5 @@
 version: "3.4"
-{% set frontends = ["React", "React (TypeScript)"] %}
+{% set frontends = ["React"] %}
 services:
 
   backend:

@@ -21,8 +21,7 @@ class MainProcess:
     BACKEND_URL = "https://github.com/20tab/django-continuous-delivery"
     FRONTEND_URLS = {
         "None": "",
-        "React": "https://github.com/20tab/react-continuous-delivery",
-        "React (TypeScript)": "https://github.com/20tab/react-ts-continuous-delivery",
+        "React": "https://github.com/20tab/react-ts-continuous-delivery",
     }
 
     def __init__(self, *args, **kwargs):

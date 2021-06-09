@@ -36,7 +36,7 @@ This section explains the steps you need to clone and work wityh this project.
 ### Git
 
 #### Clone
-{% set frontends = ["React", "React (TypeScript)"] %}
+{% set frontends = ["React"] %}
 Clone the repositories of the orchestrator{% if cookiecutter.which_frontend in frontends %}, frontend{% endif %} and backend:
 {% if cookiecutter.use_gitlab == "Yes" %}
 ```console

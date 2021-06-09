@@ -5,7 +5,7 @@ django:
 
 pull:
 	git checkout develop && git pull && \
-	cd backend && git checkout develop && git pull && \{% if cookiecutter.which_frontend in ["React", "React (TypeScript)"] %}
+	cd backend && git checkout develop && git pull && \{% if cookiecutter.which_frontend in ["React"] %}
 	cd ../frontend && git checkout develop && git pull && \{% endif %}
 	cd ..
 
