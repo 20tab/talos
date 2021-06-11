@@ -14,7 +14,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {% if cookiecutter.which_frontend in ["React", "React (TypeScript)"] %}frontend-cluster-ip-service
+                name: {% if cookiecutter.which_frontend in ["React"] %}frontend-cluster-ip-service
                 port:
                   number: 3000
           - path: /api/

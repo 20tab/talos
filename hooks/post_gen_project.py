@@ -21,8 +21,7 @@ class MainProcess:
     BACKEND_URL = "https://github.com/20tab/django-continuous-delivery"
     FRONTEND_URLS = {
         "None": "",
-        "React": "https://github.com/20tab/react-continuous-delivery",
-        "React (TypeScript)": "https://github.com/20tab/react-ts-continuous-delivery",
+        "React": "https://github.com/20tab/react-ts-continuous-delivery",
     }
 
     def __init__(self, *args, **kwargs):
@@ -53,23 +52,19 @@ class MainProcess:
         secrets_template = ""
         environments = {
             "development": {
-                "configuration": "Development",
                 "subdomain": "dev",
             },
             "integration": {
-                "configuration": "Integration",
                 "subdomain": "test",
             },
             "production": {
-                "configuration": "Production",
                 "subdomain": "www",
             },
         }
         secrets_template = Path("k8s/2_secrets.yaml_template").read_text()
         for environment, values in environments.items():
             secrets_text = (
-                secrets_template.replace("__CONFIGURATION__", values["configuration"])
-                .replace("__ENVIRONMENT__", environment)
+                secrets_template.replace("__ENVIRONMENT__", environment)
                 .replace("__SUBDOMAIN__", values["subdomain"])
                 .replace("__SECRETKEY__", secrets.token_urlsafe(40))
                 .replace("__PASSWORD__", secrets.token_urlsafe(8))

@@ -2,10 +2,8 @@
     "project_name": null,
     "project_slug": "{{cookiecutter.project_name | slugify(separator='')}}",
     "domain_url": "{{cookiecutter.project_name | slugify(separator='')}}.com",
-    "which_frontend": ["None", "React (TypeScript)", "React"],
+    "which_frontend": ["None", "React"],
     "use_gitlab": ["Yes", "No"],
     "use_media": ["Yes", "No"],
-    "_extensions": [
-        "cookiecutter.extensions.SlugifyExtension"
-    ]
+    "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }

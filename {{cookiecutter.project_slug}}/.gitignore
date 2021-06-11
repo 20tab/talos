@@ -158,7 +158,7 @@ requirements.txt
 # Environment
 kubeconfig.yaml
 *secrets.yaml
-backend/{% if cookiecutter.which_frontend in ["React", "React (TypeScript)"] %}
+backend/{% if cookiecutter.which_frontend in ["React"] %}
 frontend/{% endif %}
 
 # Locals
