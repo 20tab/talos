@@ -112,3 +112,7 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
     ```
 3. Change variables in `k8s/cluster/fluentd/1_fluentd-secrets.yaml` (E.g. `LOKI_URL` will be `http://<IP>:3100`).
 4. Apply fluentd folder `kubectl apply -f k8s/cluster/fluentd`.
+5. Apply kube-state-metrics `./scripts/kube-state-metrics_setup.sh`.
+6. If it doesn't already exist, configure a `basic auth` for the k8s metrics ingress nginx as suggested [here](https://kubernetes.github.io/ingress-nginx/examples/auth/basic/)
+7. Add a record A to DNS `metrics.{{ cookiecutter.project_domain }}` that point to k8s cluster IP.
+8. Apply kube-state-metrics ingress `kubectl apply -f k8s/cluster/metrics_ingress.yaml`.
