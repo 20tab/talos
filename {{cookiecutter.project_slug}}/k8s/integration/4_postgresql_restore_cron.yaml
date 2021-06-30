@@ -48,23 +48,18 @@ spec:
             - name: postgresql-restore-from-s3
               image: registry.gitlab.com/deliverytools/pg-dump-restore-to-from-s3:latest
               env:
-                # backend
-                - name: DATABASE_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: secrets
-                      key: DATABASE_URL
-                - name: DJANGO_CONFIGURATION
-                  valueFrom:
-                    secretKeyRef:
-                      name: secrets
-                      key: DJANGO_CONFIGURATION
-                # s3
                 - name: AWS_ACCESS_KEY_ID
                   valueFrom:
                     secretKeyRef:
                       name: secrets
                       key: AWS_ACCESS_KEY_ID
+                - name: AWS_S3_BACKUP_PATH
+                  value: "Production/backup"
+                - name: AWS_S3_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: secrets
+                      key: AWS_S3_HOST
                 - name: AWS_SECRET_ACCESS_KEY
                   valueFrom:
                     secretKeyRef:
@@ -75,13 +70,11 @@ spec:
                     secretKeyRef:
                       name: secrets
                       key: AWS_STORAGE_BUCKET_NAME
-                - name: AWS_S3_HOST
+                - name: DATABASE_URL
                   valueFrom:
                     secretKeyRef:
                       name: secrets
-                      key: AWS_S3_HOST
-                - name: AWS_S3_BACKUP_PATH
-                  value: "Production/backup"
+                      key: DATABASE_URL
                 - name: S3_MEDIA_SRC_PATH
                   value: "Production/media"
                 - name: S3_MEDIA_DEST_PATH
