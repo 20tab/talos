@@ -5,7 +5,7 @@ services:
   backend:
     build:
       args:
-        USER: ${USER}
+        USER: ${USER:-appuser}
       context: ./backend
       target: ${BACKEND_BUILD_TARGET:-local}
     depends_on:
@@ -22,7 +22,7 @@ services:
       - DJANGO_SERVER_EMAIL
       - DJANGO_SESSION_COOKIE_DOMAIN
       - EMAIL_URL
-    user: ${USER}
+    user: ${USER:-appuser}
     volumes:
       - ./backend:/app
 {% if cookiecutter.which_frontend in frontends %}

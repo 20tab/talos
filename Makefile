@@ -28,7 +28,7 @@ pip: pip_update ## Compile requirements and dependencies
 
 .PHONY: pip_update
 pip_update:  ## Update requirements and dependencies
-	python3 -m pip install -q -U pip~=21.1.0 pip-tools~=6.1.0 setuptools~=57.0.0 wheel~=0.36.0
+	python3 -m pip install -q -U pip~=21.2.0 pip-tools~=6.2.0 setuptools~=57.4.0 wheel~=0.36.0
 
 help:
 	@echo "[Help] Makefile list commands:"
