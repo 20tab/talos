@@ -5,7 +5,7 @@ services:
   backend:
     build:
       args:
-        USER: ${USER}
+        USER: ${USER:-appuser}
       context: ./backend
       target: ${BACKEND_BUILD_TARGET:-local}
     depends_on:
@@ -21,8 +21,12 @@ services:
       - DJANGO_SECRET_KEY
       - DJANGO_SERVER_EMAIL
       - DJANGO_SESSION_COOKIE_DOMAIN
+      - DJANGO_SUPERUSER_EMAIL
+      - DJANGO_SUPERUSER_PASSWORD
+      - DJANGO_SUPERUSER_USERNAME
       - EMAIL_URL
-    user: ${USER}
+      - PYTHONBREAKPOINT
+    user: ${USER:-appuser}
     volumes:
       - ./backend:/app
 {% if cookiecutter.which_frontend in frontends %}
@@ -54,7 +58,7 @@ services:
       - POSTGRES_DB={{cookiecutter.project_slug}}
       - POSTGRES_INITDB_ARGS=--no-sync
       - POSTGRES_PASSWORD=postgres
-    image: postgres:13
+    image: postgres:13-buster
     volumes:
       - pg_data:/var/lib/postgresql/data
 

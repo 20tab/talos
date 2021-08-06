@@ -3,11 +3,11 @@
 c = {{cookiecutter.project_slug}}_backend
 p = shell
 .PHONY: django
-django_shell:  ## Exec django command 
+django_shell:  ## Exec django command
 	docker exec -it $(c) python manage.py $(p)
 
 .PHONY: pull
-pull:  ## Pull develop on orchestrator, frontend and backend 
+pull:  ## Pull develop on orchestrator, frontend and backend
 	git checkout develop && git pull && \
 	cd backend && git checkout develop && git pull && \{% if cookiecutter.which_frontend in ["React"] %}
 	cd ../frontend && git checkout develop && git pull && \{% endif %}
