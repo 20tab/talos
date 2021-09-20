@@ -11,8 +11,6 @@ import sys
 from collections import OrderedDict  # noqa
 from pathlib import Path
 
-from slugify import slugify
-
 try:
     import gitlab  # noqa
 except ModuleNotFoundError:  # pragma: no cover
@@ -45,41 +43,11 @@ class MainProcess:
             except gitlab.exceptions.GitlabAuthenticationError:
                 sys.exit(f"The environment variable '{self.TOKEN}' is not correct.")
 
-    def is_group_slug_available(self, group_slug):
-        """Tell if group name is available."""
-        for p in self.gl.groups.list(search=self.group_slug):
-            if p.path == group_slug:
-                return False
-        for u in self.gl.users.list(username=group_slug):
-            if u.web_url.replace(self.URL, "").casefold() == group_slug.casefold():
-                return False
-        return True
-
-    def set_gitlab_group_slug(self):
-        """Set gitlab group name as slug."""
-        group_slug = (
-            input(f"Choose the gitlab group path slug [{self.group_slug}]: ")
-            or self.group_slug
-        )
-        self.group_slug = slugify(group_slug, separator="")
-        while len(self.group_slug) > 30:
-            group_slug = input("Please choose a name shorter than 30 characters: ")
-            self.group_slug = slugify(group_slug, separator="")
-        while not self.is_group_slug_available(self.group_slug):
-            group_slug = input(
-                f"A Gitlab group named '{self.group_slug}' already exists. "
-                "Please choose a different name and try again: "
-            )
-            self.group_slug = slugify(group_slug, separator="")
-
     def run(self):
         """Run main process."""
         configuration = {{cookiecutter}}  # noqa
         configuration["gitlab_group_slug"] = None
         configuration["use_gitlab"] = self.use_gitlab
-        if self.use_gitlab:
-            self.set_gitlab_group_slug()
-            configuration["gitlab_group_slug"] = self.group_slug
         Path("cookiecutter.json").write_text(json.dumps(configuration, indent=2))
 
 
