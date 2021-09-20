@@ -49,9 +49,27 @@ class GitlabSync:
 
     def create_group(self):
         """Create a GitLab group and sub-projects with badges."""
-        self.group = self.gl.groups.create(
-            {"name": self.project_name, "path": self.group_slug}
-        )
+        groups = self.gl.groups.list(search=self.project_name)
+        try:
+            self.group = groups[0]
+        except IndexError:
+            while len(groups) < 1:
+                create_group = input(
+                    "Create a group on gitlab.com then press enter to go ahead. "
+                    "Type 'exit' to close this setup: "
+                )
+                if create_group == "exit":
+                    sys.exit("Setup interrupted.")
+                groups = self.gl.groups.list(search=self.project_name)
+            self.group = groups[0]
+            self.group_slug = self.group.path
+            cookiecutter_path = Path(self.COOKIECUTTER)
+            cookiecutter_dict = json.loads(cookiecutter_path.read_text())
+            cookiecutter_dict["gitlab_group_slug"] = self.group_slug
+            Path("cookiecutter.json").write_text(
+                json.dumps(cookiecutter_dict, indent=2)
+            )
+
         self.orchestrator = self.gl.projects.create(
             {
                 "name": "Orchestrator",
@@ -148,8 +166,8 @@ class GitlabSync:
 
     def run(self):
         """Run the main process operations."""
-        self.update_readme()
         self.create_group()
+        self.update_readme()
         self.git_init()
         self.set_default_branch()
         self.set_owners()
