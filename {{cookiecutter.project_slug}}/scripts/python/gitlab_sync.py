@@ -55,7 +55,8 @@ class GitlabSync:
         except IndexError:
             while len(groups) < 1:
                 create_group = input(
-                    'Create a group on gitlab.com then press enter to go ahead. Type "exit" to close this setup: '  # noqa
+                    "Create a group on gitlab.com then press enter to go ahead. "
+                    "Type 'exit' to close this setup: "
                 )
                 if create_group == "exit":
                     sys.exit("Setup interrupted.")
