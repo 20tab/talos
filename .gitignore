@@ -159,3 +159,10 @@ cython_debug/
 
 # macOS
 .DS_Store
+
+# Terraform
+*.tfvars
+.terraform*
+terraform.tfstate
+terraform.tfstate.backup
+secrets.tf

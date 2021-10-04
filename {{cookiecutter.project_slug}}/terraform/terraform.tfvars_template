@@ -1,0 +1,5 @@
+do_token = "__DO_TOKEN__"
+do_20tab_ssh_key_names = ["__DO_SSH_KEY_NAME_1__", "__DO_SSH_KEY_NAME_2__"]
+gitlab_token = "__GITLAB_TOKEN__"
+project_domain = "__PROJECT_DOMAIN__"
+project_slug = "__PROJECT_SLUG__"
