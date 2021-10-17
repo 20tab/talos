@@ -106,8 +106,8 @@ class MainProcess:
         self.create_env_file()
         self.copy_secrets()
         self.create_subprojects()
-        if self.use_gitlab:
-            exec(Path("./scripts/python/gitlab_sync.py").read_text())
+        # if self.use_gitlab:
+        #     exec(Path("./scripts/python/gitlab_sync.py").read_text())
 
 
 if __name__ == "__main__":

@@ -10,11 +10,6 @@ variable "gitlab_token" {
   sensitive   = true
 }
 
-variable "do_20tab_ssh_key_names" {
-  description = "A digitalocean ssh public key name list."
-  type        = list
-}
-
 variable "project_name" {
   description = "The project name."
   type        = string

@@ -122,3 +122,6 @@ resource "digitalocean_loadbalancer" "public" {
     certificate_name = digitalocean_certificate.cert.name
   }
 }
+
+# TODO 
+# - setup deploy to k8s from registry.gitlab with a gitlab deploy token (ex. /scripts/add_registry.py)
