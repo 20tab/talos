@@ -8,6 +8,12 @@ resource "digitalocean_kubernetes_cluster" "k8s-cluster" {
     size       = "s-1vcpu-2gb-amd"
     node_count = 2
   }
+  provisioner "local-exec" {
+    inline = [
+      "kubectl --kubeconfig=${self.kube_config[0]} apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.44.0/deploy/static/provider/do/deploy.yaml",
+      "kubectl --kubeconfig=${self.kube_config[0]} patch svc ingress-nginx-controller -p '{\"spec\":{\"externalTrafficPolicy\": \"Cluster\"}}' -n ingress-nginx"
+    ]
+  }
 }
 
 resource "digitalocean_spaces_bucket" "s3-storage" {
@@ -103,7 +109,6 @@ resource "digitalocean_certificate" "ssl-cert" {
   domains = ["www.${project_domain}", "test.${project_domain}", "dev.${project_domain}"]
 }
 
-# FIXME Configure Loadbalancer in right way
 resource "digitalocean_loadbalancer" "public" {
   name        = "loadbalancer-${var.project_slug}"
   region      = digitalocean_kubernetes_cluster.k8s-cluster.region
@@ -112,10 +117,8 @@ resource "digitalocean_loadbalancer" "public" {
   forwarding_rule {
     entry_port     = 80
     entry_protocol = "http"
-
     target_port     = 443
     target_protocol = "https"
-
     certificate_name = digitalocean_certificate.cert.name
   }
 }
