@@ -9,35 +9,16 @@ data:
   fluent.conf: |
     <source>
       @type tail
-      path /var/log/*.log
-      pos_file /var/log/fluentd/tmp/access.log.pos
-      tag foo.*
-
-      <parse>
-        @type json
-      </parse>
-    </source>
-
-    <source>
-      @type tail
       @id in_tail_container_logs
-      path /var/log/containers/*.log
+      path /var/log/containers/*{{cookiecutter.project_slug}}-*.log,/var/log/containers/ingress-nginx-controller-*.log
       pos_file /var/log/fluentd-containers.log.pos
       tag kubernetes.*
       read_from_head true
       <parse>
-        @type json
-        time_format %Y-%m-%dT%H:%M:%S.%NZ
+        @type regexp
+        expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
       </parse>
     </source>
-
-    <match fluentd.**>
-      @type null
-    </match>
-
-    <match kubernetes.var.log.containers.**fluentd**.log>
-      @type null
-    </match>
 
     <filter kubernetes.**>
       @type kubernetes_metadata
