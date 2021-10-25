@@ -10,6 +10,7 @@ from functools import partial
 from pathlib import Path
 
 import click
+import validators
 from cookiecutter.main import cookiecutter
 from slugify import slugify
 
@@ -86,7 +87,6 @@ def init_gitlab(
     service_dir,
 ):
     """Initialize the Gitlab repositories."""
-    print(gitlab_group_variables)
     click.echo("...creating the Gitlab repository and associated resources")
     env = {
         "TF_VAR_gitlab_group_variables": "{%s}"
@@ -118,11 +118,6 @@ def init_gitlab(
 def change_output_owner(service_dir, uid):
     """Change the owner of the output directory recursively."""
     uid is not None and subprocess.run(["chown", "-R", uid, service_dir])
-
-
-def slugify_option(ctx, param, value):
-    """Slugify an option value."""
-    return value and slugify(value)
 
 
 def init_subrepo(service_slug, template_url, **options):
@@ -252,6 +247,33 @@ def run(
     # change_output_owner(service_dir, uid)
 
 
+def slugify_option(ctx, param, value):
+    """Slugify an option value."""
+    return value and slugify(value)
+
+
+def validate_or_prompt_url(value, message, default=None, required=False):
+    """Validate the given URL or prompt until a valid value is provided."""
+    if value is not None:
+        if not required and value == "" or validators.url(value):
+            return value
+        else:
+            click.echo("Please type a valid URL!")
+    new_value = click.prompt(message, default=default)
+    return validate_or_prompt_url(new_value, message, default, required)
+
+
+def validate_or_prompt_password(value, message, default=None, required=False):
+    """Validate the given password or prompt until a valid value is provided."""
+    if value is not None:
+        if not required and value == "" or validators.length(value, min=8):
+            return value
+        else:
+            click.echo("Please type at least 8 chars!")
+    new_value = click.prompt(message, default=default, hide_input=True)
+    return validate_or_prompt_password(new_value, message, default, required)
+
+
 @click.command()
 @click.option("--uid", type=int)
 @click.option("--output-dir", default=".", required=OUTPUT_DIR is None)
@@ -332,7 +354,7 @@ def init_command(
             f'A directory "{service_dir}" already exists and '
             "must be deleted. Continue?",
         ),
-        abort=True
+        abort=True,
     ):
         shutil.rmtree(service_dir)
     backend_type = (
@@ -353,20 +375,20 @@ def init_command(
             type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
-    project_url_dev = project_url_dev or click.prompt(
+    project_url_dev = validate_or_prompt_url(
+        project_url_dev,
         "Development environment complete URL",
-        default=f"dev.{project_slug}.com",
-        type=str,
+        default=f"https://dev.{project_slug}.com/",
     )
-    project_url_stage = project_url_stage or click.prompt(
+    project_url_stage = validate_or_prompt_url(
+        project_url_stage,
         "Staging environment complete URL",
-        default=f"stage.{project_slug}.com",
-        type=str,
+        default=f"https://stage.{project_slug}.com/",
     )
-    project_url_prod = project_url_prod or click.prompt(
+    project_url_prod = validate_or_prompt_url(
+        project_url_prod,
         "Production environment complete URL",
-        default=f"www.{project_slug}.com",
-        type=str,
+        default=f"https://www.{project_slug}.com/",
     )
     deploy_type = (
         deploy_type in DEPLOY_TYPE_CHOICES
@@ -378,22 +400,26 @@ def init_command(
         )
     ).lower()
     if "digitalocean" in deploy_type:
-        digitalocean_token = digitalocean_token or click.prompt(
-            "DigitalOcean token", hide_input=True
+        digitalocean_token = validate_or_prompt_password(
+            digitalocean_token,
+            "DigitalOcean token",
+            required=True,
         )
     sentry_org = sentry_org or click.prompt(
         'Sentry organization (e.g. "20tab", leave blank if unused)',
-        type=str,
         default="",
     )
     if sentry_org:
-        sentry_url = sentry_url or click.prompt(
+        sentry_url = validate_or_prompt_url(
+            sentry_url,
             "Sentry URL (leave blank if unused)",
             default="https://sentry.io/",
-            type=str,
+            required=True,
         )
-        sentry_auth_token = sentry_auth_token or click.prompt(
-            "Sentry auth token", hide_input=True
+        sentry_auth_token = validate_or_prompt_password(
+            sentry_auth_token,
+            "Sentry auth token",
+            required=True,
         )
     use_pact = (
         use_pact
@@ -401,15 +427,18 @@ def init_command(
         else click.confirm(warning("Do you want to configure Pact?"), default=True)
     )
     if use_pact:
-        pact_broker_url = pact_broker_url or click.prompt(
+        pact_broker_url = validate_or_prompt_url(
+            pact_broker_url,
             "Pact broker URL (e.g. https://broker.20tab.com/)",
-            type=str,
+            required=True,
         )
         pact_broker_username = pact_broker_username or click.prompt(
-            "Pact broker username", hide_input=True
+            "Pact broker username",
         )
-        pact_broker_password = pact_broker_password or click.prompt(
-            "Pact broker password", hide_input=True
+        pact_broker_password = validate_or_prompt_password(
+            pact_broker_password,
+            "Pact broker password",
+            required=True,
         )
     media_storage = (
         media_storage
@@ -448,8 +477,10 @@ def init_command(
             "Comma-separated Gitlab group developers", default=""
         )
         if media_storage == "s3-digitalocean":
-            digitalocean_token = digitalocean_token or click.prompt(
-                "DigitalOcean token", hide_input=True
+            digitalocean_token = validate_or_prompt_password(
+                digitalocean_token,
+                "DigitalOcean token",
+                required=True,
             )
             digitalocean_spaces_bucket_region = (
                 digitalocean_spaces_bucket_region
@@ -458,15 +489,15 @@ def init_command(
                     default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
                 )
             )
-            digitalocean_spaces_access_id = (
-                digitalocean_spaces_access_id
-                or click.prompt("DigitalOcean Spaces Access Key ID", hide_input=True)
+            digitalocean_spaces_access_id = validate_or_prompt_password(
+                digitalocean_spaces_access_id,
+                "DigitalOcean Spaces Access Key ID",
+                required=True,
             )
-            digitalocean_spaces_secret_key = (
-                digitalocean_spaces_secret_key
-                or click.prompt(
-                    "DigitalOcean Spaces Secret Access Key", hide_input=True
-                )
+            digitalocean_spaces_secret_key = validate_or_prompt_password(
+                digitalocean_spaces_secret_key,
+                "DigitalOcean Spaces Secret Access Key",
+                required=True,
             )
     run(
         uid,

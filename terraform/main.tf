@@ -2,6 +2,29 @@ locals {
   user_data = jsondecode(data.http.user_info.body)
 
   git_config = "-c user.email=${local.user_data.email} -c user.name=\"${local.user_data.name}\""
+
+  reserved_member_ids = toset([tostring(local.user_data.id)])
+  owners = setsubtract(
+    toset([for i in data.gitlab_users.owners : tostring(i.users[0].id) if length(i.users) > 0]),
+    local.reserved_member_ids,
+  )
+  maintainers = setsubtract(
+    setsubtract(
+      toset([for i in data.gitlab_users.maintainers : tostring(i.users[0].id) if length(i.users) > 0]),
+      local.owners
+    ),
+    local.reserved_member_ids,
+  )
+  developers = setsubtract(
+    setsubtract(
+      setsubtract(
+        toset([for i in data.gitlab_users.developers : tostring(i.users[0].id) if length(i.users) > 0]),
+        local.maintainers
+      ),
+      local.owners
+    ),
+    local.reserved_member_ids,
+  )
 }
 
 terraform {
@@ -112,13 +135,11 @@ resource "gitlab_tag_protection" "tags" {
 data "gitlab_users" "owners" {
   for_each = toset(compact(split(",", var.gitlab_group_owners)))
 
-  search = each.key
+  search = trimspace(each.key)
 }
 
 resource "gitlab_group_membership" "owners" {
-  for_each = toset(
-    [ for i in data.gitlab_users.owners : tostring(i.users[0].id) if length(i.users) > 0 ]
-  )
+  for_each = local.owners
 
   group_id     = data.gitlab_group.group.id
   user_id      = each.value
@@ -128,13 +149,11 @@ resource "gitlab_group_membership" "owners" {
 data "gitlab_users" "maintainers" {
   for_each = toset(compact(split(",", var.gitlab_group_maintainers)))
 
-  search = each.key
+  search = trimspace(each.key)
 }
 
 resource "gitlab_group_membership" "maintainers" {
-  for_each = toset(
-    [ for i in data.gitlab_users.maintainers : tostring(i.users[0].id) if length(i.users) > 0 ]
-  )
+  for_each = local.maintainers
 
   group_id     = data.gitlab_group.group.id
   user_id      = each.value
@@ -144,13 +163,11 @@ resource "gitlab_group_membership" "maintainers" {
 data "gitlab_users" "developers" {
   for_each = toset(compact(split(",", var.gitlab_group_developers)))
 
-  search = each.key
+  search = trimspace(each.key)
 }
 
 resource "gitlab_group_membership" "developers" {
-  for_each = toset(
-    [ for i in data.gitlab_users.developers : tostring(i.users[0].id) if length(i.users) > 0 ]
-  )
+  for_each = local.developers
 
   group_id     = data.gitlab_group.group.id
   user_id      = each.value

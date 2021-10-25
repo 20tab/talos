@@ -7,9 +7,9 @@ check:  ## Check code formatting and import sorting
 	flake8
 	mypy .
 
-.PHONY: dev
-dev: pip_update  ## Install development requirements
-	pip-sync requirements.txt
+.PHONY: local
+local: pip_update  ## Install local requirements
+	pip-sync requirements/local.txt
 
 .PHONY: fix
 fix:  ## Fix code formatting and import sorting
@@ -23,12 +23,20 @@ outdated:  ## Check outdated requirements and dependencies
 	python3 -m pip list --outdated
 
 .PHONY: pip
-pip: pip_update ## Compile requirements and dependencies
-	pip-compile -q -U -o requirements.txt requirements.in
+pip: pip_update  ## Compile requirements
+	pip-compile -q -U -o requirements/base.txt requirements/base.in
+	pip-compile -q -U -o requirements/common.txt requirements/common.in
+	pip-compile -q -U -o requirements/local.txt requirements/local.in
+	pip-compile -q -U -o requirements/remote.txt requirements/remote.in
+	pip-compile -q -U -o requirements/test.txt requirements/test.in
 
 .PHONY: pip_update
 pip_update:  ## Update requirements and dependencies
 	python3 -m pip install -q -U pip~=21.2.0 pip-tools~=6.2.0 setuptools~=57.4.0 wheel~=0.36.0
+
+.PHONY: remote
+remote: pip_update  ## Install remote requirements and dependencies
+	pip-sync requirements/remote.txt
 
 help:
 	@echo "[Help] Makefile list commands:"
