@@ -1,5 +1,0 @@
-do_token = "__DO_TOKEN__"
-gitlab_token = "__GITLAB_TOKEN__"
-project_domain = {{cookiecutter.project_domain}}
-project_name = {{cookiecutter.project_name}}
-project_slug = {{cookiecutter.project_slug}}

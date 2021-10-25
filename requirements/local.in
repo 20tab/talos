@@ -1,0 +1,7 @@
+# pip-compile --output-file local.txt local.in
+-r test.in
+
+ipdb~=0.13.0
+pip-tools~=6.2.0
+pre-commit~=2.13.0
+pyupgrade~=2.23.0

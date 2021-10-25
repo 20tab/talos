@@ -1,18 +1,7 @@
 locals {
-  backend_count    = var.backend_type == "django" ? 1 : 0
-  backend_project  = gitlab_project.backend[0]
-  frontend_count   = var.frontend_type == "react" ? 1 : 0
-  frontend_project = gitlab_project.frontend[0]
+  user_data = jsondecode(data.http.user_info.body)
 
-  init_command = join(" && ", [
-    "git init",
-    "git add .",
-    "git commit -m 'Initialize the repository'",
-    "git remote add origin %s",
-    "git push -u origin master -o ci.skip",
-    "git checkout -b develop",
-    "git push -u origin develop -o ci.skip"
-  ])
+  git_config = "-c user.email=${local.user_data.email} -c user.name=\"${local.user_data.name}\""
 }
 
 terraform {
@@ -31,8 +20,10 @@ provider "gitlab" {
   token = var.gitlab_token
 }
 
+/* Data Sources */
+
 data "gitlab_group" "group" {
-  full_path = var.project_slug
+  full_path = var.gitlab_group_slug
   # Gitlab group resource atm cannot be create: https://gitlab.com/gitlab-org/gitlab/-/issues/244345
   # name             = var.project_name
   # path             = var.project_slug
@@ -40,229 +31,153 @@ data "gitlab_group" "group" {
   # visibility_level = "private"
 }
 
-resource "gitlab_project" "orchestrator" {
-  name         = "Orchestrator"
-  description  = "The \"${var.project_name}\" project orchestrator service."
-  namespace_id = data.gitlab_group.group.id
-  default_branch = "develop"
+data "http" "user_info" {
+  url = "https://gitlab.com/api/v4/user"
+
+  request_headers = {
+    Accept        = "application/json"
+    Authorization = "Bearer ${var.gitlab_token}"
+  }
 }
 
-resource "null_resource" "init_orchestrator" {
+/* Project */
+
+resource "gitlab_project" "main" {
+  name                   = title(var.service_slug)
+  path                   = var.service_slug
+  description            = "The \"${var.project_name}\" project ${var.service_slug} service."
+  namespace_id           = data.gitlab_group.group.id
+  initialize_with_readme = false
+}
+
+resource "null_resource" "init_repo" {
+  depends_on = [gitlab_branch_protection.develop]
+
   triggers = {
-    orchestrator_project_id = gitlab_project.orchestrator.id
+    service_project_id = gitlab_project.main.id
   }
 
   provisioner "local-exec" {
     command = join(" && ", [
-      "cd ../${var.project_slug}",
-      "sed -i -e \"s/__GITLAB_GROUP__/${var.project_slug}/\" README.md",
-      format(local.init_command, gitlab_project.orchestrator.ssh_url_to_repo)
+      "cd ${var.service_dir}",
+      format(
+        join(" && ", [
+          "git init --initial-branch=develop",
+          "git remote add origin %s",
+          "git add .",
+          "git ${local.git_config} commit -m 'Initial commit'",
+          "git push -u origin develop -o ci.skip",
+          "git checkout -b master",
+          "git push -u origin master -o ci.skip",
+          "git remote set-url origin %s",
+        ]),
+        replace(
+          gitlab_project.main.http_url_to_repo,
+          "/^https://(.*)$/",
+          "https://oauth2:${var.gitlab_token}@$1"
+        ),
+        gitlab_project.main.ssh_url_to_repo,
+
+      )
     ])
   }
 }
 
-resource "gitlab_branch_protection" "develop_orchestrator" {
-  project            = gitlab_project.orchestrator.id
+/* Branch Protections */
+
+resource "gitlab_branch_protection" "develop" {
+  project            = gitlab_project.main.id
   branch             = "develop"
   push_access_level  = "maintainer"
   merge_access_level = "developer"
 }
 
-resource "gitlab_branch_protection" "master_orchestrator" {
-  project            = gitlab_project.orchestrator.id
+resource "gitlab_branch_protection" "master" {
+  depends_on = [null_resource.init_repo]
+
+  project            = gitlab_project.main.id
   branch             = "master"
   push_access_level  = "no one"
   merge_access_level = "maintainer"
 }
 
-resource "gitlab_tag_protection" "tags_orchestrator" {
-  project             = gitlab_project.orchestrator.id
+resource "gitlab_tag_protection" "tags" {
+  project             = gitlab_project.main.id
   tag                 = "*"
   create_access_level = "maintainer"
 }
 
-resource "gitlab_project" "backend" {
-  count = local.backend_count
+/* Group Memberships */
 
-  name         = "Backend"
-  description  = "The \"${var.project_name}\" project backend service."
-  namespace_id = data.gitlab_group.group.id
-  default_branch = "develop"
-}
-
-resource "null_resource" "init_backend" {
-  count = local.backend_count
-
-  triggers = {
-    backend_project_id = local.backend_project.id
-  }
-
-  provisioner "local-exec" {
-    command = join(" && ", [
-      "cd ../${var.project_slug}/backend",
-      format(local.init_command, local.backend_project.ssh_url_to_repo)
-    ])
-  }
-}
-
-resource "gitlab_branch_protection" "develop_backend" {
-  count = local.backend_count
-
-  project            = local.backend_project.id
-  branch             = "develop"
-  push_access_level  = "maintainer"
-  merge_access_level = "developer"
-}
-
-resource "gitlab_branch_protection" "master_backend" {
-  count = local.backend_count
-
-  project            = local.backend_project.id
-  branch             = "master"
-  push_access_level  = "no one"
-  merge_access_level = "maintainer"
-}
-
-resource "gitlab_tag_protection" "tags_backend" {
-  count = local.backend_count
-
-  project             = local.backend_project.id
-  tag                 = "*"
-  create_access_level = "maintainer"
-}
-
-resource "gitlab_project_badge" "coverage_backend" {
-  count = local.backend_count
-
-  project   = local.backend_project.id
-  link_url  = "https://${var.project_slug}.gitlab.io/backend/htmlcov/"
-  image_url = "https://gitlab.com/\\%\\{project_path}/badges/\\%\\{default_branch}/coverage.svg"
-}
-
-resource "gitlab_project_badge" "pipeline_backend" {
-  count = local.backend_count
-
-  project   = local.backend_project.id
-  link_url  = "https://gitlab.com/\\%\\{project_path}/pipelines"
-  image_url = "https://gitlab.com/\\%\\{project_path}/badges/\\%\\{default_branch}/pipeline.svg"
-}
-
-resource "gitlab_project" "frontend" {
-  count = local.frontend_count
-
-  name         = "Frontend"
-  description  = "The \"${var.project_name}\" project frontend service."
-  namespace_id = data.gitlab_group.group.id
-  default_branch = "develop"
-}
-
-resource "null_resource" "init_frontend" {
-  count = local.frontend_count
-
-  triggers = {
-    frontend_project_id = local.frontend_project.id
-  }
-
-  provisioner "local-exec" {
-    command = join(" && ", [
-      "cd ../${var.project_slug}/frontend",
-      format(local.init_command, local.frontend_project.ssh_url_to_repo)
-    ])
-  }
-}
-
-resource "gitlab_branch_protection" "develop_frontend" {
-  count = local.frontend_count
-
-  project            = local.frontend_project.id
-  branch             = "develop"
-  push_access_level  = "maintainer"
-  merge_access_level = "developer"
-}
-
-resource "gitlab_branch_protection" "master_frontend" {
-  count = local.frontend_count
-
-  project            = local.frontend_project.id
-  branch             = "master"
-  push_access_level  = "no one"
-  merge_access_level = "maintainer"
-}
-
-resource "gitlab_tag_protection" "tags_frontend" {
-  count = local.frontend_count
-
-  project             = local.frontend_project.id
-  tag                 = "*"
-  create_access_level = "maintainer"
-}
-
-resource "gitlab_project_badge" "coverage_frontend" {
-  count = local.frontend_count
-
-  project   = local.frontend_project.id
-  link_url  = "https://${var.project_slug}.gitlab.io/frontend/"
-  image_url = "https://gitlab.com/\\%\\{project_path}/badges/\\%\\{default_branch}/pipeline.svg"
-}
-
-resource "gitlab_project_badge" "pipeline_frontend" {
-  count = local.frontend_count
-
-  project   = local.frontend_project.id
-  link_url  = "https://gitlab.com/\\%\\{project_path}/pipelines"
-  image_url = "https://gitlab.com/\\%\\{project_path}/badges/\\%\\{default_branch}/pipeline.svg"
-}
-
-data "gitlab_user" "owners" {
+data "gitlab_users" "owners" {
   for_each = toset(compact(split(",", var.gitlab_group_owners)))
 
-  username = each.key
+  search = each.key
 }
 
 resource "gitlab_group_membership" "owners" {
-  for_each = {
-    for k, v in data.gitlab_user.owners : k => v.id
-  }
+  for_each = toset(
+    [ for i in data.gitlab_users.owners : tostring(i.users[0].id) if length(i.users) > 0 ]
+  )
 
   group_id     = data.gitlab_group.group.id
   user_id      = each.value
   access_level = "owner"
 }
 
-data "gitlab_user" "maintainers" {
+data "gitlab_users" "maintainers" {
   for_each = toset(compact(split(",", var.gitlab_group_maintainers)))
 
-  username = each.key
+  search = each.key
 }
 
 resource "gitlab_group_membership" "maintainers" {
-  for_each = {
-    for k, v in data.gitlab_user.maintainers : k => v.id
-  }
+  for_each = toset(
+    [ for i in data.gitlab_users.maintainers : tostring(i.users[0].id) if length(i.users) > 0 ]
+  )
 
   group_id     = data.gitlab_group.group.id
   user_id      = each.value
   access_level = "maintainer"
 }
 
-data "gitlab_user" "developers" {
+data "gitlab_users" "developers" {
   for_each = toset(compact(split(",", var.gitlab_group_developers)))
 
-  username = each.key
+  search = each.key
 }
 
 resource "gitlab_group_membership" "developers" {
-  for_each = {
-    for k, v in data.gitlab_user.developers : k => v.id
-  }
+  for_each = toset(
+    [ for i in data.gitlab_users.developers : tostring(i.users[0].id) if length(i.users) > 0 ]
+  )
 
   group_id     = data.gitlab_group.group.id
   user_id      = each.value
   access_level = "developer"
 }
 
+/* Group Variables */
 
+resource "gitlab_group_variable" "vars" {
+  for_each = var.gitlab_group_variables
 
-# TODO
-# - Fix escape in pipeline and move pipeline badge to group
-# - Check default branch on checkout -b
+  group     = data.gitlab_group.group.id
+  key       = each.key
+  value     = each.value.value
+  protected = lookup(each.value, "protected", true)
+  masked    = lookup(each.value, "masked", true)
+}
+
+/* Project Variables */
+
+resource "gitlab_project_variable" "vars" {
+  for_each = var.gitlab_project_variables
+
+  project           = gitlab_project.main.id
+  key               = each.key
+  value             = each.value.value
+  protected         = lookup(each.value, "protected", true)
+  masked            = lookup(each.value, "masked", true)
+  environment_scope = lookup(each.value, "environment_scope", "*")
+}

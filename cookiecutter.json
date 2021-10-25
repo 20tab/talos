@@ -1,9 +1,9 @@
 {
   "project_name": null,
-  "project_slug": "{{cookiecutter.project_name | slugify(separator='')}}",
-  "domain_url": "{{cookiecutter.project_name | slugify(separator='')}}.com",
-  "which_frontend": ["None", "React"],
-  "use_gitlab": ["Yes", "No"],
-  "use_media": ["Yes", "No"],
+  "project_slug": "{{ cookiecutter.project_name | slugify() }}",
+  "project_dirname": "{{ cookiecutter.project_slug | slugify(separator='') }}",
+  "backend_type": ["django", "none"],
+  "frontend_type": ["nextjs", "none"],
+  "media_storage": ["local", "s3-digitalocean", "none"],
   "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }

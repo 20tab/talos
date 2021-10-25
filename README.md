@@ -57,7 +57,7 @@ Make sure you have a local SSH key and have it associated with your GitLab accou
 Put the GitLab Access Token of the chosen user in an environment variable (e.g. export it in the command line or add it to the bash config).
 
 ```console
-$ export GITLAB_PRIVATE_TOKEN={{gitlab_private_token}}
+$ export GITLAB_PRIVATE_TOKEN={{ gitlab_private_token }}
 ```
 
 **Note:** the access token can be generated from the GitLab settings "Access Tokens"
@@ -67,35 +67,10 @@ section. Make sure to give it full permission. Beware that GitLab only shows the
 
 Change directory and create a new project as in this example:
 
+# TODO: update example
 ```console
-$ cd ~/projects/
-$ cookiecutter https://github.com/20tab/20tab-standard-project
-project_name: My Project Name
-project_slug [myprojectname]:
-domain_url [myprojectname.com]:
-Select which_frontend:
-1 - None
-2 - React
-Choose from 1, 2 [1]:
-Select use_gitlab:
-1 - Yes
-2 - No
-Choose from 1, 2 [1]:
-Select use_media:
-1 - Yes
-2 - No
-Choose from 1, 2 [1]:
-Generated '.env' file.
-Generated '/requirements/common.txt' file.
-Generated '/requirements/dev.txt' file.
-Generated '/requirements/prod.txt' file.
-Generated '/requirements/tests.txt' file.
-Generated '/static' directory.
-Choose the gitlab group path slug [myprojectname]:
-Insert a comma separated list of usernames to set as group owners:
-Insert a comma separated list of usernames to set as group mantainers:
 ```
 
 ## 🚚 Setup
 
-To configure the Kubernetes cluster now, read the [SETUP]({{cookiecutter.project_slug}}/SETUP.md) documentation.
+To configure the Kubernetes cluster now, read the [SETUP]({{ cookiecutter.project_slug }}/SETUP.md) documentation.

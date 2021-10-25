@@ -1,0 +1,6 @@
+# pip-compile --output-file common.txt common.in
+-r base.in
+
+click~=8.0.1
+cookiecutter~=1.7.3
+types-python-slugify~=0.1.0
