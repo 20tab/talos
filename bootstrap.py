@@ -32,6 +32,9 @@ MEDIA_STORAGE_DEFAULT = "s3-digitalocean"
 OUTPUT_DIR = os.getenv("OUTPUT_DIR")
 SUBREPOS_DIR = ".subrepos"
 
+error = partial(click.style, fg="red")
+highlight = partial(click.style, fg="cyan")
+info = partial(click.style, dim=True)
 warning = partial(click.style, fg="yellow")
 
 
@@ -45,7 +48,7 @@ def init_service(
     media_storage,
 ):
     """Initialize the service."""
-    click.echo("...cookiecutting the service")
+    click.echo(info("...cookiecutting the service"))
     cookiecutter(
         ".",
         extra_context={
@@ -63,7 +66,7 @@ def init_service(
 
 def create_env_file(service_dir):
     """Create env file from the template."""
-    click.echo("...generating the .env file")
+    click.echo(info("...generating the .env file"))
     env_path = Path(service_dir) / ".env_template"
     env_text = (
         env_path.read_text()
@@ -87,7 +90,7 @@ def init_gitlab(
     service_dir,
 ):
     """Initialize the Gitlab repositories."""
-    click.echo("...creating the Gitlab repository and associated resources")
+    click.echo(info("...creating the Gitlab repository and associated resources"))
     env = {
         "TF_VAR_gitlab_group_variables": "{%s}"
         % ", ".join(f"{k} = {v}" for k, v in gitlab_group_variables.items()),
@@ -103,16 +106,43 @@ def init_gitlab(
         "TF_VAR_service_dir": service_dir,
         "TF_VAR_service_slug": service_slug,
     }
-    subprocess.run(
-        ["terraform", "init", "-reconfigure", "-input=false"],
-        cwd="terraform",
+    cwd = Path("terraform")
+    init_process = subprocess.run(
+        ["terraform", "init", "-reconfigure", "-input=false", "-no-color"],
+        capture_output=True,
+        cwd=cwd,
         env=env,
+        text=True,
     )
-    subprocess.run(
-        ["terraform", "apply", "-auto-approve", "-input=false"],
-        cwd="terraform",
-        env=env,
-    )
+    if init_process.returncode == 0:
+        (cwd / ".terraform-init.log").write_text(init_process.stdout)
+        apply_process = subprocess.run(
+            ["terraform", "apply", "-auto-approve", "-input=false", "-no-color"],
+            capture_output=True,
+            cwd=cwd,
+            env=env,
+            text=True,
+        )
+        if apply_process.returncode == 0:
+            (cwd / ".terraform-apply.log").write_text(apply_process.stdout)
+        else:
+            (cwd / ".terraform-apply-errors.log").write_text(apply_process.stderr)
+            click.echo(
+                error(
+                    "Error applying Terraform Gitlab configuration "
+                    "(see terraform/.terraform-apply-errors.log)"
+                )
+            )
+            raise click.Abort()
+    else:
+        (cwd / ".terraform-init-errors.log").write_text(init_process.stderr)
+        click.echo(
+            error(
+                "Error initializing Terraform "
+                "(see terraform/.terraform-init-errors.log)"
+            )
+        )
+        raise click.Abort()
 
 
 def change_output_owner(service_dir, uid):
@@ -120,14 +150,28 @@ def change_output_owner(service_dir, uid):
     uid is not None and subprocess.run(["chown", "-R", uid, service_dir])
 
 
-def init_subrepo(service_slug, template_url, **options):
+def init_subrepo(service_slug, service_dir, template_url, **options):
     """Initialize a subrepo using the given template and options."""
-    subrepo_dir = Path(SUBREPOS_DIR) / service_slug
-    subprocess.run(["git", "clone", template_url, subrepo_dir])
-    options.update(service_slug=service_slug, create_group_variables=False)
-    options_str = ", ".join(f"{k}={v}" for k, v in options.items())
+    subrepo_dir = str(Path(SUBREPOS_DIR) / service_slug)
+    shutil.rmtree(subrepo_dir, ignore_errors=True)
     subprocess.run(
-        ["python", "-c", f"'from bootstrap import run; run({options_str})'"],
+        [
+            "git",
+            "clone",
+            template_url,
+            subrepo_dir,
+            "--branch",
+            "feature/terraform",
+            "-q",
+        ],
+    )
+    options.update(
+        project_dirname=service_slug,
+        service_slug=service_slug,
+        service_dir=str(Path(service_dir) / service_slug),
+    )
+    subprocess.run(
+        ["python", "-c", f"from bootstrap import run; run(**{options})"],
         cwd=subrepo_dir,
     )
 
@@ -166,7 +210,7 @@ def run(
     gitlab_group_developers,
 ):
     """Run the bootstrap."""
-    click.echo(f"Initializing the {service_slug} service:")
+    click.echo(highlight(f"Initializing the {service_slug} service:"))
     init_service(
         output_dir,
         project_name,
@@ -235,16 +279,42 @@ def run(
             service_slug,
             service_dir,
         )
-    # backend_template_url = BACKEND_TEMPLATE_URLS.get(backend_type)
-    # if backend_template_url:
-    #     init_subrepo(
-    #         backend_type,
-    #         backend_template_url,
-    #     )
-    # frontend_template_url = FRONTEND_TEMPLATE_URLS.get(frontend_type)
-    # if frontend_template_url:
-    #     init_subrepo(frontend_type, frontend_template_url)
-    # change_output_owner(service_dir, uid)
+    common_options = {
+        "uid": uid,
+        "output_dir": service_dir,
+        "project_name": project_name,
+        "project_slug": project_slug,
+        "project_url_dev": project_url_dev,
+        "project_url_stage": project_url_stage,
+        "project_url_prod": project_url_prod,
+        "deploy_type": deploy_type,
+        "digitalocean_token": digitalocean_token,
+        "use_gitlab": use_gitlab,
+        "create_group_variables": False,
+        "gitlab_private_token": gitlab_private_token,
+        "gitlab_group_slug": gitlab_group_slug,
+    }
+    backend_template_url = BACKEND_TEMPLATE_URLS.get(backend_type)
+    if backend_template_url:
+        init_subrepo(
+            backend_type,
+            service_dir,
+            backend_template_url,
+            media_storage=media_storage,
+            digitalocean_spaces_bucket_region=digitalocean_spaces_bucket_region,
+            digitalocean_spaces_access_id=digitalocean_spaces_access_id,
+            digitalocean_spaces_secret_key=digitalocean_spaces_secret_key,
+            **common_options,
+        )
+    frontend_template_url = FRONTEND_TEMPLATE_URLS.get(frontend_type)
+    if frontend_template_url:
+        init_subrepo(
+            frontend_type,
+            service_dir,
+            frontend_template_url,
+            **common_options,
+        )
+    change_output_owner(service_dir, uid)
 
 
 def slugify_option(ctx, param, value):
@@ -348,7 +418,7 @@ def init_command(
     )
     project_dirname = slugify(project_slug, separator="")
     service_slug = DEFAULT_SERVICE_SLUG
-    service_dir = (Path(output_dir) / project_dirname).resolve()
+    service_dir = str(Path(output_dir) / project_dirname)
     if Path(service_dir).is_dir() and click.confirm(
         warning(
             f'A directory "{service_dir}" already exists and '
@@ -412,7 +482,7 @@ def init_command(
     if sentry_org:
         sentry_url = validate_or_prompt_url(
             sentry_url,
-            "Sentry URL (leave blank if unused)",
+            "Sentry URL",
             default="https://sentry.io/",
             required=True,
         )
