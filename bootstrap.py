@@ -73,7 +73,7 @@ def create_env_file(service_dir):
         .replace("__SECRETKEY__", secrets.token_urlsafe(40))
         .replace("__PASSWORD__", secrets.token_urlsafe(8))
     )
-    env_path.write_text(env_text)
+    (Path(service_dir) / ".env").write_text(env_text)
 
 
 def init_gitlab(
@@ -152,7 +152,7 @@ def change_output_owner(service_dir, uid):
 
 def init_subrepo(service_slug, service_dir, template_url, **options):
     """Initialize a subrepo using the given template and options."""
-    subrepo_dir = str(Path(SUBREPOS_DIR) / service_slug)
+    subrepo_dir = str((Path(SUBREPOS_DIR) / service_slug).resolve())
     shutil.rmtree(subrepo_dir, ignore_errors=True)
     subprocess.run(
         [
@@ -168,7 +168,7 @@ def init_subrepo(service_slug, service_dir, template_url, **options):
     options.update(
         project_dirname=service_slug,
         service_slug=service_slug,
-        service_dir=str(Path(service_dir) / service_slug),
+        service_dir=str((Path(service_dir) / service_slug).resolve()),
     )
     subprocess.run(
         ["python", "-c", f"from bootstrap import run; run(**{options})"],
@@ -418,7 +418,7 @@ def init_command(
     )
     project_dirname = slugify(project_slug, separator="")
     service_slug = DEFAULT_SERVICE_SLUG
-    service_dir = str(Path(output_dir) / project_dirname)
+    service_dir = str((Path(output_dir) / project_dirname).resolve())
     if Path(service_dir).is_dir() and click.confirm(
         warning(
             f'A directory "{service_dir}" already exists and '
