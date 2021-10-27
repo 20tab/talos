@@ -28,7 +28,7 @@ services:
       - PYTHONBREAKPOINT
     user: ${USER:-appuser}
     volumes:
-      - ./backend:/app{% endif %}
+      - ./{{ cookiecutter.backend_type }}:/app{% endif %}
 {% if cookiecutter.frontend_type != "none" %}
   {{ cookiecutter.frontend_type }}:
     build:
@@ -42,7 +42,7 @@ services:
       - NODE_ENV
       - REACT_ENVIRONMENT=${DJANGO_CONFIGURATION}
     volumes:
-      - ./frontend:/app{% endif %}
+      - ./{{ cookiecutter.frontend_type }}:/app{% endif %}
 
   nginx:
     build: ./nginx{% if cookiecutter.backend_type != 'none' or cookiecutter.frontend_type != 'none' %}
