@@ -6,7 +6,7 @@ services:
     build:
       args:
         USER: ${USER:-appuser}
-      context: ./backend
+      context: ./{{ cookiecutter.backend_type }}
       target: ${BACKEND_BUILD_TARGET:-local}
     depends_on:
       - postgres
@@ -32,7 +32,7 @@ services:
 {% if cookiecutter.frontend_type != "none" %}
   {{ cookiecutter.frontend_type }}:
     build:
-      context: ./frontend
+      context: ./{{ cookiecutter.frontend_type }}
       dockerfile: docker/local.Dockerfile{% if cookiecutter.backend_type != "none" %}
     depends_on:
       - {{ cookiecutter.backend_type }}{% endif %}
