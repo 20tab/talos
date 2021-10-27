@@ -71,6 +71,7 @@ resource "gitlab_project" "main" {
   description            = "The \"${var.project_name}\" project ${var.service_slug} service."
   namespace_id           = data.gitlab_group.group.id
   initialize_with_readme = false
+  shared_runners_enabled = true
 }
 
 resource "null_resource" "init_repo" {

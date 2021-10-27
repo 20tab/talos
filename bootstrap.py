@@ -19,8 +19,15 @@ BACKEND_TEMPLATE_URLS = {
 }
 BACKEND_TYPE_CHOICES = ["django", "none"]
 DEFAULT_SERVICE_SLUG = "orchestrator"
-DEPLOY_TYPE_CHOICES = ["k8s-digitalocean", "k8s-other"]
-DEPLOY_TYPE_DEFAULT = "k8s-digitalocean"
+DEPLOYMENT_TYPE_CHOICES = ["k8s-digitalocean", "k8s-other"]
+DEPLOYMENT_TYPE_DEFAULT = "k8s-digitalocean"
+ENVIRONMENTS_DISTRIBUTION_CHOICES = ["1", "2", "3"]
+ENVIRONMENTS_DISTRIBUTION_PROMPT = """Choose the environments distribution:
+  1 - All environments share the same stack (Default)
+  2 - Dev and Stage environments share the same stack, Prod has its own
+  3 - Each environment has its own stack
+"""
+ENVIRONMENTS_DISTRIBUTION_DEFAULT = "1"
 DIGITALOCEAN_SPACES_REGION_DEFAULT = "fra1"
 FRONTEND_TEMPLATE_URLS = {
     "nextjs": "https://github.com/20tab/react-ts-continuous-delivery"
@@ -189,7 +196,7 @@ def run(
     project_url_dev,
     project_url_stage,
     project_url_prod,
-    deploy_type,
+    deployment_type,
     digitalocean_token,
     sentry_org,
     sentry_url,
@@ -287,10 +294,7 @@ def run(
         "project_url_dev": project_url_dev,
         "project_url_stage": project_url_stage,
         "project_url_prod": project_url_prod,
-        "deploy_type": deploy_type,
-        "digitalocean_token": digitalocean_token,
         "use_gitlab": use_gitlab,
-        "create_group_variables": False,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
     }
@@ -301,9 +305,6 @@ def run(
             service_dir,
             backend_template_url,
             media_storage=media_storage,
-            digitalocean_spaces_bucket_region=digitalocean_spaces_bucket_region,
-            digitalocean_spaces_access_id=digitalocean_spaces_access_id,
-            digitalocean_spaces_secret_key=digitalocean_spaces_secret_key,
             **common_options,
         )
     frontend_template_url = FRONTEND_TEMPLATE_URLS.get(frontend_type)
@@ -352,14 +353,22 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--project-dirname")
 @click.option("--backend-type")
 @click.option("--frontend-type")
+@click.option(
+    "--deployment-type",
+    type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
+)
+@click.option("--digitalocean-token")
+@click.option(
+    "--environments-distribution",
+    type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES),
+)
+@click.option("--project-domain")
+@click.option("--domain-prefix-dev")
+@click.option("--domain-prefix-stage")
+@click.option("--domain-prefix-prod")
 @click.option("--project-url-dev")
 @click.option("--project-url-stage")
 @click.option("--project-url-prod")
-@click.option(
-    "--deploy-type",
-    type=click.Choice(DEPLOY_TYPE_CHOICES, case_sensitive=False),
-)
-@click.option("--digitalocean-token")
 @click.option("--sentry-org")
 @click.option("--sentry-url")
 @click.option("--sentry-auth-token")
@@ -388,11 +397,16 @@ def init_command(
     project_dirname,
     backend_type,
     frontend_type,
+    deployment_type,
+    digitalocean_token,
+    environments_distribution,
+    project_domain,
+    domain_prefix_dev,
+    domain_prefix_stage,
+    domain_prefix_prod,
     project_url_dev,
     project_url_stage,
     project_url_prod,
-    deploy_type,
-    digitalocean_token,
     sentry_org,
     sentry_url,
     sentry_auth_token,
@@ -445,35 +459,68 @@ def init_command(
             type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
-    project_url_dev = validate_or_prompt_url(
-        project_url_dev,
-        "Development environment complete URL",
-        default=f"https://dev.{project_slug}.com/",
-    )
-    project_url_stage = validate_or_prompt_url(
-        project_url_stage,
-        "Staging environment complete URL",
-        default=f"https://stage.{project_slug}.com/",
-    )
-    project_url_prod = validate_or_prompt_url(
-        project_url_prod,
-        "Production environment complete URL",
-        default=f"https://www.{project_slug}.com/",
-    )
-    deploy_type = (
-        deploy_type in DEPLOY_TYPE_CHOICES
-        and deploy_type
+    deployment_type = (
+        deployment_type in DEPLOYMENT_TYPE_CHOICES
+        and deployment_type
         or click.prompt(
             "Deploy type",
-            default=DEPLOY_TYPE_DEFAULT,
-            type=click.Choice(DEPLOY_TYPE_CHOICES, case_sensitive=False),
+            default=DEPLOYMENT_TYPE_DEFAULT,
+            type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
-    if "digitalocean" in deploy_type:
+    digitalocean_enabled = "digitalocean" in deployment_type
+    if digitalocean_enabled:
         digitalocean_token = validate_or_prompt_password(
             digitalocean_token,
             "DigitalOcean token",
             required=True,
+        )
+    environments_distribution = (
+        environments_distribution in ENVIRONMENTS_DISTRIBUTION_CHOICES
+        and environments_distribution
+        or click.prompt(
+            ENVIRONMENTS_DISTRIBUTION_PROMPT,
+            default=ENVIRONMENTS_DISTRIBUTION_DEFAULT,
+            type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES),
+        )
+    )
+    if digitalocean_enabled:
+        project_domain = project_domain or click.prompt(
+            "Project domain (e.g. 20tab.com, "
+            "if you prefer to skip DigitalOcean DNS configuration, leave blank)",
+            default="",
+        )
+    if project_domain:
+        domain_prefix_dev = domain_prefix_dev or click.prompt(
+            "Development domain prefix",
+            default="dev",
+        )
+        domain_prefix_stage = domain_prefix_stage or click.prompt(
+            "Staging domain prefix",
+            default="stage",
+        )
+        domain_prefix_prod = domain_prefix_prod or click.prompt(
+            "Production domain prefix",
+            default="www",
+        )
+        project_url_dev = f"https://{domain_prefix_dev}.{project_domain}"
+        project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
+        project_url_prod = f"https://{domain_prefix_prod}.{project_domain}"
+    else:
+        project_url_dev = validate_or_prompt_url(
+            project_url_dev,
+            "Development environment complete URL",
+            default=f"https://dev.{project_slug}.com/",
+        )
+        project_url_stage = validate_or_prompt_url(
+            project_url_stage,
+            "Staging environment complete URL",
+            default=f"https://stage.{project_slug}.com/",
+        )
+        project_url_prod = validate_or_prompt_url(
+            project_url_prod,
+            "Production environment complete URL",
+            default=f"https://www.{project_slug}.com/",
         )
     sentry_org = sentry_org or click.prompt(
         'Sentry organization (e.g. "20tab", leave blank if unused)',
@@ -582,7 +629,7 @@ def init_command(
         project_url_dev,
         project_url_stage,
         project_url_prod,
-        deploy_type,
+        deployment_type,
         digitalocean_token,
         sentry_org,
         sentry_url,
