@@ -1,0 +1,156 @@
+locals {
+  digitalocean_default_region = "fra1"
+  digitalocean_regions        = data.digitalocean_regions.main[*].slug
+
+  resource_name = var.stack_slug == "main" ? var.project_slug : "${var.project_slug}-${var.stack_slug}"
+}
+
+terraform {
+  backend "local" {
+  }
+
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "~> 2.0"
+    }
+  }
+}
+
+/* Providers */
+
+provider "digitalocean" {
+  token = var.digitalocean_token
+}
+
+/* Data Sources */
+
+data "digitalocean_kubernetes_versions" "main" {}
+
+data "digitalocean_sizes" "database" {
+  filter {
+    key    = "vcpus"
+    values = range(var.database_cluster_node_min_vcpus, var.database_cluster_node_max_vcpus)
+  }
+
+  filter {
+    key    = "memory"
+    values = [for i in range(var.database_cluster_node_min_memory, var.database_cluster_node_max_memory) : i * 1024]
+  }
+
+  filter {
+    key    = "regions"
+    values = [var.database_cluster_region]
+  }
+
+  sort {
+    key       = "price_monthly"
+    direction = "asc"
+  }
+}
+
+data "digitalocean_sizes" "k8s" {
+  filter {
+    key    = "vcpus"
+    values = range(var.k8s_cluster_node_min_vcpus, var.k8s_cluster_node_max_vcpus)
+  }
+
+  filter {
+    key    = "memory"
+    values = [for i in range(var.k8s_cluster_node_min_memory, var.k8s_cluster_node_max_memory) : i * 1024]
+  }
+
+  filter {
+    key    = "regions"
+    values = [var.k8s_cluster_region]
+  }
+
+  sort {
+    key       = "price_monthly"
+    direction = "asc"
+  }
+}
+
+data "digitalocean_regions" "main" {
+  filter {
+    key    = "available"
+    values = ["true"]
+  }
+}
+
+/* Kubernetes Cluster */
+
+resource "digitalocean_kubernetes_cluster" "main" {
+  name = "${local.resource_name}-k8s-cluster"
+  region = contains(
+    local.digitalocean_regions,
+    var.k8s_cluster_region
+  ) ? var.k8s_cluster_region : local.digitalocean_default_region
+  version = coalesce(
+    var.k8s_cluster_version,
+    data.digitalocean_kubernetes_versions.main.latest_version
+  )
+  auto_upgrade = true
+
+  node_pool {
+    name       = "${local.resource_name}-k8s-node"
+    node_count = var.k8s_cluster_node_count
+    size = contains(
+      data.digitalocean_sizes.k8s.sizes[*].slug,
+      var.k8s_cluster_node_size
+    ) ? var.k8s_cluster_node_size : element(data.digitalocean_sizes.k8s.sizes, 0).slug
+  }
+
+  maintenance_policy {
+    start_time = "02:00"
+    day        = "sunday"
+  }
+
+  timeouts {
+    create = "60m"
+  }
+}
+
+/* Spaces Bucket */
+
+resource "digitalocean_spaces_bucket" "main" {
+  name = "${local.resource_name}-s3-bucket"
+  region = contains(
+    local.digitalocean_regions,
+    var.s3_bucket_region
+  ) ? var.s3_bucket_region : local.digitalocean_default_region
+}
+
+/* Database Cluster */
+
+resource "digitalocean_database_cluster" "main" {
+  name = "${local.resource_name}-database-cluster"
+  region = contains(
+    local.digitalocean_regions,
+    var.database_cluster_region
+  ) ? var.database_cluster_region : local.digitalocean_default_region
+  engine  = var.database_cluster_engine
+  version = var.database_cluster_version
+  size = contains(
+    data.digitalocean_sizes.database[*].slug,
+    var.database_cluster_node_size
+  ) ? var.database_cluster_node_size : element(data.digitalocean_sizes.database, 0).slug
+  node_count = var.database_cluster_node_count
+
+  maintenance_policy {
+    start_time = "02:00"
+    day        = "sunday"
+  }
+
+  timeouts {
+    create = "60m"
+  }
+}
+
+/* Domain */
+
+resource "digitalocean_domain" "default" {
+  count = var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
+
+  name = var.project_domain
+}
