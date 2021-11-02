@@ -10,34 +10,9 @@ variable "database_cluster_node_count" {
   default     = 1
 }
 
-variable "database_cluster_node_min_memory" {
-  description = "The Digital Ocean database cluster node droplet candidate minimum memory (in GB)."
-  type        = number
-  default     = 2
-}
-
-variable "database_cluster_node_min_vcpus" {
-  description = "The Digital Ocean database cluster node droplet candidate minimum number of vCPUs."
-  type        = number
-  default     = 1
-}
-
-variable "database_cluster_node_max_memory" {
-  description = "The Digital Ocean database cluster node droplet candidate maximum memory (in GB)."
-  type        = number
-  default     = 16
-}
-
-variable "database_cluster_node_max_vcpus" {
-  description = "The Digital Ocean database cluster node droplet candidate maximum number of vCPUs."
-  type        = number
-  default     = 4
-}
-
 variable "database_cluster_node_size" {
   description = "The Digital Ocean database cluster droplet size."
   type        = string
-  default     = ""
 }
 
 variable "database_cluster_region" {
@@ -117,10 +92,23 @@ variable "project_slug" {
   type        = string
 }
 
+
+variable "s3_bucket_access_id" {
+  description = "The S3 bucket access key ID."
+  type        = string
+  sensitive   = true
+}
+
 variable "s3_bucket_region" {
   description = "The Digital Ocean S3 Spaces region."
   type        = string
   default     = ""
+}
+
+variable "s3_bucket_secret_key" {
+  description = "The S3 bucket secret access key."
+  type        = string
+  sensitive   = true
 }
 
 variable "stack_name" {

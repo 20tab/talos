@@ -1,6 +1,16 @@
 locals {
   digitalocean_default_region = "fra1"
-  digitalocean_regions        = data.digitalocean_regions.main[*].slug
+  digitalocean_regions        = data.digitalocean_regions.main.regions[*].slug
+
+  database_cluster_region = contains(
+    local.digitalocean_regions,
+    var.database_cluster_region
+  ) ? var.database_cluster_region : local.digitalocean_default_region
+
+  k8s_cluster_region = contains(
+    local.digitalocean_regions,
+    var.k8s_cluster_region
+  ) ? var.k8s_cluster_region : local.digitalocean_default_region
 
   resource_name = var.stack_slug == "main" ? var.project_slug : "${var.project_slug}-${var.stack_slug}"
 }
@@ -21,33 +31,14 @@ terraform {
 
 provider "digitalocean" {
   token = var.digitalocean_token
+
+  spaces_access_id  = var.s3_bucket_access_id
+  spaces_secret_key = var.s3_bucket_secret_key
 }
 
 /* Data Sources */
 
 data "digitalocean_kubernetes_versions" "main" {}
-
-data "digitalocean_sizes" "database" {
-  filter {
-    key    = "vcpus"
-    values = range(var.database_cluster_node_min_vcpus, var.database_cluster_node_max_vcpus)
-  }
-
-  filter {
-    key    = "memory"
-    values = [for i in range(var.database_cluster_node_min_memory, var.database_cluster_node_max_memory) : i * 1024]
-  }
-
-  filter {
-    key    = "regions"
-    values = [var.database_cluster_region]
-  }
-
-  sort {
-    key       = "price_monthly"
-    direction = "asc"
-  }
-}
 
 data "digitalocean_sizes" "k8s" {
   filter {
@@ -62,7 +53,7 @@ data "digitalocean_sizes" "k8s" {
 
   filter {
     key    = "regions"
-    values = [var.k8s_cluster_region]
+    values = [local.k8s_cluster_region]
   }
 
   sort {
@@ -81,11 +72,8 @@ data "digitalocean_regions" "main" {
 /* Kubernetes Cluster */
 
 resource "digitalocean_kubernetes_cluster" "main" {
-  name = "${local.resource_name}-k8s-cluster"
-  region = contains(
-    local.digitalocean_regions,
-    var.k8s_cluster_region
-  ) ? var.k8s_cluster_region : local.digitalocean_default_region
+  name   = "${local.resource_name}-k8s-cluster"
+  region = local.k8s_cluster_region
   version = coalesce(
     var.k8s_cluster_version,
     data.digitalocean_kubernetes_versions.main.latest_version
@@ -124,22 +112,16 @@ resource "digitalocean_spaces_bucket" "main" {
 /* Database Cluster */
 
 resource "digitalocean_database_cluster" "main" {
-  name = "${local.resource_name}-database-cluster"
-  region = contains(
-    local.digitalocean_regions,
-    var.database_cluster_region
-  ) ? var.database_cluster_region : local.digitalocean_default_region
-  engine  = var.database_cluster_engine
-  version = var.database_cluster_version
-  size = contains(
-    data.digitalocean_sizes.database[*].slug,
-    var.database_cluster_node_size
-  ) ? var.database_cluster_node_size : element(data.digitalocean_sizes.database, 0).slug
+  name       = "${local.resource_name}-database-cluster"
+  region     = local.database_cluster_region
+  engine     = var.database_cluster_engine
+  version    = var.database_cluster_version
+  size       = var.database_cluster_node_size
   node_count = var.database_cluster_node_count
 
-  maintenance_policy {
-    start_time = "02:00"
-    day        = "sunday"
+  maintenance_window {
+    day  = "sunday"
+    hour = "02:00"
   }
 
   timeouts {
