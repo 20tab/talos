@@ -28,12 +28,6 @@ variable "frontend_service_slug" {
   default     = "nextjs"
 }
 
-variable "k8s_cluster_region" {
-  description = "The Digital Ocean Kubernetes cluster region."
-  type        = string
-  default     = ""
-}
-
 variable "media_storage" {
   description = "The media storage solution."
   type        = string

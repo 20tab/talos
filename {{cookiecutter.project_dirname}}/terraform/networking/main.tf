@@ -11,7 +11,7 @@ locals {
 }
 
 terraform {
-  backend "local" {
+  backend "http" {
   }
 
   required_providers {
