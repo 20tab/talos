@@ -86,13 +86,11 @@ resource "null_resource" "init_repo" {
       "cd ${var.service_dir}",
       format(
         join(" && ", [
-          "git init --initial-branch=develop",
+          "git init --initial-branch=main",
           "git remote add origin %s",
           "git add .",
           "git ${local.git_config} commit -m 'Initial commit'",
-          "git push -u origin develop -o ci.skip",
-          "git checkout -b master",
-          "git push -u origin master -o ci.skip",
+          "git push -u origin main -o ci.skip",
           "git remote set-url origin %s",
         ]),
         replace(
@@ -109,26 +107,11 @@ resource "null_resource" "init_repo" {
 
 /* Branch Protections */
 
-resource "gitlab_branch_protection" "develop" {
+resource "gitlab_branch_protection" "main" {
   project            = gitlab_project.main.id
-  branch             = "develop"
+  branch             = "main"
   push_access_level  = "maintainer"
   merge_access_level = "developer"
-}
-
-resource "gitlab_branch_protection" "master" {
-  depends_on = [null_resource.init_repo]
-
-  project            = gitlab_project.main.id
-  branch             = "master"
-  push_access_level  = "no one"
-  merge_access_level = "maintainer"
-}
-
-resource "gitlab_tag_protection" "tags" {
-  project             = gitlab_project.main.id
-  tag                 = "*"
-  create_access_level = "maintainer"
 }
 
 /* Group Memberships */
