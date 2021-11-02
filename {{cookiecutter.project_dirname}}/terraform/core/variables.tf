@@ -92,7 +92,6 @@ variable "project_slug" {
   type        = string
 }
 
-
 variable "s3_bucket_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
@@ -109,12 +108,6 @@ variable "s3_bucket_secret_key" {
   description = "The S3 bucket secret access key."
   type        = string
   sensitive   = true
-}
-
-variable "stack_name" {
-  description = "The stack name (e.g. 'Main')."
-  type        = string
-  default     = "Main"
 }
 
 variable "stack_slug" {
