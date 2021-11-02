@@ -4,7 +4,6 @@ stages:
   - Build
   - Deploy
 
-# {"dev":{"stack":"main","slug":"dev","name":"Development"},"stage":{"stack":"stage","slug":"stage","name":"Staging"},"prod":{"stack":"dev","slug":"prod","name":"Production"}}
 image: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
 
 variables:
@@ -20,161 +19,16 @@ cache:
 
 before_script:
   - cd ${TF_ROOT}
-{% for stack_slug in cookiecutter.environments.values()|map(attribute="stack")|unique %}
-init_{{ stack_slug }}_core:
-  stage: Prepare
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_core
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core
-    TF_VAR_stack_slug: {{ stack_slug }}
+
+.init:
   script:
-    - gitlab-terraform init
-
-validate_{{ stack_slug }}_core:
-  depends_on: init_{{ stack_slug }}_core
-  stage: Validate
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_core
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core
-    TF_VAR_stack_slug: {{ stack_slug }}
-  script:
-    - gitlab-terraform validate
-
-plan_{{ stack_slug }}_core:
-  depends_on: validate_{{ stack_slug }}_core
-  stage: Build
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_core
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core
-    TF_VAR_stack_slug: {{ stack_slug }}
-  script:
-    - gitlab-terraform plan
-    - gitlab-terraform plan-json
-  artifacts:
-    name: plan
-    paths:
-      - ${TF_ROOT}/plan.cache
-    reports:
-      terraform: ${TF_ROOT}/plan.json
-
-apply_{{ stack_slug }}_core:
-  depends_on: plan_{{ stack_slug }}_core
-  stage: Deploy
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_core
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core
-    TF_VAR_stack_slug: {{ stack_slug }}
-  script:
-    - gitlab-terraform apply
-  when: manual{% endfor %}
-{% for stack_slug in cookiecutter.environments.values()|map(attribute="stack")|unique %}
-init_{{ stack_slug }}_networking:
-  stage: Prepare
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_networking
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
-    TF_VAR_stack_slug: {{ stack_slug }}
-  script:
-    - gitlab-terraform init
-
-validate_{{ stack_slug }}_networking:
-  depends_on: init_{{ stack_slug }}_networking
-  stage: Validate
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_networking
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
-    TF_VAR_stack_slug: {{ stack_slug }}
-  script:
-    - gitlab-terraform validate
-
-plan_{{ stack_slug }}_networking:
-  depends_on: validate_{{ stack_slug }}_networking
-  stage: Build
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_networking
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
-    TF_VAR_stack_slug: {{ stack_slug }}
-  script:
-    - gitlab-terraform plan
-    - gitlab-terraform plan-json
-  artifacts:
-    name: plan
-    paths:
-      - ${TF_ROOT}/plan.cache
-    reports:
-      terraform: ${TF_ROOT}/plan.json
-
-apply_{{ stack_slug }}_networking:
-  depends_on: plan_{{ stack_slug }}_networking
-  stage: Deploy
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ stack_slug }}_networking
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
-    TF_VAR_stack_slug: {{ stack_slug }}
-  script:
-    - gitlab-terraform apply
-  when: manual{% endfor %}
-
-.environment:
-  variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/{{ cookiecutter.project_slug }}-${CI_ENVIRONMENT_NAME}
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform
-
-.development:
-  extends:
-    - .environment
-  variables:
-    TF_domain: dev.{{ cookiecutter.project_slug }}.com
-  environment:
-    name: Development
-    url: https://dev.{{ cookiecutter.project_slug }}.com
-  only:
-    - develop
-
-.integration:
-  extends:
-    - .environment
-  variables:
-    TF_domain: test.{{ cookiecutter.project_slug }}.com
-  environment:
-    name: Integration
-    url: https://test.{{ cookiecutter.project_slug }}.com
-  only:
-    - master
-
-.production:
-  extends:
-    - .environment
-  variables:
-    TF_domain: www.{{ cookiecutter.project_slug }}.com
-  environment:
-    name: Production
-    url: https://www.{{ cookiecutter.project_slug }}.com
-  only:
-    - tags
+  - gitlab-terraform init
 
 .validate:
-  stage: Validate
   script:
     - gitlab-terraform validate
 
-validate_development:
-  extends:
-    - .development
-    - .validate
-
-validate_integration:
-  extends:
-    - .integration
-    - .validate
-
-validate_production:
-  extends:
-    - .production
-    - .validate
-
 .plan:
-  stage: Build
   script:
     - gitlab-terraform plan
     - gitlab-terraform plan-json
@@ -185,45 +39,127 @@ validate_production:
     reports:
       terraform: ${TF_ROOT}/plan.json
 
-plan_development:
-  extends:
-    - .development
-    - .plan
-
-plan_integration:
-  extends:
-    - .integration
-    - .plan
-
-plan_production:
-  extends:
-    - .production
-    - .plan
-
 .apply:
-  stage: Deploy
   script:
-    - apk add aws-cli
     - gitlab-terraform apply
   when: manual
 
-apply_development:
-  extends:
-    - .development
-    - .apply
-  dependencies:
-    - plan_development
+### CORE STACK ###{% for stack_slug in cookiecutter.environments.values()|map(attribute="stack")|unique %}
 
-apply_integration:
-  extends:
-    - .integration
-    - .apply
-  dependencies:
-    - plan_integration
+# CORE STACK - {{ stack_slug|title }} #
 
-apply_production:
+.stack_{{ stack_slug }}_core:
+  variables:
+    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_core
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core
+    TF_VAR_stack_slug: {{ stack_slug }}
+
+stack_{{ stack_slug }}_core_init:
+  stage: Prepare
   extends:
-    - .production
-    - .apply
+    - .init
+    - .stack_{{ stack_slug }}_core
+
+stack_{{ stack_slug }}_core_validate:
+  stage: Validate
+  extends:
+    - .validate
+    - .stack_{{ stack_slug }}_core
   dependencies:
-    - plan_production
+    - stack_{{ stack_slug }}_core_init
+
+stack_{{ stack_slug }}_core_plan:
+  stage: Build
+  extends:
+    - .plan
+    - .stack_{{ stack_slug }}_core
+  dependencies:
+    - stack_{{ stack_slug }}_core_validate
+
+stack_{{ stack_slug }}_core_apply:
+  stage: Deploy
+  extends:
+    - .apply
+    - .stack_{{ stack_slug }}_core
+  dependencies:
+    - stack_{{ stack_slug }}_core_plan{% endfor %}
+
+### NETWORKING STACK ###{% for stack_slug in cookiecutter.environments.values()|map(attribute="stack")|unique %}
+
+# NETWORKING STACK - {{ stack_slug|title }} #
+
+.stack_{{ stack_slug }}_networking:
+  variables:
+    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_networking
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
+    TF_VAR_stack_slug: {{ stack_slug }}
+
+stack_{{ stack_slug }}_networking_init:
+  stage: Prepare
+  extends:
+    - .init
+    - .stack_{{ stack_slug }}_networking
+
+stack_{{ stack_slug }}_networking_validate:
+  stage: Validate
+  extends:
+    - .validate
+    - .stack_{{ stack_slug }}_networking
+  dependencies:
+    - stack_{{ stack_slug }}_networking_init
+
+stack_{{ stack_slug }}_networking_plan:
+  stage: Build
+  extends:
+    - .plan
+    - .stack_{{ stack_slug }}_networking
+  dependencies:
+    - stack_{{ stack_slug }}_networking_validate
+
+stack_{{ stack_slug }}_networking_apply:
+  stage: Deploy
+  extends:
+    - .apply
+    - .stack_{{ stack_slug }}_networking
+  dependencies:
+    - stack_{{ stack_slug }}_networking_plan{% endfor %}
+
+### ENVIRONMENT STACK ###{% for env_slug, env_conf in cookiecutter.environments.items() %}
+
+# ENVIRONMENT STACK - {{ env_conf.name }} #
+
+.env_{{ env_slug }}:
+  variables:
+    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment
+    TF_VAR_env_slug: {{ env_slug }}
+
+env_{{ env_slug }}_init:
+  stage: Prepare
+  extends:
+    - .init
+    - .env_{{ env_slug }}
+
+env_{{ env_slug }}_validate:
+  stage: Validate
+  extends:
+    - .validate
+    - .env_{{ env_slug }}
+  dependencies:
+    - env_{{ env_slug }}_init
+
+env_{{ env_slug }}_plan:
+  stage: Build
+  extends:
+    - .plan
+    - .env_{{ env_slug }}
+  dependencies:
+    - env_{{ env_slug }}_validate
+
+env_{{ env_slug }}_apply:
+  stage: Deploy
+  extends:
+    - .apply
+    - .env_{{ env_slug }}
+  dependencies:
+    - env_{{ env_slug }}_plan{% endfor %}

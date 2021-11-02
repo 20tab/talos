@@ -8,17 +8,14 @@
   "environments": {
     "dev": {
       "stack": "main",
-      "slug": "dev",
       "name": "Development"
     },
     "stage": {
       "stack": "main",
-      "slug": "stage",
       "name": "Staging"
     },
     "prod": {
       "stack": "main",
-      "slug": "prod",
       "name": "Production"
     }
   },
