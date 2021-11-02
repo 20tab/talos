@@ -5,18 +5,17 @@
   "backend_type": ["django", "none"],
   "frontend_type": ["nextjs", "none"],
   "media_storage": ["local", "s3-digitalocean", "none"],
-  "environments": {
-    "dev": {
-      "stack": "main",
-      "name": "Development"
-    },
-    "stage": {
-      "stack": "main",
-      "name": "Staging"
-    },
-    "prod": {
-      "stack": "main",
-      "name": "Production"
+  "stacks": {
+    "main": {
+      "dev": {
+        "name": "Development"
+      },
+      "stage": {
+        "name": "Staging"
+      },
+      "prod": {
+        "name": "Production"
+      }
     }
   },
   "_extensions": ["cookiecutter.extensions.SlugifyExtension"]

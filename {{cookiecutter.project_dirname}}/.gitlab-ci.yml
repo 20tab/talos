@@ -44,7 +44,7 @@ before_script:
     - gitlab-terraform apply
   when: manual
 
-### CORE STACK ###{% for stack_slug in cookiecutter.environments.values()|map(attribute="stack")|unique %}
+### CORE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
 # CORE STACK - {{ stack_slug|title }} #
 
@@ -84,7 +84,7 @@ stack_{{ stack_slug }}_core_apply:
   dependencies:
     - stack_{{ stack_slug }}_core_plan{% endfor %}
 
-### NETWORKING STACK ###{% for stack_slug in cookiecutter.environments.values()|map(attribute="stack")|unique %}
+### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
 # NETWORKING STACK - {{ stack_slug|title }} #
 
@@ -93,6 +93,7 @@ stack_{{ stack_slug }}_core_apply:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_networking
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
     TF_VAR_stack_slug: {{ stack_slug }}
+    TF_VAR_stack_envs: '{{ stack_envs|tojson }}'
 
 stack_{{ stack_slug }}_networking_init:
   stage: Prepare
@@ -124,7 +125,7 @@ stack_{{ stack_slug }}_networking_apply:
   dependencies:
     - stack_{{ stack_slug }}_networking_plan{% endfor %}
 
-### ENVIRONMENT STACK ###{% for env_slug, env_conf in cookiecutter.environments.items() %}
+### ENVIRONMENT STACK ###{% for stack_envs in cookiecutter.stacks.values() %}{% for  env_slug, env_conf in stack_envs.items() %}
 
 # ENVIRONMENT STACK - {{ env_conf.name }} #
 
@@ -162,4 +163,4 @@ env_{{ env_slug }}_apply:
     - .apply
     - .env_{{ env_slug }}
   dependencies:
-    - env_{{ env_slug }}_plan{% endfor %}
+    - env_{{ env_slug }}_plan{% endfor %}{% endfor %}
