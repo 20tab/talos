@@ -163,3 +163,10 @@ kubeconfig.yaml
 
 # Locals
 *.local.yaml
+
+# Terraform
+*.tfvars
+.terraform*
+terraform.tfstate
+terraform.tfstate.backup
+secrets.tf
