@@ -132,7 +132,7 @@ resource "kubernetes_ingress" "main" {
 
   spec {
     rule {
-      host = coalesce(var.project_domain, regexall("https?://([^/]+)", var.project_url)[0][0])
+      host = regexall("https?://([^/]+)", var.project_url)[0][0]
 
       http {
 
