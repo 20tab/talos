@@ -87,11 +87,6 @@ variable "project_domain" {
   default     = ""
 }
 
-variable "project_slug" {
-  description = "The project slug."
-  type        = string
-}
-
 variable "s3_bucket_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
@@ -113,5 +108,4 @@ variable "s3_bucket_secret_key" {
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
-  default     = "main"
 }

@@ -1,13 +1,7 @@
 locals {
-  backend_paths = var.backend_service_slug != "" ? (
-    var.frontend_service_slug != "" ? concat(
-      ["/admin", "/api", "/static"],
-      var.media_storage == "local" ? ["/media"] : []
-    ) : ["/"]
-  ) : []
-  frontend_paths = var.frontend_service_slug != "" ? ["/"] : []
+  project_slug = "{{ cookiecutter.project_slug }}"
 
-  resource_name = var.stack_slug == "main" ? var.project_slug : "${var.project_slug}-${var.stack_slug}"
+  resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
 }
 
 terraform {
@@ -25,6 +19,8 @@ terraform {
     }
   }
 }
+
+/* Providers */
 
 provider "digitalocean" {
   token = var.digitalocean_token
@@ -53,9 +49,9 @@ data "digitalocean_domain" "main" {
 /* Certificate */
 
 resource "digitalocean_certificate" "ssl_cert" {
-  count = var.project_domain != "" ? 1 : 0
+  count = var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
 
-  name    = "${var.project_slug}-lets-encrypt-certificate"
+  name    = "${local.project_slug}-lets-encrypt-certificate"
   type    = "lets_encrypt"
   domains = ["*.${var.project_domain}"]
 }
@@ -138,7 +134,7 @@ resource "kubernetes_deployment" "traefik_controller" {
       }
 
       spec {
-        service_account_name = "traefik-ingress-controller"
+        service_account_name = "${local.resource_name}-traefik-ingress-controller"
 
         container {
           name  = "traefik"
@@ -204,65 +200,4 @@ resource "kubernetes_service" "traefik_load_balancer" {
       target_port = 443
     }
   }
-}
-
-/* Ingress */
-
-resource "kubernetes_ingress" "main" {
-  for_each = var.stack_envs
-
-  metadata {
-    name      = "${local.resource_name}-ingress"
-    namespace = "${var.project_slug}-${each.key}"
-    annotations = {
-      "kubernetes.io/ingress.class"                      = "traefik"
-      "traefik.ingress.kubernetes.io/router.entrypoints" = "websecure"
-    }
-  }
-
-  spec {
-    rule {
-      host = replace(each.value.url, "/https?:///", "")
-
-      http {
-
-        dynamic "path" {
-          for_each = toset(local.backend_paths)
-          content {
-            path = each.key
-
-            backend {
-              service_name = var.backend_service_slug
-              service_port = var.backend_service_port
-            }
-
-          }
-        }
-
-        dynamic "path" {
-          for_each = toset(local.frontend_paths)
-          content {
-            path = each.key
-
-            backend {
-              service_name = var.frontend_service_slug
-              service_port = var.frontend_service_port
-            }
-
-          }
-        }
-      }
-    }
-  }
-}
-
-/* DNS Records */
-
-resource "digitalocean_record" "main" {
-  for_each = var.project_domain != "" ? var.stack_envs : {}
-
-  domain = data.digitalocean_domain.main[0].name
-  type   = "A"
-  name   = each.value.prefix
-  value  = kubernetes_service.traefik_load_balancer.status[0].load_balancer[0].ingress[0].ip
 }

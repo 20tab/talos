@@ -1,21 +1,13 @@
 stages:
-  - Prepare
-  - Validate
-  - Build
-  - Deploy
+  - Core
+  - Networking
+  - Environment
 
 image: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
 
 variables:
-  TF_VAR_domain: ${DOMAIN}
-  TF_VAR_environment: ${CI_ENVIRONMENT_NAME}
-  TF_VAR_project_name: {{ cookiecutter.project_name }}
-  TF_VAR_project_slug: {{ cookiecutter.project_slug }}
-
-cache:
-  key: {{ cookiecutter.project_slug }}-${CI_ENVIRONMENT_SLUG}
-  paths:
-    - ${TF_ROOT}/.terraform
+  TF_VAR_digitalocean_token: "${DIGITALOCEAN_TOKEN}"
+  TF_VAR_project_domain: "${DOMAIN}"
 
 before_script:
   - cd ${TF_ROOT}
@@ -49,120 +41,119 @@ before_script:
 # CORE STACK - {{ stack_slug|title }} #
 
 .stack_{{ stack_slug }}_core:
+  stage: Core
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_core
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/core
+    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"
+    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"
+    TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"
     TF_VAR_stack_slug: {{ stack_slug }}
+  cache:
+    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-core
+    paths:
+      - ${TF_ROOT}/.terraform
 
 stack_{{ stack_slug }}_core_init:
-  stage: Prepare
   extends:
     - .init
     - .stack_{{ stack_slug }}_core
 
 stack_{{ stack_slug }}_core_validate:
-  stage: Validate
   extends:
     - .validate
     - .stack_{{ stack_slug }}_core
-  dependencies:
-    - stack_{{ stack_slug }}_core_init
+  needs: ["stack_{{ stack_slug }}_core_init"]
 
 stack_{{ stack_slug }}_core_plan:
-  stage: Build
   extends:
     - .plan
     - .stack_{{ stack_slug }}_core
-  dependencies:
-    - stack_{{ stack_slug }}_core_validate
+  needs: ["stack_{{ stack_slug }}_core_validate"]
 
 stack_{{ stack_slug }}_core_apply:
-  stage: Deploy
   extends:
     - .apply
     - .stack_{{ stack_slug }}_core
-  dependencies:
-    - stack_{{ stack_slug }}_core_plan{% endfor %}
+  needs: ["stack_{{ stack_slug }}_core_plan"]{% endfor %}
 
 ### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
 # NETWORKING STACK - {{ stack_slug|title }} #
 
 .stack_{{ stack_slug }}_networking:
+  stage: Networking
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_networking
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
-    TF_VAR_backend_type: {{ cookiecutter.backend_type }}
-    TF_VAR_frontend_type: {{ cookiecutter.frontend_type }}
-    TF_VAR_stack_envs: '{{ stack_envs|tojson }}'
     TF_VAR_stack_slug: {{ stack_slug }}
+  cache:
+    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-networking
+    paths:
+      - ${TF_ROOT}/.terraform
 
 stack_{{ stack_slug }}_networking_init:
-  stage: Prepare
   extends:
     - .init
     - .stack_{{ stack_slug }}_networking
 
 stack_{{ stack_slug }}_networking_validate:
-  stage: Validate
   extends:
     - .validate
     - .stack_{{ stack_slug }}_networking
-  dependencies:
-    - stack_{{ stack_slug }}_networking_init
+  needs: ["stack_{{ stack_slug }}_networking_init"]
 
 stack_{{ stack_slug }}_networking_plan:
-  stage: Build
   extends:
     - .plan
     - .stack_{{ stack_slug }}_networking
-  dependencies:
-    - stack_{{ stack_slug }}_networking_validate
+  needs: ["stack_{{ stack_slug }}_core_apply", "stack_{{ stack_slug }}_networking_validate"]
 
 stack_{{ stack_slug }}_networking_apply:
-  stage: Deploy
   extends:
     - .apply
     - .stack_{{ stack_slug }}_networking
-  dependencies:
-    - stack_{{ stack_slug }}_networking_plan{% endfor %}
+  needs: ["stack_{{ stack_slug }}_networking_plan"]{% endfor %}
 
-### ENVIRONMENT STACK ###{% for stack_envs in cookiecutter.stacks.values() %}{% for  env_slug, env_conf in stack_envs.items() %}
+### ENVIRONMENT STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}{% for  env_slug, env_conf in stack_envs.items() %}
 
 # ENVIRONMENT STACK - {{ env_conf.name }} #
 
 .env_{{ env_slug }}:
+  stage: Environment
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment
+    TF_VAR_domain_prefix: {{ env_conf.prefix }}
     TF_VAR_env_slug: {{ env_slug }}
+    TF_VAR_project_url: {{ env_conf.url }}
+    TF_VAR_registry_password: "${K8S_REGCRED}"
+    TF_VAR_stack_slug: {{ stack_slug }}
+  cache:
+    key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}
+    paths:
+      - ${TF_ROOT}/.terraform
 
 env_{{ env_slug }}_init:
-  stage: Prepare
   extends:
     - .init
     - .env_{{ env_slug }}
 
 env_{{ env_slug }}_validate:
-  stage: Validate
   extends:
     - .validate
     - .env_{{ env_slug }}
-  dependencies:
-    - env_{{ env_slug }}_init
+  needs: ["env_{{ env_slug }}_init"]
 
 env_{{ env_slug }}_plan:
-  stage: Build
   extends:
     - .plan
     - .env_{{ env_slug }}
-  dependencies:
-    - env_{{ env_slug }}_validate
+  needs: ["stack_{{ stack_slug }}_core_apply", "env_{{ env_slug }}_validate"]
+
 
 env_{{ env_slug }}_apply:
-  stage: Deploy
   extends:
     - .apply
     - .env_{{ env_slug }}
-  dependencies:
-    - env_{{ env_slug }}_plan{% endfor %}{% endfor %}
+  needs: ["env_{{ env_slug }}_plan"]{% endfor %}{% endfor %}

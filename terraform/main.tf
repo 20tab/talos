@@ -75,7 +75,7 @@ resource "gitlab_project" "main" {
 }
 
 resource "null_resource" "init_repo" {
-  depends_on = [gitlab_branch_protection.develop]
+  depends_on = [gitlab_branch_protection.main]
 
   triggers = {
     service_project_id = gitlab_project.main.id
@@ -158,6 +158,15 @@ resource "gitlab_group_membership" "developers" {
   access_level = "developer"
 }
 
+/* Deploy Token */
+
+resource "gitlab_deploy_token" "regcred" {
+  group    = data.gitlab_group.group.id
+  name     = "Kubernetes registry credentials"
+  username = "${var.project_slug}-k8s-regcred"
+  scopes   = ["read_registry"]
+}
+
 /* Group Variables */
 
 resource "gitlab_group_variable" "vars" {
@@ -168,6 +177,14 @@ resource "gitlab_group_variable" "vars" {
   value     = each.value.value
   protected = lookup(each.value, "protected", true)
   masked    = lookup(each.value, "masked", true)
+}
+
+resource "gitlab_group_variable" "regcred" {
+  group     = data.gitlab_group.group.id
+  key       = "K8S_REGCRED"
+  value     = gitlab_deploy_token.regcred.token
+  protected = true
+  masked    = true
 }
 
 /* Project Variables */
