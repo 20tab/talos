@@ -206,9 +206,9 @@ def change_output_owner(service_dir, uid):
     uid is not None and subprocess.run(["chown", "-R", uid, service_dir])
 
 
-def init_subrepo(service_slug, service_dirname, template_url, **options):
+def init_subrepo(service_slug, template_url, **options):
     """Initialize a subrepo using the given template and options."""
-    subrepo_dir = str((Path(SUBREPOS_DIR) / service_dirname).resolve())
+    subrepo_dir = str((Path(SUBREPOS_DIR) / service_slug).resolve())
     shutil.rmtree(subrepo_dir, ignore_errors=True)
     subprocess.run(
         [
@@ -222,7 +222,7 @@ def init_subrepo(service_slug, service_dirname, template_url, **options):
         ],
     )
     options.update(
-        project_dirname=service_dirname,
+        project_dirname=service_slug,
         service_slug=service_slug,
     )
     subprocess.run(
@@ -370,7 +370,6 @@ def run(
     backend_template_url = BACKEND_TEMPLATE_URLS.get(backend_type)
     if backend_template_url:
         init_subrepo(
-            backend_type,
             backend_service_slug,
             backend_template_url,
             media_storage=media_storage,
@@ -379,7 +378,6 @@ def run(
     frontend_template_url = FRONTEND_TEMPLATE_URLS.get(frontend_type)
     if frontend_template_url:
         init_subrepo(
-            frontend_type,
             frontend_service_slug,
             frontend_template_url,
             **common_options,
