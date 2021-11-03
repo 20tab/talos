@@ -43,6 +43,11 @@ variable "project_name" {
   type        = string
 }
 
+variable "project_slug" {
+  description = "The project slug."
+  type        = string
+}
+
 variable "service_dir" {
   description = "The service directory."
   type        = string

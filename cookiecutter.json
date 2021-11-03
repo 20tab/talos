@@ -7,6 +7,7 @@
   "frontend_type": ["nextjs", "none"],
   "frontend_service_slug": "frontend",
   "media_storage": ["local", "s3-digitalocean", "none"],
+  "project_domain": "",
   "stacks": {
     "main": {
       "dev": {

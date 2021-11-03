@@ -45,26 +45,75 @@ info = partial(click.style, dim=True)
 warning = partial(click.style, fg="yellow")
 
 
+def get_stacks_environments(
+    environments_distribution,
+    domain_prefix_dev,
+    domain_prefix_stage,
+    domain_prefix_prod,
+    project_url_dev,
+    project_url_stage,
+    project_url_prod,
+):
+    """Return a dict with the environments distribution per stack."""
+    dev_env = {
+        "name": "Development",
+        "url": project_url_dev,
+        "prefix": domain_prefix_dev,
+    }
+    stage_env = {
+        "name": "Staging",
+        "url": project_url_stage,
+        "prefix": domain_prefix_stage,
+    }
+    prod_env = {
+        "name": "Production",
+        "url": project_url_prod,
+        "prefix": domain_prefix_prod,
+    }
+    if environments_distribution == "1":
+        return {"main": {"dev": dev_env, "stage": stage_env, "prod": prod_env}}
+    elif environments_distribution == "2":
+        return {
+            "dev": {"dev": dev_env, "stage": stage_env},
+            "main": {"prod": prod_env},
+        }
+    elif environments_distribution == "3":
+        return {
+            "dev": {"dev": dev_env},
+            "stage": {"stage": stage_env},
+            "main": {"prod": prod_env},
+        }
+    return {}
+
+
 def init_service(
     output_dir,
     project_name,
     project_slug,
     project_dirname,
     backend_type,
+    backend_service_slug,
     frontend_type,
+    frontend_service_slug,
     media_storage,
+    project_domain,
+    stacks_environments,
 ):
     """Initialize the service."""
     click.echo(info("...cookiecutting the service"))
     cookiecutter(
         ".",
         extra_context={
+            "backend_service_slug": backend_service_slug,
             "backend_type": backend_type,
+            "frontend_service_slug": frontend_service_slug,
             "frontend_type": frontend_type,
             "media_storage": media_storage,
             "project_dirname": project_dirname,
+            "project_domain": project_domain,
             "project_name": project_name,
             "project_slug": project_slug,
+            "stacks": stacks_environments,
         },
         output_dir=output_dir,
         no_input=True,
@@ -157,9 +206,9 @@ def change_output_owner(service_dir, uid):
     uid is not None and subprocess.run(["chown", "-R", uid, service_dir])
 
 
-def init_subrepo(service_slug, service_dir, template_url, **options):
+def init_subrepo(service_slug, service_dirname, template_url, **options):
     """Initialize a subrepo using the given template and options."""
-    subrepo_dir = str((Path(SUBREPOS_DIR) / service_slug).resolve())
+    subrepo_dir = str((Path(SUBREPOS_DIR) / service_dirname).resolve())
     shutil.rmtree(subrepo_dir, ignore_errors=True)
     subprocess.run(
         [
@@ -173,9 +222,8 @@ def init_subrepo(service_slug, service_dir, template_url, **options):
         ],
     )
     options.update(
-        project_dirname=service_slug,
+        project_dirname=service_dirname,
         service_slug=service_slug,
-        service_dir=str((Path(service_dir) / service_slug).resolve()),
     )
     subprocess.run(
         ["python", "-c", f"from bootstrap import run; run(**{options})"],
@@ -192,12 +240,19 @@ def run(
     service_slug,
     service_dir,
     backend_type,
+    backend_service_slug,
     frontend_type,
+    frontend_service_slug,
+    deployment_type,
+    digitalocean_token,
+    environments_distribution,
+    project_domain,
+    domain_prefix_dev,
+    domain_prefix_stage,
+    domain_prefix_prod,
     project_url_dev,
     project_url_stage,
     project_url_prod,
-    deployment_type,
-    digitalocean_token,
     sentry_org,
     sentry_url,
     sentry_auth_token,
@@ -218,25 +273,40 @@ def run(
 ):
     """Run the bootstrap."""
     click.echo(highlight(f"Initializing the {service_slug} service:"))
+    stacks_environments = get_stacks_environments(
+        environments_distribution,
+        domain_prefix_dev,
+        domain_prefix_stage,
+        domain_prefix_prod,
+        project_url_dev,
+        project_url_stage,
+        project_url_prod,
+    )
     init_service(
         output_dir,
         project_name,
         project_slug,
         project_dirname,
         backend_type,
+        backend_service_slug,
         frontend_type,
+        frontend_service_slug,
         media_storage,
+        project_domain,
+        stacks_environments,
     )
     create_env_file(service_dir)
     if use_gitlab:
         gitlab_project_variables = {}
         gitlab_group_variables = {}
-        if sentry_org:
-            gitlab_group_variables.update(
-                SENTRY_ORG='{value = "%s", masked = false}' % sentry_org,
-                SENTRY_URL='{value = "%s", masked = false}' % sentry_url,
-                SENTRY_AUTH_TOKEN='{value = "%s"}' % sentry_auth_token,
-            )
+        project_domain and gitlab_group_variables.update(
+            DOMAIN='{value = "%s", masked = false}' % project_domain
+        )
+        sentry_org and gitlab_group_variables.update(
+            SENTRY_ORG='{value = "%s", masked = false}' % sentry_org,
+            SENTRY_URL='{value = "%s", masked = false}' % sentry_url,
+            SENTRY_AUTH_TOKEN='{value = "%s"}' % sentry_auth_token,
+        )
         if use_pact:
             pact_broker_auth_url = re.sub(
                 r"^(https?)://(.*)$",
@@ -258,18 +328,17 @@ def run(
                 ),
                 PACT_BROKER_AUTH_URL=('{value = "%s"}' % pact_broker_auth_url),
             )
-        if media_storage == "s3-digitalocean":
-            gitlab_group_variables.update(
-                DIGITALOCEAN_BUCKET_REGION=(
-                    '{value = "%s", masked = false}' % digitalocean_spaces_bucket_region
-                ),
-                DIGITALOCEAN_SPACES_ACCESS_ID=(
-                    '{value = "%s"}' % digitalocean_spaces_access_id
-                ),
-                DIGITALOCEAN_SPACES_SECRET_KEY=(
-                    '{value = "%s"}' % digitalocean_spaces_secret_key
-                ),
-            )
+        media_storage == "s3-digitalocean" and gitlab_group_variables.update(
+            DIGITALOCEAN_BUCKET_REGION=(
+                '{value = "%s", masked = false}' % digitalocean_spaces_bucket_region
+            ),
+            S3_BUCKET_ENDPOINT_URL=(
+                '{value = "https://%s.digitaloceanspaces.com", masked = false}'
+                % digitalocean_spaces_bucket_region
+            ),
+            S3_BUCKET_ACCESS_ID=('{value = "%s"}' % digitalocean_spaces_access_id),
+            S3_BUCKET_SECRET_KEY=('{value = "%s"}' % digitalocean_spaces_secret_key),
+        )
         digitalocean_token and gitlab_group_variables.update(
             DIGITALOCEAN_TOKEN='{value = "%s"}' % digitalocean_token
         )
@@ -302,7 +371,7 @@ def run(
     if backend_template_url:
         init_subrepo(
             backend_type,
-            service_dir,
+            backend_service_slug,
             backend_template_url,
             media_storage=media_storage,
             **common_options,
@@ -311,7 +380,7 @@ def run(
     if frontend_template_url:
         init_subrepo(
             frontend_type,
-            service_dir,
+            frontend_service_slug,
             frontend_template_url,
             **common_options,
         )
@@ -352,7 +421,9 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--project-slug", callback=slugify_option)
 @click.option("--project-dirname")
 @click.option("--backend-type")
+@click.option("--backend-service-slug")
 @click.option("--frontend-type")
+@click.option("--frontend-service-slug")
 @click.option(
     "--deployment-type",
     type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
@@ -396,7 +467,9 @@ def init_command(
     project_slug,
     project_dirname,
     backend_type,
+    backend_service_slug,
     frontend_type,
+    frontend_service_slug,
     deployment_type,
     digitalocean_token,
     environments_distribution,
@@ -450,6 +523,12 @@ def init_command(
             type=click.Choice(BACKEND_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
+    if backend_type:
+        backend_service_slug = slugify(
+            backend_service_slug
+            or click.prompt("Backend service slug", default="backend"),
+            separator="",
+        )
     frontend_type = (
         frontend_type in FRONTEND_TYPE_CHOICES
         and frontend_type
@@ -459,6 +538,12 @@ def init_command(
             type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
+    if frontend_type:
+        frontend_service_slug = slugify(
+            frontend_service_slug
+            or click.prompt("Frontend service slug", default="frontend"),
+            separator="",
+        )
     deployment_type = (
         deployment_type in DEPLOYMENT_TYPE_CHOICES
         and deployment_type
@@ -507,6 +592,8 @@ def init_command(
         project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
         project_url_prod = f"https://{domain_prefix_prod}.{project_domain}"
     else:
+        project_domain = ""
+        domain_prefix_dev = domain_prefix_stage = domain_prefix_prod = ""
         project_url_dev = validate_or_prompt_url(
             project_url_dev,
             "Development environment complete URL",
@@ -625,12 +712,19 @@ def init_command(
         service_slug,
         service_dir,
         backend_type,
+        backend_service_slug,
         frontend_type,
+        frontend_service_slug,
+        deployment_type,
+        digitalocean_token,
+        environments_distribution,
+        project_domain,
+        domain_prefix_dev,
+        domain_prefix_stage,
+        domain_prefix_prod,
         project_url_dev,
         project_url_stage,
         project_url_prod,
-        deployment_type,
-        digitalocean_token,
         sentry_org,
         sentry_url,
         sentry_auth_token,

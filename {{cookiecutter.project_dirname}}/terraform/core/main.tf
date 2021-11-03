@@ -1,4 +1,8 @@
 locals {
+  project_slug = "{{ cookiecutter.project_slug }}"
+
+  media_storage = "{{ cookiecutter.media_storage }}"
+
   digitalocean_default_region = "fra1"
   digitalocean_regions        = data.digitalocean_regions.main.regions[*].slug
 
@@ -12,7 +16,7 @@ locals {
     var.k8s_cluster_region
   ) ? var.k8s_cluster_region : local.digitalocean_default_region
 
-  resource_name = var.stack_slug == "main" ? var.project_slug : "${var.project_slug}-${var.stack_slug}"
+  resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
 }
 
 terraform {
@@ -102,6 +106,8 @@ resource "digitalocean_kubernetes_cluster" "main" {
 /* Spaces Bucket */
 
 resource "digitalocean_spaces_bucket" "main" {
+  count = local.media_storage == "s3-digitalocean" ? 1 : 0
+
   name = "${local.resource_name}-s3-bucket"
   region = contains(
     local.digitalocean_regions,
