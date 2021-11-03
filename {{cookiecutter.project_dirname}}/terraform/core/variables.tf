@@ -1,3 +1,9 @@
+variable "create_domain" {
+  description = "If true, a Digital Ocean domain is created."
+  type        = bool
+  default     = true
+}
+
 variable "database_cluster_engine" {
   description = "The Digital Ocean database cluster engine."
   type        = string

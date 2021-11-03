@@ -138,7 +138,7 @@ resource "digitalocean_database_cluster" "main" {
 /* Domain */
 
 resource "digitalocean_domain" "default" {
-  count = var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
+  count = var.create_domain && var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
 
   name = var.project_domain
 }

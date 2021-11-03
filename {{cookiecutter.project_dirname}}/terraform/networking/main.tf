@@ -60,7 +60,7 @@ resource "digitalocean_certificate" "ssl_cert" {
 
 resource "kubernetes_cluster_role" "traefik_ingress_controller" {
   metadata {
-    name = "${local.resource_name}-traefik-ingress-controller"
+    name = "traefik-ingress-controller"
   }
 
   rule {
@@ -84,22 +84,22 @@ resource "kubernetes_cluster_role" "traefik_ingress_controller" {
 
 resource "kubernetes_service_account" "traefik_ingress_controller" {
   metadata {
-    name = "${local.resource_name}-traefik-ingress-controller"
+    name = "traefik-ingress-controller"
   }
 }
 
 resource "kubernetes_cluster_role_binding" "traefik_ingress_controller" {
   metadata {
-    name = "${local.resource_name}-traefik-ingress-controller"
+    name = "traefik-ingress-controller"
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
-    name      = "traefik-ingress-controller"
+    name      = kubernetes_cluster_role.traefik_ingress_controller.metadata[0].name
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "traefik-ingress-controller"
+    name      = kubernetes_service_account.traefik_ingress_controller.metadata[0].name
     namespace = "default"
   }
 }
@@ -108,7 +108,7 @@ resource "kubernetes_cluster_role_binding" "traefik_ingress_controller" {
 
 resource "kubernetes_deployment" "traefik_controller" {
   metadata {
-    name = "${local.resource_name}-traefik-ingress-controller"
+    name = "traefik-ingress-controller"
     labels = {
       app   = "traefik"
       stack = var.stack_slug
@@ -134,7 +134,7 @@ resource "kubernetes_deployment" "traefik_controller" {
       }
 
       spec {
-        service_account_name = "${local.resource_name}-traefik-ingress-controller"
+        service_account_name = kubernetes_service_account.traefik_ingress_controller.metadata[0].name
 
         container {
           name  = "traefik"
