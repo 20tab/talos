@@ -241,8 +241,10 @@ def run(
     service_dir,
     backend_type,
     backend_service_slug,
+    backend_service_port,
     frontend_type,
     frontend_service_slug,
+    frontend_service_port,
     deployment_type,
     digitalocean_token,
     environments_distribution,
@@ -301,6 +303,12 @@ def run(
         gitlab_group_variables = {}
         project_domain and gitlab_group_variables.update(
             DOMAIN='{value = "%s", masked = false}' % project_domain
+        )
+        backend_service_slug and frontend_service_slug and (
+            gitlab_group_variables.update(
+                INTERNAL_API_URL='{value = "http://%s:%s", masked = false}'
+                % (backend_service_slug, backend_service_port)
+            )
         )
         sentry_org and gitlab_group_variables.update(
             SENTRY_ORG='{value = "%s", masked = false}' % sentry_org,
@@ -420,8 +428,10 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--project-dirname")
 @click.option("--backend-type")
 @click.option("--backend-service-slug")
+@click.option("--backend-service-port", type=int)
 @click.option("--frontend-type")
 @click.option("--frontend-service-slug")
+@click.option("--frontend-service-port", type=int)
 @click.option(
     "--deployment-type",
     type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
@@ -452,6 +462,7 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--digitalocean-spaces-bucket-region")
 @click.option("--digitalocean-spaces-access-id")
 @click.option("--digitalocean-spaces-secret-key")
+@click.option("--digitalocean-spaces-secret-key")
 @click.option("--use-gitlab/--no-gitlab", is_flag=True, default=None)
 @click.option("--gitlab-private-token", envvar=GITLAB_TOKEN_ENV_VAR)
 @click.option("--gitlab-group-slug")
@@ -466,8 +477,10 @@ def init_command(
     project_dirname,
     backend_type,
     backend_service_slug,
+    backend_service_port,
     frontend_type,
     frontend_service_slug,
+    frontend_service_port,
     deployment_type,
     digitalocean_token,
     environments_distribution,
@@ -527,6 +540,9 @@ def init_command(
             or click.prompt("Backend service slug", default="backend"),
             separator="",
         )
+        backend_service_port = backend_service_port or click.prompt(
+            "Backend service port", default=8000, type=int
+        )
     frontend_type = (
         frontend_type in FRONTEND_TYPE_CHOICES
         and frontend_type
@@ -541,6 +557,9 @@ def init_command(
             frontend_service_slug
             or click.prompt("Frontend service slug", default="frontend"),
             separator="",
+        )
+        frontend_service_port = frontend_service_port or click.prompt(
+            "Frontend service port", default=3000, type=int
         )
     deployment_type = (
         deployment_type in DEPLOYMENT_TYPE_CHOICES
@@ -711,8 +730,10 @@ def init_command(
         service_dir,
         backend_type,
         backend_service_slug,
+        backend_service_port,
         frontend_type,
         frontend_service_slug,
+        frontend_service_port,
         deployment_type,
         digitalocean_token,
         environments_distribution,

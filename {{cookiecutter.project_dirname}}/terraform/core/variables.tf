@@ -87,6 +87,12 @@ variable "k8s_cluster_version" {
   default     = ""
 }
 
+variable "media_storage" {
+  description = "The media storage solution."
+  type        = string
+  default     = "{{ cookiecutter.media_storage }}"
+}
+
 variable "project_domain" {
   description = "The project domain."
   type        = string

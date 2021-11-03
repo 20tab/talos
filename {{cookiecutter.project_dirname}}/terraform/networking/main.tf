@@ -54,6 +54,10 @@ resource "digitalocean_certificate" "ssl_cert" {
   name    = "${local.project_slug}-lets-encrypt-certificate"
   type    = "lets_encrypt"
   domains = ["*.${var.project_domain}"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 /* RBAC */

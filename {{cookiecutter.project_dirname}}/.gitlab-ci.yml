@@ -34,7 +34,6 @@ before_script:
 .apply:
   script:
     - gitlab-terraform apply
-  when: manual
 
 ### CORE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
@@ -76,6 +75,7 @@ stack_{{ stack_slug }}_core_apply:
     - .apply
     - .stack_{{ stack_slug }}_core
   needs: ["stack_{{ stack_slug }}_core_plan"]{% endfor %}
+  when: manual
 
 ### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
@@ -149,8 +149,7 @@ env_{{ env_slug }}_plan:
   extends:
     - .plan
     - .env_{{ env_slug }}
-  needs: ["stack_{{ stack_slug }}_core_apply", "env_{{ env_slug }}_validate"]
-
+  needs: ["stack_{{ stack_slug }}_networking_apply", "env_{{ env_slug }}_validate"]
 
 env_{{ env_slug }}_apply:
   extends:
