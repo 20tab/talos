@@ -40,8 +40,8 @@ Clone the orchestrator and services repositories:
 ```console
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{ cookiecutter.project_dirname }}
 $ cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/{{ cookiecutter.backend_type }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/{{ cookiecutter.frontend_type }}.git{% endif %}
+$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/backend.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/frontend.git{% endif %}
 $ cd ..
 ```
 **NOTE** : We're cloning the `develop` branch for all repo.

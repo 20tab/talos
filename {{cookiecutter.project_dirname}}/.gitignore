@@ -156,6 +156,8 @@ dmypy.json
 requirements.txt
 
 # Environment
+backend/
+frontend/
 kubeconfig.yaml
 *secrets.yaml{% if cookiecutter.backend_type != 'none' %}
 {{ cookiecutter.backend_type }}/{% endif %}{% if cookiecutter.frontend_type != 'none' %}
