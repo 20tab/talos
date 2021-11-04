@@ -54,10 +54,6 @@ resource "digitalocean_certificate" "ssl_cert" {
   name    = "${local.project_slug}-lets-encrypt-certificate"
   type    = "lets_encrypt"
   domains = ["*.${var.project_domain}"]
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 /* RBAC */
@@ -178,7 +174,7 @@ resource "kubernetes_service" "traefik_load_balancer" {
         "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https" = "true"
         "service.beta.kubernetes.io/do-loadbalancer-protocol"               = "http"
         "service.beta.kubernetes.io/do-loadbalancer-tls-ports"              = "443"
-        "service.beta.kubernetes.io/do-loadbalancer-certificate-id"         = "${digitalocean_certificate.ssl_cert[0].id}"
+        "service.beta.kubernetes.io/do-loadbalancer-certificate-id"         = "${digitalocean_certificate.ssl_cert[0].uuid}"
       } : {}
     )
   }
