@@ -306,7 +306,7 @@ def run(
         )
         backend_service_slug and frontend_service_slug and (
             gitlab_group_variables.update(
-                INTERNAL_API_URL='{value = "http://%s:%s", masked = false}'
+                INTERNAL_URL='{value = "http://%s:%s", masked = false}'
                 % (backend_service_slug, backend_service_port)
             )
         )

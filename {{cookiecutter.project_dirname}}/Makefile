@@ -9,8 +9,8 @@ django_shell:  ## Exec django command
 .PHONY: pull
 pull:  ## Pull develop on orchestrator, frontend and backend
 	git checkout main && git pull && \{% if cookiecutter.backend_type != 'none' %}
-	cd backend && git checkout develop && git pull && \{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-	cd ../frontend && git checkout develop && git pull && \{% endif %}
+	cd {{ cookiecutter.backend_service_slug }} && git checkout develop && git pull && \{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+	cd ../{{ cookiecutter.frontend_service_slug }} && git checkout develop && git pull && \{% endif %}
 	cd ..
 
 s =

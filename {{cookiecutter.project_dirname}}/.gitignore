@@ -156,12 +156,10 @@ dmypy.json
 requirements.txt
 
 # Environment
-backend/
-frontend/
 kubeconfig.yaml
 *secrets.yaml{% if cookiecutter.backend_type != 'none' %}
-{{ cookiecutter.backend_type }}/{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-{{ cookiecutter.frontend_type }}/{% endif %}
+{{ cookiecutter.backend_service_slug }}/{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+{{ cookiecutter.frontend_service_slug }}/{% endif %}
 
 # Locals
 *.local.yaml
