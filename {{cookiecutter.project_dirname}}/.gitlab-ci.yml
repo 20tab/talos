@@ -115,20 +115,27 @@ stack_{{ stack_slug }}_networking_apply:
     - .stack_{{ stack_slug }}_networking
   needs: ["stack_{{ stack_slug }}_networking_plan"]{% endfor %}
 
-### ENVIRONMENT STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}{% for  env_slug, env_conf in stack_envs.items() %}
+### ENVIRONMENT STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
+.{{ stack_slug }}_env:
+  stage: Environment
+  variables:
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment
+    TF_VAR_basic_auth_password: "${BASIC_AUTH_PASSWORD}"
+    TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
+    TF_VAR_registry_password: "${K8S_REGCRED}"
+    TF_VAR_stack_slug: {{ stack_slug }}
+{% for  env_slug, env_conf in stack_envs.items() %}
 # ENVIRONMENT STACK - {{ env_conf.name }} #
 
 .env_{{ env_slug }}:
-  stage: Environment
+  extends:
+    - .{{ stack_slug }}_env
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment
     TF_VAR_domain_prefix: {{ env_conf.prefix }}
     TF_VAR_env_slug: {{ env_slug }}
     TF_VAR_project_url: {{ env_conf.url }}
-    TF_VAR_registry_password: "${K8S_REGCRED}"
-    TF_VAR_stack_slug: {{ stack_slug }}
   cache:
     key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}
     paths:
