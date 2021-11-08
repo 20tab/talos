@@ -15,10 +15,14 @@ before_script:
 .init:
   script:
   - gitlab-terraform init
+  only:
+    - main
 
 .validate:
   script:
     - gitlab-terraform validate
+  only:
+    - main
 
 .plan:
   script:
@@ -30,10 +34,14 @@ before_script:
       - ${TF_ROOT}/plan.cache
     reports:
       terraform: ${TF_ROOT}/plan.json
+  only:
+    - main
 
 .apply:
   script:
     - gitlab-terraform apply
+  only:
+    - main
 
 ### CORE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
