@@ -334,7 +334,9 @@ def run(
                 PACT_BROKER_PASSWORD=(
                     '{value = "%s", protected = false}' % pact_broker_password
                 ),
-                PACT_BROKER_AUTH_URL=('{value = "%s"}' % pact_broker_auth_url),
+                PACT_BROKER_AUTH_URL=(
+                    '{value = "%s", protected = false}' % pact_broker_auth_url
+                ),
             )
         media_storage == "s3-digitalocean" and gitlab_group_variables.update(
             DIGITALOCEAN_BUCKET_REGION=(

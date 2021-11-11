@@ -90,7 +90,7 @@ resource "digitalocean_database_db" "main" {
   name       = "${local.project_slug}-${var.env_slug}-database"
 }
 
-resource "digitalocean_database_connection_pool" "db-production-pool" {
+resource "digitalocean_database_connection_pool" "main" {
   cluster_id = data.digitalocean_database_cluster.main.id
   db_name    = digitalocean_database_db.main.name
   user       = digitalocean_database_user.main.name
