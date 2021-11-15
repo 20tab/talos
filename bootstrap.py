@@ -93,19 +93,25 @@ def init_service(
     project_dirname,
     backend_type,
     backend_service_slug,
+    backend_service_port,
     frontend_type,
     frontend_service_slug,
+    frontend_service_port,
     media_storage,
     project_domain,
     stacks_environments,
+    deployment_type,
 ):
     """Initialize the service."""
     click.echo(info("...cookiecutting the service"))
     cookiecutter(
         ".",
         extra_context={
+            "backend_service_port": backend_service_port,
             "backend_service_slug": backend_service_slug,
             "backend_type": backend_type,
+            "deployment_type": deployment_type,
+            "frontend_service_port": frontend_service_port,
             "frontend_service_slug": frontend_service_slug,
             "frontend_type": frontend_type,
             "media_storage": media_storage,
@@ -255,6 +261,9 @@ def run(
     project_url_dev,
     project_url_stage,
     project_url_prod,
+    digitalocean_k8s_cluster_region,
+    digitalocean_database_cluster_region,
+    digitalocean_database_cluster_node_size,
     sentry_org,
     sentry_url,
     sentry_auth_token,
@@ -291,16 +300,23 @@ def run(
         project_dirname,
         backend_type,
         backend_service_slug,
+        backend_service_port,
         frontend_type,
         frontend_service_slug,
+        frontend_service_port,
         media_storage,
         project_domain,
         stacks_environments,
+        deployment_type,
     )
     create_env_file(service_dir)
     if use_gitlab:
         gitlab_project_variables = {}
-        gitlab_group_variables = {}
+        gitlab_group_variables = dict(
+            BACKEND_SERVICE_PORT="{value = %s, masked = false}" % backend_service_port,
+            FRONTEND_SERVICE_PORT="{value = %s, masked = false}"
+            % frontend_service_port,
+        )
         project_domain and gitlab_group_variables.update(
             DOMAIN='{value = "%s", masked = false}' % project_domain
         )
@@ -352,6 +368,15 @@ def run(
         digitalocean_token and gitlab_group_variables.update(
             DIGITALOCEAN_TOKEN='{value = "%s"}' % digitalocean_token
         )
+        if "digitalocean" in deployment_type:
+            gitlab_project_variables.update(
+                DIGITALOCEAN_K8S_CLUSTER_REGION='{value = "%s"}'
+                % digitalocean_k8s_cluster_region,
+                DIGITALOCEAN_DATABASE_CLUSTER_REGION='{value = "%s"}'
+                % digitalocean_database_cluster_region,
+                DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE='{value = "%s"}'
+                % digitalocean_database_cluster_node_size,
+            )
         init_gitlab(
             gitlab_group_slug,
             gitlab_private_token,
@@ -382,6 +407,7 @@ def run(
         init_subrepo(
             backend_service_slug,
             backend_template_url,
+            internal_service_port=backend_service_port,
             media_storage=media_storage,
             **common_options,
         )
@@ -390,6 +416,7 @@ def run(
         init_subrepo(
             frontend_service_slug,
             frontend_template_url,
+            internal_service_port=frontend_service_port,
             **common_options,
         )
     change_output_owner(service_dir, uid)
@@ -430,10 +457,10 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--project-dirname")
 @click.option("--backend-type")
 @click.option("--backend-service-slug")
-@click.option("--backend-service-port", type=int)
+@click.option("--backend-service-port", default=8000, type=int)
 @click.option("--frontend-type")
 @click.option("--frontend-service-slug")
-@click.option("--frontend-service-port", type=int)
+@click.option("--frontend-service-port", default=3000, type=int)
 @click.option(
     "--deployment-type",
     type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
@@ -450,6 +477,9 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--project-url-dev")
 @click.option("--project-url-stage")
 @click.option("--project-url-prod")
+@click.option("--digitalocean-k8s-cluster-region")
+@click.option("--digitalocean-database-cluster-region")
+@click.option("--digitalocean-database-cluster-node-size")
 @click.option("--sentry-org")
 @click.option("--sentry-url")
 @click.option("--sentry-auth-token")
@@ -493,6 +523,9 @@ def init_command(
     project_url_dev,
     project_url_stage,
     project_url_prod,
+    digitalocean_k8s_cluster_region,
+    digitalocean_database_cluster_region,
+    digitalocean_database_cluster_node_size,
     sentry_org,
     sentry_url,
     sentry_auth_token,
@@ -542,9 +575,6 @@ def init_command(
             or click.prompt("Backend service slug", default="backend"),
             separator="",
         )
-        backend_service_port = backend_service_port or click.prompt(
-            "Backend service port", default=8000, type=int
-        )
     frontend_type = (
         frontend_type in FRONTEND_TYPE_CHOICES
         and frontend_type
@@ -559,9 +589,6 @@ def init_command(
             frontend_service_slug
             or click.prompt("Frontend service slug", default="frontend"),
             separator="",
-        )
-        frontend_service_port = frontend_service_port or click.prompt(
-            "Frontend service port", default=3000, type=int
         )
     deployment_type = (
         deployment_type in DEPLOYMENT_TYPE_CHOICES
@@ -632,6 +659,20 @@ def init_command(
         'Sentry organization (e.g. "20tab", leave blank if unused)',
         default="",
     )
+    if digitalocean_enabled:
+        # TODO: ask these settings for each stack
+        digitalocean_k8s_cluster_region = (
+            digitalocean_k8s_cluster_region
+            or click.prompt("Kubernetes cluster Digital Ocean region", default="fra1")
+        )
+        digitalocean_database_cluster_region = (
+            digitalocean_database_cluster_region
+            or click.prompt("Database cluster Digital Ocean region", default="fra1")
+        )
+        digitalocean_database_cluster_node_size = (
+            digitalocean_database_cluster_node_size
+            or click.prompt("Database cluster node size", default="db-s-1vcpu-2gb")
+        )
     if sentry_org:
         sentry_url = validate_or_prompt_url(
             sentry_url,
@@ -746,6 +787,9 @@ def init_command(
         project_url_dev,
         project_url_stage,
         project_url_prod,
+        digitalocean_k8s_cluster_region,
+        digitalocean_database_cluster_region,
+        digitalocean_database_cluster_node_size,
         sentry_org,
         sentry_url,
         sentry_auth_token,

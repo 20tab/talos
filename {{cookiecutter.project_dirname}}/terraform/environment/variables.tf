@@ -1,7 +1,7 @@
 variable "backend_service_port" {
   description = "The backend service port."
   type        = number
-  default     = 8000
+  default     = {{ cookiecutter.backend_service_port }}
 }
 
 variable "database_connection_pool_size" {
@@ -19,7 +19,7 @@ variable "digitalocean_token" {
 variable "frontend_service_port" {
   description = "The frontend service port."
   type        = number
-  default     = 3000
+  default     = {{ cookiecutter.frontend_service_port }}
 }
 
 variable "domain_prefix" {

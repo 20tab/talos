@@ -51,9 +51,12 @@ before_script:
   stage: Core
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_core
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core
-    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"
-    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core{% if cookiecutter.deployment_type == "k8s-digitalocean" %}
+    TF_VAR_database_cluster_node_size: "${DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE}"
+    TF_VAR_database_cluster_region: "${DIGITALOCEAN_DATABASE_CLUSTER_REGION}"
+    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% endif %}
+    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"{% if cookiecutter.media_storage == "s3-digitalocean" %}
+    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"{% endif %}
     TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"
     TF_VAR_stack_slug: {{ stack_slug }}
   cache:
@@ -129,8 +132,10 @@ stack_{{ stack_slug }}_networking_apply:
   stage: Environment
   variables:
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment
+    TF_VAR_backend_service_port: "${BACKEND_SERVICE_PORT}"
     TF_VAR_basic_auth_password: "${BASIC_AUTH_PASSWORD}"
     TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
+    TF_VAR_frontend_service_port: "${FRONTEND_SERVICE_PORT}"
     TF_VAR_registry_password: "${K8S_REGCRED}"
     TF_VAR_stack_slug: {{ stack_slug }}
 {% for  env_slug, env_conf in stack_envs.items() %}
