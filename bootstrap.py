@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from functools import partial
 from pathlib import Path
+from time import time
 
 import click
 import validators
@@ -150,58 +151,97 @@ def init_gitlab(
     project_slug,
     service_slug,
     service_dir,
+    terraform_dir,
+    logs_dir,
 ):
     """Initialize the Gitlab repositories."""
     click.echo(info("...creating the Gitlab repository and associated resources"))
-    env = {
-        "TF_VAR_gitlab_group_variables": "{%s}"
+    terraform_dir = Path(terraform_dir) / service_slug
+    os.makedirs(terraform_dir)
+    env = dict(
+        TF_DATA_DIR=(Path(terraform_dir) / "data").resolve(),
+        TF_LOG="INFO",
+        TF_VAR_gitlab_group_variables="{%s}"
         % ", ".join(f"{k} = {v}" for k, v in gitlab_group_variables.items()),
-        "TF_VAR_gitlab_group_slug": gitlab_group_slug,
-        "TF_VAR_gitlab_token": gitlab_private_token,
-        "TF_VAR_gitlab_group_developers": gitlab_group_developers,
-        "TF_VAR_gitlab_group_maintainers": gitlab_group_maintainers,
-        "TF_VAR_gitlab_group_owners": gitlab_group_owners,
-        "TF_VAR_project_name": project_name,
-        "TF_VAR_project_slug": project_slug,
-        "TF_VAR_gitlab_project_variables": "{%s}"
+        TF_VAR_gitlab_group_slug=gitlab_group_slug,
+        TF_VAR_gitlab_token=gitlab_private_token,
+        TF_VAR_gitlab_group_developers=gitlab_group_developers,
+        TF_VAR_gitlab_group_maintainers=gitlab_group_maintainers,
+        TF_VAR_gitlab_group_owners=gitlab_group_owners,
+        TF_VAR_project_name=project_name,
+        TF_VAR_project_slug=project_slug,
+        TF_VAR_gitlab_project_variables="{%s}"
         % ", ".join(f"{k} = {v}" for k, v in gitlab_project_variables.items()),
-        "TF_VAR_service_dir": service_dir,
-        "TF_VAR_service_slug": service_slug,
-    }
+        TF_VAR_service_dir=service_dir,
+        TF_VAR_service_slug=service_slug,
+    )
+    state_path = Path(terraform_dir) / "state.tfstate"
     cwd = Path("terraform")
+    logs_dir = Path(logs_dir) / service_slug / "terraform"
+    os.makedirs(logs_dir)
+    init_log_path = logs_dir / "init.log"
+    init_output_path = logs_dir / "init-output.log"
     init_process = subprocess.run(
-        ["terraform", "init", "-reconfigure", "-input=false", "-no-color"],
+        [
+            "terraform",
+            "init",
+            "-backend-config",
+            f"path={state_path.resolve()}",
+            "-input=false",
+            "-no-color",
+        ],
         capture_output=True,
         cwd=cwd,
-        env=env,
+        env=dict(**env, TF_LOG_PATH=init_log_path.resolve()),
         text=True,
     )
+    init_output_path.write_text(init_process.stdout)
     if init_process.returncode == 0:
-        (cwd / ".terraform-init.log").write_text(init_process.stdout)
+        apply_log_path = logs_dir / "apply.log"
+        apply_output_path = logs_dir / "apply-output.log"
         apply_process = subprocess.run(
             ["terraform", "apply", "-auto-approve", "-input=false", "-no-color"],
             capture_output=True,
             cwd=cwd,
-            env=env,
+            env=dict(**env, TF_LOG_PATH=apply_log_path.resolve()),
             text=True,
         )
-        if apply_process.returncode == 0:
-            (cwd / ".terraform-apply.log").write_text(apply_process.stdout)
-        else:
-            (cwd / ".terraform-apply-errors.log").write_text(apply_process.stderr)
+        apply_output_path.write_text(apply_process.stdout)
+        if apply_process.returncode != 0:
             click.echo(
                 error(
                     "Error applying Terraform Gitlab configuration "
-                    "(see terraform/.terraform-apply-errors.log)"
+                    f"(check {apply_output_path} and {apply_log_path})"
+                )
+            )
+            destroy_log_path = logs_dir / "destroy.log"
+            destroy_output_path = logs_dir / "destroy.log"
+            destroy_process = subprocess.run(
+                [
+                    "terraform",
+                    "destroy",
+                    "-auto-approve",
+                    "-input=false",
+                    "-no-color",
+                ],
+                capture_output=True,
+                cwd=cwd,
+                env=dict(**env, TF_LOG_PATH=destroy_log_path.resolve()),
+                text=True,
+            )
+            destroy_output_path.write_text(destroy_process.stdout)
+            destroy_process.returncode != 0 and click.echo(
+                error(
+                    "Error performing Terraform destroy "
+                    f"(check {destroy_output_path} and {destroy_log_path})"
                 )
             )
             raise click.Abort()
     else:
-        (cwd / ".terraform-init-errors.log").write_text(init_process.stderr)
         click.echo(
             error(
-                "Error initializing Terraform "
-                "(see terraform/.terraform-init-errors.log)"
+                "Error performing Terraform init "
+                f"(check {init_output_path} and {init_log_path})"
             )
         )
         raise click.Abort()
@@ -281,8 +321,13 @@ def run(
     gitlab_group_owners,
     gitlab_group_maintainers,
     gitlab_group_developers,
+    terraform_dir,
+    logs_dir,
 ):
     """Run the bootstrap."""
+    run_id = f"{time():.0f}"
+    terraform_dir = terraform_dir or Path(f".terraform/{run_id}").resolve()
+    logs_dir = logs_dir or Path(f".logs/{run_id}").resolve()
     click.echo(highlight(f"Initializing the {service_slug} service:"))
     stacks_environments = get_stacks_environments(
         environments_distribution,
@@ -313,23 +358,22 @@ def run(
     if use_gitlab:
         gitlab_project_variables = {}
         gitlab_group_variables = dict(
-            BACKEND_SERVICE_PORT="{value = %s, masked = false}" % backend_service_port,
-            FRONTEND_SERVICE_PORT="{value = %s, masked = false}"
-            % frontend_service_port,
+            BACKEND_SERVICE_PORT='{value = "%s"}' % backend_service_port,
+            FRONTEND_SERVICE_PORT='{value = "%s"}' % frontend_service_port,
         )
         project_domain and gitlab_group_variables.update(
-            DOMAIN='{value = "%s", masked = false}' % project_domain
+            DOMAIN='{value = "%s"}' % project_domain
         )
         backend_service_slug and frontend_service_slug and (
             gitlab_group_variables.update(
-                INTERNAL_URL='{value = "http://%s:%s", masked = false}'
+                INTERNAL_BACKEND_URL='{value = "http://%s:%s"}'
                 % (backend_service_slug, backend_service_port)
             )
         )
         sentry_org and gitlab_group_variables.update(
-            SENTRY_ORG='{value = "%s", masked = false}' % sentry_org,
-            SENTRY_URL='{value = "%s", masked = false}' % sentry_url,
-            SENTRY_AUTH_TOKEN='{value = "%s"}' % sentry_auth_token,
+            SENTRY_ORG='{value = "%s"}' % sentry_org,
+            SENTRY_URL='{value = "%s"}' % sentry_url,
+            SENTRY_AUTH_TOKEN='{value = "%s", masked = true}' % sentry_auth_token,
         )
         if use_pact:
             pact_broker_auth_url = re.sub(
@@ -338,35 +382,39 @@ def run(
                 pact_broker_url,
             )
             gitlab_group_variables.update(
-                PACT_ENABLED='{value = "true", protected = false, masked = false}',
+                PACT_ENABLED='{value = "true", protected = false}',
                 PACT_BROKER_BASE_URL=(
-                    '{value = "%s", protected = false, masked = false}'
-                    % pact_broker_url
+                    '{value = "%s", protected = false}' % pact_broker_url
                 ),
                 PACT_BROKER_USERNAME=(
-                    '{value = "%s", protected = false, masked = false}'
-                    % pact_broker_username
+                    '{value = "%s", protected = false}' % pact_broker_username
                 ),
                 PACT_BROKER_PASSWORD=(
-                    '{value = "%s", protected = false}' % pact_broker_password
+                    '{value = "%s", masked = true, protected = false}'
+                    % pact_broker_password
                 ),
                 PACT_BROKER_AUTH_URL=(
-                    '{value = "%s", protected = false}' % pact_broker_auth_url
+                    '{value = "%s", masked = true, protected = false}'
+                    % pact_broker_auth_url
                 ),
             )
         media_storage == "s3-digitalocean" and gitlab_group_variables.update(
             DIGITALOCEAN_BUCKET_REGION=(
-                '{value = "%s", masked = false}' % digitalocean_spaces_bucket_region
+                '{value = "%s"}' % digitalocean_spaces_bucket_region
             ),
             S3_BUCKET_ENDPOINT_URL=(
-                '{value = "https://%s.digitaloceanspaces.com", masked = false}'
+                '{value = "https://%s.digitaloceanspaces.com"}'
                 % digitalocean_spaces_bucket_region
             ),
-            S3_BUCKET_ACCESS_ID=('{value = "%s"}' % digitalocean_spaces_access_id),
-            S3_BUCKET_SECRET_KEY=('{value = "%s"}' % digitalocean_spaces_secret_key),
+            S3_BUCKET_ACCESS_ID=(
+                '{value = "%s", masked = true}' % digitalocean_spaces_access_id
+            ),
+            S3_BUCKET_SECRET_KEY=(
+                '{value = "%s", masked = true}' % digitalocean_spaces_secret_key
+            ),
         )
         digitalocean_token and gitlab_group_variables.update(
-            DIGITALOCEAN_TOKEN='{value = "%s"}' % digitalocean_token
+            DIGITALOCEAN_TOKEN='{value = "%s", masked = true}' % digitalocean_token
         )
         if "digitalocean" in deployment_type:
             gitlab_project_variables.update(
@@ -389,6 +437,8 @@ def run(
             project_slug,
             service_slug,
             service_dir,
+            terraform_dir,
+            logs_dir,
         )
     common_options = {
         "uid": uid,
@@ -408,7 +458,9 @@ def run(
             backend_service_slug,
             backend_template_url,
             internal_service_port=backend_service_port,
+            logs_dir=logs_dir,
             media_storage=media_storage,
+            terraform_dir=terraform_dir,
             **common_options,
         )
     frontend_template_url = FRONTEND_TEMPLATE_URLS.get(frontend_type)
@@ -417,6 +469,8 @@ def run(
             frontend_service_slug,
             frontend_template_url,
             internal_service_port=frontend_service_port,
+            logs_dir=logs_dir,
+            terraform_dir=terraform_dir,
             **common_options,
         )
     change_output_owner(service_dir, uid)
@@ -501,6 +555,8 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--gitlab-group-owners", default="")
 @click.option("--gitlab-group-maintainers", default="")
 @click.option("--gitlab-group-developers", default="")
+@click.option("--terraform-dir")
+@click.option("--logs-dir")
 def init_command(
     uid,
     output_dir,
@@ -543,6 +599,8 @@ def init_command(
     gitlab_group_owners,
     gitlab_group_maintainers,
     gitlab_group_developers,
+    terraform_dir,
+    logs_dir,
 ):
     """Collect options and run the bootstrap."""
     output_dir = OUTPUT_DIR or output_dir
@@ -807,6 +865,8 @@ def init_command(
         gitlab_group_owners,
         gitlab_group_maintainers,
         gitlab_group_developers,
+        terraform_dir,
+        logs_dir,
     )
 
 
