@@ -176,7 +176,7 @@ resource "gitlab_group_variable" "vars" {
   key       = each.key
   value     = each.value.value
   protected = lookup(each.value, "protected", true)
-  masked    = lookup(each.value, "masked", true)
+  masked    = lookup(each.value, "masked", false)
 }
 
 resource "gitlab_group_variable" "regcred" {
@@ -196,6 +196,6 @@ resource "gitlab_project_variable" "vars" {
   key               = each.key
   value             = each.value.value
   protected         = lookup(each.value, "protected", true)
-  masked            = lookup(each.value, "masked", true)
+  masked            = lookup(each.value, "masked", false)
   environment_scope = lookup(each.value, "environment_scope", "*")
 }
