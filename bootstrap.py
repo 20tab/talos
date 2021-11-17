@@ -157,9 +157,9 @@ def init_gitlab(
     """Initialize the Gitlab repositories."""
     click.echo(info("...creating the Gitlab repository and associated resources"))
     terraform_dir = Path(terraform_dir) / service_slug
-    os.makedirs(terraform_dir)
+    os.makedirs(terraform_dir, exist_ok=True)
     env = dict(
-        TF_DATA_DIR=(Path(terraform_dir) / "data").resolve(),
+        TF_DATA_DIR=str((Path(terraform_dir) / "data").resolve()),
         TF_LOG="INFO",
         TF_VAR_gitlab_group_variables="{%s}"
         % ", ".join(f"{k} = {v}" for k, v in gitlab_group_variables.items()),
@@ -180,7 +180,8 @@ def init_gitlab(
     logs_dir = Path(logs_dir) / service_slug / "terraform"
     os.makedirs(logs_dir)
     init_log_path = logs_dir / "init.log"
-    init_output_path = logs_dir / "init-output.log"
+    init_stdout_path = logs_dir / "init-stdout.log"
+    init_stderr_path = logs_dir / "init-stderr.log"
     init_process = subprocess.run(
         [
             "terraform",
@@ -192,30 +193,33 @@ def init_gitlab(
         ],
         capture_output=True,
         cwd=cwd,
-        env=dict(**env, TF_LOG_PATH=init_log_path.resolve()),
+        env=dict(**env, TF_LOG_PATH=str(init_log_path.resolve())),
         text=True,
     )
-    init_output_path.write_text(init_process.stdout)
+    init_stdout_path.write_text(init_process.stdout)
     if init_process.returncode == 0:
         apply_log_path = logs_dir / "apply.log"
-        apply_output_path = logs_dir / "apply-output.log"
+        apply_stdout_path = logs_dir / "apply-stdout.log"
+        apply_stderr_path = logs_dir / "apply-stderr.log"
         apply_process = subprocess.run(
             ["terraform", "apply", "-auto-approve", "-input=false", "-no-color"],
             capture_output=True,
             cwd=cwd,
-            env=dict(**env, TF_LOG_PATH=apply_log_path.resolve()),
+            env=dict(**env, TF_LOG_PATH=str(apply_log_path.resolve())),
             text=True,
         )
-        apply_output_path.write_text(apply_process.stdout)
+        apply_stdout_path.write_text(apply_process.stdout)
         if apply_process.returncode != 0:
+            apply_stderr_path.write_text(apply_process.stderr)
             click.echo(
                 error(
                     "Error applying Terraform Gitlab configuration "
-                    f"(check {apply_output_path} and {apply_log_path})"
+                    f"(check {apply_stderr_path} and {apply_log_path})"
                 )
             )
             destroy_log_path = logs_dir / "destroy.log"
-            destroy_output_path = logs_dir / "destroy.log"
+            destroy_stdout_path = logs_dir / "destroy-stdout.log"
+            destroy_stderr_path = logs_dir / "destroy-stderr.log"
             destroy_process = subprocess.run(
                 [
                     "terraform",
@@ -226,22 +230,25 @@ def init_gitlab(
                 ],
                 capture_output=True,
                 cwd=cwd,
-                env=dict(**env, TF_LOG_PATH=destroy_log_path.resolve()),
+                env=dict(**env, TF_LOG_PATH=str(destroy_log_path.resolve())),
                 text=True,
             )
-            destroy_output_path.write_text(destroy_process.stdout)
-            destroy_process.returncode != 0 and click.echo(
-                error(
-                    "Error performing Terraform destroy "
-                    f"(check {destroy_output_path} and {destroy_log_path})"
+            destroy_stdout_path.write_text(destroy_process.stdout)
+            if destroy_process.returncode != 0:
+                destroy_stderr_path.write_text(destroy_process.stderr)
+                click.echo(
+                    error(
+                        "Error performing Terraform destroy "
+                        f"(check {destroy_stderr_path} and {destroy_log_path})"
+                    )
                 )
-            )
             raise click.Abort()
     else:
+        init_stderr_path.write_text(init_process.stderr)
         click.echo(
             error(
                 "Error performing Terraform init "
-                f"(check {init_output_path} and {init_log_path})"
+                f"(check {init_stderr_path} and {init_log_path})"
             )
         )
         raise click.Abort()
@@ -326,8 +333,8 @@ def run(
 ):
     """Run the bootstrap."""
     run_id = f"{time():.0f}"
-    terraform_dir = terraform_dir or Path(f".terraform/{run_id}").resolve()
-    logs_dir = logs_dir or Path(f".logs/{run_id}").resolve()
+    terraform_dir = str(Path(terraform_dir or f".terraform/{run_id}").resolve())
+    logs_dir = str(Path(logs_dir or f".logs/{run_id}").resolve())
     click.echo(highlight(f"Initializing the {service_slug} service:"))
     stacks_environments = get_stacks_environments(
         environments_distribution,
