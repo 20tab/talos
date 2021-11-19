@@ -65,7 +65,7 @@ before_script:
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES != "core" || $ENABLED_STACKS != "{{ stack_slug }}"
+    - if: $ENABLED_STAGES !~ /(?:^|,)\s*core\s*(?:,|$)/i || $ENABLED_STACKS !~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
       when: never
     - when: always
 
@@ -109,7 +109,7 @@ stack_{{ stack_slug }}_core_apply:
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES != "networking" || $ENABLED_STACKS != "{{ stack_slug }}"
+    - if: $ENABLED_STAGES !~ /(?:^|,)\s*networking\s*(?:,|$)/i || $ENABLED_STACKS !~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
       when: never
     - when: always
 
@@ -169,7 +169,7 @@ stack_{{ stack_slug }}_networking_apply:
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES != "environment" || $ENABLED_STACKS != "{{ stack_slug }}" || $ENABLED_ENVS != "{{ env_slug }}"
+    - if: $ENABLED_STAGES !~ /(?:^|,)\s*environment\s*(?:,|$)/i || $ENABLED_STACKS !~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i || $ENABLED_ENVS !~ /(?:^|,)\s*{{ env_slug }}\s*(?:,|$)/i
       when: never
     - when: always
 
