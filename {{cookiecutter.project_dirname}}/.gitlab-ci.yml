@@ -1,3 +1,10 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE != "web" && $CI_COMMIT_BRANCH != "main"
+      when: never
+    - if: $ENABLED_ALL || $ENABLED_STAGES || $ENABLED_STACKS || $ENABLED_ENVS
+      when: always
+
 stages:
   - Core
   - Networking
@@ -15,14 +22,10 @@ before_script:
 .init:
   script:
   - gitlab-terraform init
-  only:
-    - main
 
 .validate:
   script:
     - gitlab-terraform validate
-  only:
-    - main
 
 .plan:
   script:
@@ -34,14 +37,10 @@ before_script:
       - ${TF_ROOT}/plan.cache
     reports:
       terraform: ${TF_ROOT}/plan.json
-  only:
-    - main
 
 .apply:
   script:
     - gitlab-terraform apply
-  only:
-    - main
 
 ### CORE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
@@ -63,6 +62,12 @@ before_script:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-core
     paths:
       - ${TF_ROOT}/.terraform
+  rules:
+    - if: $ENABLED_ALL == "true"
+      when: always
+    - if: $ENABLED_STAGES != "core" || $ENABLED_STACKS != "{{ stack_slug }}"
+      when: never
+    - when: always
 
 stack_{{ stack_slug }}_core_init:
   extends:
@@ -86,7 +91,6 @@ stack_{{ stack_slug }}_core_apply:
     - .apply
     - .stack_{{ stack_slug }}_core
   needs: ["stack_{{ stack_slug }}_core_plan"]{% endfor %}
-  when: manual
 
 ### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
@@ -102,6 +106,12 @@ stack_{{ stack_slug }}_core_apply:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-networking
     paths:
       - ${TF_ROOT}/.terraform
+  rules:
+    - if: $ENABLED_ALL == "true"
+      when: always
+    - if: $ENABLED_STAGES != "networking" || $ENABLED_STACKS != "{{ stack_slug }}"
+      when: never
+    - when: always
 
 stack_{{ stack_slug }}_networking_init:
   extends:
@@ -118,7 +128,10 @@ stack_{{ stack_slug }}_networking_plan:
   extends:
     - .plan
     - .stack_{{ stack_slug }}_networking
-  needs: ["stack_{{ stack_slug }}_core_apply", "stack_{{ stack_slug }}_networking_validate"]
+  needs:
+    - job: stack_{{ stack_slug }}_core_apply
+      optional: true
+    - job: stack_{{ stack_slug }}_networking_validate
 
 stack_{{ stack_slug }}_networking_apply:
   extends:
@@ -153,6 +166,12 @@ stack_{{ stack_slug }}_networking_apply:
     key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}
     paths:
       - ${TF_ROOT}/.terraform
+  rules:
+    - if: $ENABLED_ALL == "true"
+      when: always
+    - if: $ENABLED_STAGES != "environment" || $ENABLED_STACKS != "{{ stack_slug }}" || $ENABLED_ENVS != "{{ env_slug }}"
+      when: never
+    - when: always
 
 env_{{ env_slug }}_init:
   extends:
@@ -169,7 +188,10 @@ env_{{ env_slug }}_plan:
   extends:
     - .plan
     - .env_{{ env_slug }}
-  needs: ["stack_{{ stack_slug }}_networking_apply", "env_{{ env_slug }}_validate"]
+  needs:
+    - job: stack_{{ stack_slug }}_networking_apply
+      optional: true
+    - job: env_{{ env_slug }}_validate
 
 env_{{ env_slug }}_apply:
   extends:
