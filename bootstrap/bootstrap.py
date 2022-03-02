@@ -11,34 +11,44 @@ from pathlib import Path
 from time import time
 
 import click
-import validators
 from cookiecutter.main import cookiecutter
-from slugify import slugify
 
-BACKEND_TEMPLATE_URLS = {
-    "django": "https://github.com/20tab/django-continuous-delivery"
-}
-BACKEND_TYPE_CHOICES = ["django", "none"]
-DEFAULT_SERVICE_SLUG = "orchestrator"
-DEPLOYMENT_TYPE_CHOICES = ["k8s-digitalocean", "k8s-other"]
-DEPLOYMENT_TYPE_DEFAULT = "k8s-digitalocean"
-ENVIRONMENTS_DISTRIBUTION_CHOICES = ["1", "2", "3"]
-ENVIRONMENTS_DISTRIBUTION_PROMPT = """Choose the environments distribution:
-  1 - All environments share the same stack (Default)
-  2 - Dev and Stage environments share the same stack, Prod has its own
-  3 - Each environment has its own stack
-"""
-ENVIRONMENTS_DISTRIBUTION_DEFAULT = "1"
-DIGITALOCEAN_SPACES_REGION_DEFAULT = "fra1"
-FRONTEND_TEMPLATE_URLS = {
-    "nextjs": "https://github.com/20tab/react-ts-continuous-delivery"
-}
-FRONTEND_TYPE_CHOICES = ["nextjs", "none"]
-GITLAB_TOKEN_ENV_VAR = "GITLAB_PRIVATE_TOKEN"
-MEDIA_STORAGE_CHOICES = ["local", "s3-digitalocean", "none"]
-MEDIA_STORAGE_DEFAULT = "s3-digitalocean"
-OUTPUT_DIR = os.getenv("OUTPUT_DIR")
-SUBREPOS_DIR = ".subrepos"
+from bootstrap.constants import (
+    BACKEND_TEMPLATE_URLS,
+    DEPLOYMENT_TYPE_CHOICES,
+    ENVIRONMENT_DISTRIBUTION_CHOICES,
+    FRONTEND_TEMPLATE_URLS,
+    GITLAB_TOKEN_ENV_VAR,
+    MEDIA_STORAGE_CHOICES,
+    SUBREPOS_DIR,
+)
+from bootstrap.helpers import slugify_option
+from bootstrap.options import (
+    get_backend_service_slug,
+    get_backend_type,
+    get_broker_data,
+    get_cluster_data,
+    get_digitalocean_media_storage_data,
+    get_digitalocean_token,
+    get_environment_distribution,
+    get_frontend_service_slug,
+    get_frontend_type,
+    get_gitlab_group_data,
+    get_is_digitalocean_enabled,
+    get_media_storage,
+    get_output_dir,
+    get_project_dirname,
+    get_project_domain,
+    get_project_slug,
+    get_project_urls,
+    get_sentry_org,
+    get_sentry_token,
+    get_sentry_url,
+    get_service_dir,
+    get_service_slug,
+    get_use_gitlab,
+    get_use_pact,
+)
 
 error = partial(click.style, fg="red")
 highlight = partial(click.style, fg="cyan")
@@ -47,7 +57,7 @@ warning = partial(click.style, fg="yellow")
 
 
 def get_stacks_environments(
-    environments_distribution,
+    environment_distribution,
     domain_prefix_dev,
     domain_prefix_stage,
     domain_prefix_prod,
@@ -71,14 +81,14 @@ def get_stacks_environments(
         "url": project_url_prod,
         "prefix": domain_prefix_prod,
     }
-    if environments_distribution == "1":
+    if environment_distribution == "1":
         return {"main": {"dev": dev_env, "stage": stage_env, "prod": prod_env}}
-    elif environments_distribution == "2":
+    elif environment_distribution == "2":
         return {
             "dev": {"dev": dev_env, "stage": stage_env},
             "main": {"prod": prod_env},
         }
-    elif environments_distribution == "3":
+    elif environment_distribution == "3":
         return {
             "dev": {"dev": dev_env},
             "stage": {"stage": stage_env},
@@ -279,7 +289,7 @@ def init_subrepo(service_slug, template_url, **options):
         service_slug=service_slug,
     )
     subprocess.run(
-        ["python", "-c", f"from bootstrap import run; run(**{options})"],
+        ["python", "-c", f"from bootstrap.bootstrap import run; run(**{options})"],
         cwd=subrepo_dir,
     )
 
@@ -300,7 +310,7 @@ def run(
     frontend_service_port,
     deployment_type,
     digitalocean_token,
-    environments_distribution,
+    environment_distribution,
     project_domain,
     domain_prefix_dev,
     domain_prefix_stage,
@@ -337,7 +347,7 @@ def run(
     logs_dir = str(Path(logs_dir or f".logs/{run_id}").resolve())
     click.echo(highlight(f"Initializing the {service_slug} service:"))
     stacks_environments = get_stacks_environments(
-        environments_distribution,
+        environment_distribution,
         domain_prefix_dev,
         domain_prefix_stage,
         domain_prefix_prod,
@@ -385,7 +395,7 @@ def run(
         if use_pact:
             pact_broker_auth_url = re.sub(
                 r"^(https?)://(.*)$",
-                fr"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
+                rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
                 pact_broker_url,
             )
             gitlab_group_variables.update(
@@ -483,36 +493,9 @@ def run(
     change_output_owner(service_dir, uid)
 
 
-def slugify_option(ctx, param, value):
-    """Slugify an option value."""
-    return value and slugify(value)
-
-
-def validate_or_prompt_url(value, message, default=None, required=False):
-    """Validate the given URL or prompt until a valid value is provided."""
-    if value is not None:
-        if not required and value == "" or validators.url(value):
-            return value
-        else:
-            click.echo("Please type a valid URL!")
-    new_value = click.prompt(message, default=default)
-    return validate_or_prompt_url(new_value, message, default, required)
-
-
-def validate_or_prompt_password(value, message, default=None, required=False):
-    """Validate the given password or prompt until a valid value is provided."""
-    if value is not None:
-        if not required and value == "" or validators.length(value, min=8):
-            return value
-        else:
-            click.echo("Please type at least 8 chars!")
-    new_value = click.prompt(message, default=default, hide_input=True)
-    return validate_or_prompt_password(new_value, message, default, required)
-
-
 @click.command()
 @click.option("--uid", type=int)
-@click.option("--output-dir", default=".", required=OUTPUT_DIR is None)
+@click.option("--output-dir", default=".", required=os.getenv("OUTPUT_DIR") is None)
 @click.option("--project-name", prompt=True)
 @click.option("--project-slug", callback=slugify_option)
 @click.option("--project-dirname")
@@ -528,8 +511,7 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 )
 @click.option("--digitalocean-token")
 @click.option(
-    "--environments-distribution",
-    type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES),
+    "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)
 )
 @click.option("--project-domain")
 @click.option("--domain-prefix-dev")
@@ -578,7 +560,7 @@ def init_command(
     frontend_service_port,
     deployment_type,
     digitalocean_token,
-    environments_distribution,
+    environment_distribution,
     project_domain,
     domain_prefix_dev,
     domain_prefix_stage,
@@ -610,224 +592,84 @@ def init_command(
     logs_dir,
 ):
     """Collect options and run the bootstrap."""
-    output_dir = OUTPUT_DIR or output_dir
-    project_slug = slugify(
-        project_slug or click.prompt("Project slug", default=slugify(project_name)),
+    output_dir = get_output_dir(output_dir)
+    project_slug = get_project_slug(project_name, project_slug)
+    project_dirname = get_project_dirname(project_slug)
+    service_slug = get_service_slug()
+    service_dir = get_service_dir(output_dir, project_dirname)
+    backend_type = get_backend_type(backend_type)
+    backend_service_slug = get_backend_service_slug(backend_service_slug, backend_type)
+    frontend_type = get_frontend_type(frontend_service_slug, backend_type)
+    frontend_service_slug = get_frontend_service_slug(
+        frontend_service_slug, frontend_type
     )
-    project_dirname = slugify(project_slug, separator="")
-    service_slug = DEFAULT_SERVICE_SLUG
-    service_dir = str((Path(output_dir) / project_dirname).resolve())
-    if Path(service_dir).is_dir() and click.confirm(
-        warning(
-            f'A directory "{service_dir}" already exists and '
-            "must be deleted. Continue?",
-        ),
-        abort=True,
-    ):
-        shutil.rmtree(service_dir)
-    backend_type = (
-        backend_type in BACKEND_TYPE_CHOICES
-        and backend_type
-        or click.prompt(
-            "Backend type",
-            default=BACKEND_TYPE_CHOICES[0],
-            type=click.Choice(BACKEND_TYPE_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-    if backend_type:
-        backend_service_slug = slugify(
-            backend_service_slug
-            or click.prompt("Backend service slug", default="backend"),
-            separator="",
-        )
-    frontend_type = (
-        frontend_type in FRONTEND_TYPE_CHOICES
-        and frontend_type
-        or click.prompt(
-            "Frontend type",
-            default=FRONTEND_TYPE_CHOICES[0],
-            type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-    if frontend_type:
-        frontend_service_slug = slugify(
-            frontend_service_slug
-            or click.prompt("Frontend service slug", default="frontend"),
-            separator="",
-        )
-    deployment_type = (
-        deployment_type in DEPLOYMENT_TYPE_CHOICES
-        and deployment_type
-        or click.prompt(
-            "Deploy type",
-            default=DEPLOYMENT_TYPE_DEFAULT,
-            type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-    digitalocean_enabled = "digitalocean" in deployment_type
+    digitalocean_enabled = get_is_digitalocean_enabled(deployment_type)
     if digitalocean_enabled:
-        digitalocean_token = validate_or_prompt_password(
-            digitalocean_token,
-            "DigitalOcean token",
-            required=True,
-        )
-    environments_distribution = (
-        environments_distribution in ENVIRONMENTS_DISTRIBUTION_CHOICES
-        and environments_distribution
-        or click.prompt(
-            ENVIRONMENTS_DISTRIBUTION_PROMPT,
-            default=ENVIRONMENTS_DISTRIBUTION_DEFAULT,
-            type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES),
-        )
+        digitalocean_token = get_digitalocean_token(digitalocean_token)
+    environment_distribution = get_environment_distribution(environment_distribution)
+    if digitalocean_enabled:
+        project_domain = get_project_domain(project_domain)
+    (
+        project_domain,
+        project_url_dev,
+        project_url_stage,
+        project_url_prod,
+    ) = get_project_urls(
+        project_slug,
+        project_domain,
+        domain_prefix_dev,
+        domain_prefix_stage,
+        domain_prefix_prod,
+        project_url_dev,
+        project_url_stage,
+        project_url_prod,
     )
+    sentry_org = get_sentry_org(sentry_org)
     if digitalocean_enabled:
-        project_domain = project_domain or click.prompt(
-            "Project domain (e.g. 20tab.com, "
-            "if you prefer to skip DigitalOcean DNS configuration, leave blank)",
-            default="",
-        )
-    if project_domain:
-        domain_prefix_dev = domain_prefix_dev or click.prompt(
-            "Development domain prefix",
-            default="dev",
-        )
-        domain_prefix_stage = domain_prefix_stage or click.prompt(
-            "Staging domain prefix",
-            default="stage",
-        )
-        domain_prefix_prod = domain_prefix_prod or click.prompt(
-            "Production domain prefix",
-            default="www",
-        )
-        project_url_dev = f"https://{domain_prefix_dev}.{project_domain}"
-        project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
-        project_url_prod = f"https://{domain_prefix_prod}.{project_domain}"
-    else:
-        project_domain = ""
-        domain_prefix_dev = domain_prefix_stage = domain_prefix_prod = ""
-        project_url_dev = validate_or_prompt_url(
-            project_url_dev,
-            "Development environment complete URL",
-            default=f"https://dev.{project_slug}.com/",
-        )
-        project_url_stage = validate_or_prompt_url(
-            project_url_stage,
-            "Staging environment complete URL",
-            default=f"https://stage.{project_slug}.com/",
-        )
-        project_url_prod = validate_or_prompt_url(
-            project_url_prod,
-            "Production environment complete URL",
-            default=f"https://www.{project_slug}.com/",
-        )
-    sentry_org = sentry_org or click.prompt(
-        'Sentry organization (e.g. "20tab", leave blank if unused)',
-        default="",
-    )
-    if digitalocean_enabled:
-        # TODO: ask these settings for each stack
-        digitalocean_k8s_cluster_region = (
-            digitalocean_k8s_cluster_region
-            or click.prompt("Kubernetes cluster Digital Ocean region", default="fra1")
-        )
-        digitalocean_database_cluster_region = (
-            digitalocean_database_cluster_region
-            or click.prompt("Database cluster Digital Ocean region", default="fra1")
-        )
-        digitalocean_database_cluster_node_size = (
-            digitalocean_database_cluster_node_size
-            or click.prompt("Database cluster node size", default="db-s-1vcpu-2gb")
+        (
+            digitalocean_k8s_cluster_region,
+            digitalocean_database_cluster_region,
+            digitalocean_database_cluster_node_size,
+        ) = get_cluster_data(
+            digitalocean_k8s_cluster_region,
+            digitalocean_database_cluster_region,
+            digitalocean_database_cluster_node_size,
         )
     if sentry_org:
-        sentry_url = validate_or_prompt_url(
-            sentry_url,
-            "Sentry URL",
-            default="https://sentry.io/",
-            required=True,
-        )
-        sentry_auth_token = validate_or_prompt_password(
-            sentry_auth_token,
-            "Sentry auth token",
-            required=True,
-        )
-    use_pact = (
-        use_pact
-        if use_pact is not None
-        else click.confirm(warning("Do you want to configure Pact?"), default=True)
-    )
+        sentry_url = get_sentry_url(sentry_url)
+        sentry_auth_token = get_sentry_token(sentry_auth_token)
+    if use_pact is None:
+        use_pact = get_use_pact()
     if use_pact:
-        pact_broker_url = validate_or_prompt_url(
-            pact_broker_url,
-            "Pact broker URL (e.g. https://broker.20tab.com/)",
-            required=True,
+        pact_broker_url, pact_broker_username, pact_broker_password = get_broker_data(
+            use_pact, pact_broker_url, pact_broker_username, pact_broker_password
         )
-        pact_broker_username = pact_broker_username or click.prompt(
-            "Pact broker username",
-        )
-        pact_broker_password = validate_or_prompt_password(
-            pact_broker_password,
-            "Pact broker password",
-            required=True,
-        )
-    media_storage = (
-        media_storage
-        or click.prompt(
-            "Media storage",
-            default=MEDIA_STORAGE_DEFAULT,
-            type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-    use_gitlab = (
-        use_gitlab
-        if use_gitlab is not None
-        else click.confirm(warning("Do you want to configure Gitlab?"), default=True)
-    )
+    if media_storage is None:
+        media_storage = get_media_storage()
+    if use_gitlab is None:
+        use_gitlab = get_use_gitlab(use_gitlab)
     if use_gitlab:
-        gitlab_group_slug = gitlab_group_slug or click.prompt(
-            "Gitlab group slug", default=project_slug
-        )
-        click.confirm(
-            warning(
-                f'Make sure the Gitlab "{gitlab_group_slug}" group exists '
-                "before proceeding. Continue?"
-            ),
-            abort=True,
-        )
-        gitlab_private_token = gitlab_private_token or click.prompt(
-            "Gitlab private token (with API scope enabled)", hide_input=True
-        )
-        gitlab_group_owners = gitlab_group_owners or click.prompt(
-            "Comma-separated Gitlab group owners", default=""
-        )
-        gitlab_group_maintainers = gitlab_group_maintainers or click.prompt(
-            "Comma-separated Gitlab group maintainers", default=""
-        )
-        gitlab_group_developers = gitlab_group_developers or click.prompt(
-            "Comma-separated Gitlab group developers", default=""
+        (
+            gitlab_group_slug,
+            gitlab_private_token,
+            gitlab_group_owners,
+            gitlab_group_maintainers,
+            gitlab_group_developers,
+        ) = get_gitlab_group_data(
+            media_storage,
+            gitlab_group_slug,
+            gitlab_private_token,
+            gitlab_group_owners,
+            gitlab_group_maintainers,
+            gitlab_group_developers,
         )
         if media_storage == "s3-digitalocean":
-            digitalocean_token = validate_or_prompt_password(
+            (
                 digitalocean_token,
-                "DigitalOcean token",
-                required=True,
-            )
-            digitalocean_spaces_bucket_region = (
-                digitalocean_spaces_bucket_region
-                or click.prompt(
-                    "DigitalOcean Spaces region",
-                    default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
-                )
-            )
-            digitalocean_spaces_access_id = validate_or_prompt_password(
+                digitalocean_spaces_bucket_region,
                 digitalocean_spaces_access_id,
-                "DigitalOcean Spaces Access Key ID",
-                required=True,
-            )
-            digitalocean_spaces_secret_key = validate_or_prompt_password(
                 digitalocean_spaces_secret_key,
-                "DigitalOcean Spaces Secret Access Key",
-                required=True,
-            )
+            ) = get_digitalocean_media_storage_data()
     run(
         uid,
         output_dir,
@@ -844,7 +686,7 @@ def init_command(
         frontend_service_port,
         deployment_type,
         digitalocean_token,
-        environments_distribution,
+        environment_distribution,
         project_domain,
         domain_prefix_dev,
         domain_prefix_stage,

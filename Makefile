@@ -38,6 +38,15 @@ pip_update:  ## Update requirements and dependencies
 remote: pip_update  ## Install remote requirements and dependencies
 	pip-sync requirements/remote.txt
 
+ifeq (simpletest,$(firstword $(MAKECMDGOALS)))
+  simpletestargs := $(wordlist 2, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+  $(eval $(simpletestargs):;@true)
+endif
+
+.PHONY: simpletest # Run debug tests
+simpletest:
+	python3 -m unittest $(simpletestargs)
+
 help:
 	@echo "[Help] Makefile list commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

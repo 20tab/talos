@@ -8,7 +8,7 @@ COPY --chown=$APPUSER ./requirements/common.txt requirements/common.txt
 RUN python3 -m pip install --no-cache-dir -r requirements/common.txt
 COPY . .
 RUN mkdir ${OUTPUT_BASE_DIR}
-ENTRYPOINT [ "/app/bootstrap.py" ]
+ENTRYPOINT [ "/app/bootstrap/bootstrap.py" ]
 
 
 FROM base AS remote
