@@ -255,9 +255,9 @@ def init_gitlab(
         raise click.Abort()
 
 
-def change_output_owner(service_dir, uid):
+def change_output_owner(service_dir, uid, gid):
     """Change the owner of the output directory recursively."""
-    uid is not None and subprocess.run(["chown", "-R", uid, service_dir])
+    all((uid, gid)) and subprocess.run(["chown", "-R", f"{uid}:{gid}", service_dir])
 
 
 def init_subrepo(service_slug, template_url, **options):
@@ -280,6 +280,10 @@ def init_subrepo(service_slug, template_url, **options):
         service_slug=service_slug,
     )
     subprocess.run(
+        ["python", "-m", "pip", "install", "-r", "requirements/remote.txt"],
+        cwd=subrepo_dir,
+    )
+    subprocess.run(
         ["python", "-c", f"from bootstrap import run; run(**{options})"],
         cwd=subrepo_dir,
     )
@@ -287,6 +291,7 @@ def init_subrepo(service_slug, template_url, **options):
 
 def run(
     uid,
+    gid,
     output_dir,
     project_name,
     project_slug,
@@ -481,7 +486,7 @@ def run(
             terraform_dir=terraform_dir,
             **common_options,
         )
-    change_output_owner(service_dir, uid)
+    change_output_owner(service_dir, uid, gid)
 
 
 def slugify_option(ctx, param, value):
@@ -513,6 +518,7 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 
 @click.command()
 @click.option("--uid", type=int)
+@click.option("--gid", type=int)
 @click.option("--output-dir", default=".", required=OUTPUT_DIR is None)
 @click.option("--project-name", prompt=True)
 @click.option("--project-slug", callback=slugify_option)
@@ -567,6 +573,7 @@ def validate_or_prompt_password(value, message, default=None, required=False):
 @click.option("--logs-dir")
 def init_command(
     uid,
+    gid,
     output_dir,
     project_name,
     project_slug,
@@ -834,6 +841,7 @@ def init_command(
             )
     run(
         uid,
+        gid,
         output_dir,
         project_name,
         project_slug,
