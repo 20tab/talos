@@ -19,6 +19,7 @@ BACKEND_TEMPLATE_URLS = {
     "django": "https://github.com/20tab/django-continuous-delivery"
 }
 BACKEND_TYPE_CHOICES = ["django", "none"]
+DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE = "db-s-1vcpu-2gb"
 DEFAULT_SERVICE_SLUG = "orchestrator"
 DEPLOYMENT_TYPE_CHOICES = ["k8s-digitalocean", "k8s-other"]
 DEPLOYMENT_TYPE_DEFAULT = "k8s-digitalocean"
@@ -736,7 +737,10 @@ def init_command(
         )
         digitalocean_database_cluster_node_size = (
             digitalocean_database_cluster_node_size
-            or click.prompt("Database cluster node size", default="db-s-1vcpu-2gb")
+            or click.prompt(
+                "Database cluster node size",
+                default=DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE,
+            )
         )
     if sentry_org:
         sentry_url = validate_or_prompt_url(

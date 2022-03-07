@@ -2,6 +2,9 @@ locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
   resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+
+  stacks = jsondecode("{{ cookiecutter.stacks|tojson }}")
+  envs = local.stacks[var.stack_slug]
 }
 
 terraform {
@@ -49,11 +52,11 @@ data "digitalocean_domain" "main" {
 /* Certificate */
 
 resource "digitalocean_certificate" "ssl_cert" {
-  count = var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
+  count = var.project_domain != "" ? 1 : 0
 
-  name    = "${local.project_slug}-lets-encrypt-certificate"
+  name    = "${local.project_slug}-${var.stack_slug}-lets-encrypt-certificate"
   type    = "lets_encrypt"
-  domains = ["*.${var.project_domain}"]
+  domains = [for k, v in local.envs: "${v.prefix}.${var.project_domain}"]
 }
 
 /* RBAC */
