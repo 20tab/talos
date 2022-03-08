@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq-dev \
         software-properties-common \
     && curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - \
-    && apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+    && apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
     && apt-get update && apt-get install -y --no-install-recommends terraform \
     && python3 -m pip install --no-cache-dir -r requirements/common.txt
 COPY . .
