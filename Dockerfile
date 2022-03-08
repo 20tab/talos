@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG OUTPUT_BASE_DIR=/data
 ENV OUTPUT_BASE_DIR=${OUTPUT_BASE_DIR}
 WORKDIR /app
-COPY --chown=$APPUSER ./requirements/common.txt requirements/common.txt
+COPY ./requirements/common.txt requirements/common.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         git \
@@ -17,14 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && python3 -m pip install --no-cache-dir -r requirements/common.txt
 COPY . .
 RUN mkdir ${OUTPUT_BASE_DIR}
-ENTRYPOINT [ "/app/bootstrap.py" ]
-
-
-FROM base AS remote
-
-COPY --chown=$APPUSER ./requirements/remote.txt requirements/remote.txt
-RUN python3 -m pip install --no-cache-dir -r requirements/remote.txt
-
+ENTRYPOINT [ "python", "/app/bootstrap.py" ]
 
 FROM base AS local
 
