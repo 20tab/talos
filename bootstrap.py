@@ -391,7 +391,7 @@ def run(
         if use_pact:
             pact_broker_auth_url = re.sub(
                 r"^(https?)://(.*)$",
-                fr"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
+                rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
                 pact_broker_url,
             )
             gitlab_group_variables.update(
