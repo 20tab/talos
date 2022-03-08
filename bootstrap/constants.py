@@ -6,6 +6,8 @@ BACKEND_TEMPLATE_URLS = {
 
 BACKEND_TYPE_CHOICES = ["django", "none"]
 
+DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE = "db-s-1vcpu-2gb"
+
 DEFAULT_SERVICE_SLUG = "orchestrator"
 
 DEPLOYMENT_TYPE_CHOICES = ["k8s-digitalocean", "k8s-other"]

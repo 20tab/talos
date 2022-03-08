@@ -10,6 +10,7 @@ from slugify import slugify
 
 from bootstrap.constants import (
     BACKEND_TYPE_CHOICES,
+    DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE,
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
@@ -399,7 +400,10 @@ def clean_digitalocean_clusters_data(
     )
     digitalocean_database_cluster_node_size = (
         digitalocean_database_cluster_node_size
-        or click.prompt("Database cluster node size", default="db-s-1vcpu-2gb")
+        or click.prompt(
+            "Database cluster node size",
+            default=DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE,
+        )
     )
     return (
         digitalocean_k8s_cluster_region,

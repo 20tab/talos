@@ -2,6 +2,12 @@ locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
   resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+
+  stacks = jsondecode(<<EOF
+{{ cookiecutter.stacks|tojson(2) }}
+EOF
+  )
+  envs = local.stacks[var.stack_slug]
 }
 
 terraform {
@@ -49,11 +55,11 @@ data "digitalocean_domain" "main" {
 /* Certificate */
 
 resource "digitalocean_certificate" "ssl_cert" {
-  count = var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
+  count = var.project_domain != "" ? 1 : 0
 
-  name    = "${local.project_slug}-lets-encrypt-certificate"
+  name    = "${local.project_slug}-${var.stack_slug}-lets-encrypt-certificate"
   type    = "lets_encrypt"
-  domains = ["*.${var.project_domain}"]
+  domains = [for k, v in local.envs: "${v.prefix}.${var.project_domain}"]
 }
 
 /* RBAC */
@@ -174,7 +180,7 @@ resource "kubernetes_service" "traefik_load_balancer" {
         "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https" = "true"
         "service.beta.kubernetes.io/do-loadbalancer-protocol"               = "http"
         "service.beta.kubernetes.io/do-loadbalancer-tls-ports"              = "443"
-        "service.beta.kubernetes.io/do-loadbalancer-certificate-id"         = "${data.digitalocean_certificate.ssl_cert[0].uuid}"
+        "service.beta.kubernetes.io/do-loadbalancer-certificate-id"         = "${digitalocean_certificate.ssl_cert[0].uuid}"
       } : {}
     )
   }

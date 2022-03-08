@@ -154,8 +154,8 @@ stack_{{ stack_slug }}_networking_apply:
     TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
     TF_VAR_frontend_service_port: "${FRONTEND_SERVICE_PORT}"
     TF_VAR_registry_password: "${K8S_REGCRED}"
-    TF_VAR_stack_slug: {{ stack_slug }}
-{% for  env_slug, env_conf in stack_envs.items() %}
+    TF_VAR_stack_slug: {{ stack_slug }}{% for  env_slug, env_conf in stack_envs.items() %}
+
 # ENVIRONMENT STACK - {{ env_conf.name }} #
 
 .env_{{ env_slug }}:

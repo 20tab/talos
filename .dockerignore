@@ -1,17 +1,7 @@
-# directories
-.*
 **/__pycache__
 **/lost+found
-htmlcov
-# files
 *.md
-*.svg
-*.txt
-**/LICENSE*
-**/README*
-docker-compose*
-Dockerfile*
+.*
+Dockerfile
 Makefile
-# pyproject.toml
 requirements/*.in
-# setup.cfg
