@@ -57,7 +57,7 @@ services:
       - POSTGRES_DB={{ cookiecutter.project_slug }}
       - POSTGRES_INITDB_ARGS=--no-sync
       - POSTGRES_PASSWORD=postgres
-    image: postgres:13-buster
+    image: postgres:14-bullseye
     volumes:
       - pg_data:/var/lib/postgresql/data
 
