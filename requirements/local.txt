@@ -163,7 +163,9 @@ traitlets==5.1.1
 types-python-slugify==5.0.3
     # via -r requirements/common.in
 typing-extensions==4.1.1
-    # via mypy
+    # via
+    #   black
+    #   mypy
 urllib3==1.26.8
     # via requests
 validators==0.18.2

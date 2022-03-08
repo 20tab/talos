@@ -46,6 +46,15 @@ precommit_update:  ## Update pre_commit
 remote: pip_update  ## Install remote requirements and dependencies
 	pip-sync requirements/remote.txt
 
+ifeq (simpletest,$(firstword $(MAKECMDGOALS)))
+  simpletestargs := $(wordlist 2, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+  $(eval $(simpletestargs):;@true)
+endif
+
+.PHONY: simpletest # Run debug tests
+simpletest:
+	python3 -m unittest $(simpletestargs)
+
 .PHONY: update
 update: pip precommit_update ## Run update
 
