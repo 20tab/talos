@@ -69,6 +69,9 @@ def collect(
     pact_broker_username,
     pact_broker_password,
     media_storage,
+    monitoring,
+    grafana_user,
+    grafana_password,
     digitalocean_spaces_bucket_region,
     digitalocean_spaces_access_id,
     digitalocean_spaces_secret_key,
@@ -180,6 +183,13 @@ def collect(
                 digitalocean_spaces_access_id,
                 digitalocean_spaces_secret_key,
             )
+        if monitoring := clean_monitoring_enabled(monitoring):
+            (
+                grafana_user,
+                grafana_password,
+            ) = clean_grafana_credentials(
+                grafana_user, grafana_password
+            )
     return {
         "uid": uid,
         "gid": gid,
@@ -232,6 +242,9 @@ def collect(
         "gitlab_group_maintainers": gitlab_group_maintainers,
         "gitlab_group_developers": gitlab_group_developers,
         "terraform_dir": terraform_dir,
+        "monitoring": monitoring,
+        "grafana_user": grafana_user,
+        "grafana_password": grafana_password,
         "logs_dir": logs_dir,
     }
 
@@ -540,6 +553,28 @@ def clean_media_storage(media_storage):
             type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
         ).lower()
     )
+
+
+def clean_monitoring_enabled(monitoring_enabled):
+    """Tell whether Monitoring should be enabled."""
+    if monitoring_enabled is None:
+        return click.confirm(
+            warning("Do you want to configure Monitoring?"), default=True
+        )
+    return monitoring_enabled
+
+
+def clean_grafana_credentials(grafana_user, grafana_password):
+    """Return grafana admin credentials."""
+    grafana_user = click.prompt(
+        "Grafana username", default="",
+    )
+    grafana_password = validate_or_prompt_password(
+        None,
+        "Grafana password",
+        required=True,
+    )
+    return grafana_user, grafana_password
 
 
 def clean_use_gitlab(use_gitlab):

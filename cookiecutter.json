@@ -10,6 +10,7 @@
   "frontend_service_port": "3000",
   "media_storage": ["local", "s3-digitalocean", "none"],
   "project_domain": "",
+  "monitoring": false,
   "stacks": {
     "main": {
       "dev": {

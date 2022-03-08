@@ -12,7 +12,8 @@ workflow:
 stages:
   - Core
   - Networking
-  - Environment
+  - Environment{% if cookiecutter.monitoring %}
+  - Monitoring{% endif %}
 
 image: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
 

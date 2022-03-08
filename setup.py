@@ -77,6 +77,9 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gitlab-group-maintainers", default="")
 @click.option("--gitlab-group-developers", default="")
 @click.option("--terraform-dir")
+@click.option("--monitoring/--no-monitoring", is_flag=True, default=None)
+@click.option("--grafana-user")
+@click.option("--grafana-password")
 @click.option("--logs-dir")
 @click.option("--silent", is_flag=True)
 def main(**options):

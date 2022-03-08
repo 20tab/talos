@@ -79,6 +79,9 @@ def run(
     gitlab_group_maintainers,
     gitlab_group_developers,
     terraform_dir,
+    monitoring,
+    grafana_user,
+    grafana_password,
     logs_dir,
 ):
     """Run the bootstrap."""
@@ -108,6 +111,9 @@ def run(
         frontend_service_slug,
         frontend_service_port,
         media_storage,
+        monitoring,
+        grafana_user,
+        grafana_password,
         project_domain,
         stacks_environments,
         deployment_type,
@@ -193,6 +199,10 @@ def run(
                 DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE='{value = "%s"}'
                 % digitalocean_redis_cluster_node_size,
             )
+        monitoring and gitlab_group_variables.update(
+            TF_VAR_grafana_user='{value = "%s"}' % grafana_user,
+            TF_VAR_grafana_password='{value = "%s"}' % grafana_password,
+        )
         init_gitlab(
             gitlab_group_slug,
             gitlab_private_token,
@@ -201,6 +211,9 @@ def run(
             gitlab_group_owners,
             gitlab_group_maintainers,
             gitlab_group_developers,
+            grafana_user,
+            grafana_password,
+            monitoring,
             project_name,
             project_slug,
             service_slug,
@@ -259,6 +272,7 @@ def init_service(
     frontend_service_slug,
     frontend_service_port,
     media_storage,
+    monitoring,
     project_domain,
     stacks_environments,
     deployment_type,
@@ -276,6 +290,7 @@ def init_service(
             "frontend_service_slug": frontend_service_slug,
             "frontend_type": frontend_type,
             "media_storage": media_storage,
+            "monitoring": monitoring,
             "project_dirname": project_dirname,
             "project_domain": project_domain,
             "project_name": project_name,
@@ -348,6 +363,9 @@ def init_gitlab(
     gitlab_group_owners,
     gitlab_group_maintainers,
     gitlab_group_developers,
+    grafana_user,
+    grafana_password,
+    monitoring,
     project_name,
     project_slug,
     service_slug,
@@ -376,6 +394,12 @@ def init_gitlab(
         TF_VAR_service_dir=service_dir,
         TF_VAR_service_slug=service_slug,
     )
+    if monitoring:
+        env = dict(
+            **env,
+            TF_VAR_grafana_user=grafana_user,
+            TF_VAR_grafana_password=grafana_password,
+        )
     state_path = Path(terraform_dir) / "state.tfstate"
     cwd = Path("terraform")
     logs_dir = Path(logs_dir) / service_slug / "terraform"

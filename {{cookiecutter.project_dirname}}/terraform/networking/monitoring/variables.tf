@@ -1,7 +1,7 @@
-variable "digitalocean_token" {
-  description = "The DigitalOcean access token."
+variable "domain_prefix" {
+  description = "The monitoring stack domain prefix."
   type        = string
-  sensitive   = true
+  default     = "logs"
 }
 
 variable "grafana_password" {
@@ -13,13 +13,11 @@ variable "grafana_password" {
 variable "grafana_user" {
   description = "The grafana admin username."
   type        = string
-  default     = "admin"
 }
 
 variable "grafana_version" {
   description = "The Grafana version."
   type        = string
-  default     = "8.4.2"
 }
 
 variable "project_domain" {
@@ -28,7 +26,3 @@ variable "project_domain" {
   default     = ""
 }
 
-variable "stack_slug" {
-  description = "The stack slug (e.g. 'main')."
-  type        = string
-}
