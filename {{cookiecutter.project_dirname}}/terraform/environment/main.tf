@@ -185,4 +185,239 @@ resource "kubernetes_secret" "regcred" {
   type = "kubernetes.io/dockerconfigjson"
 }
 
+
+/* Dump database cron */
+
+resource "kubernetes_manifest" "postgres_dump_cron" {
+  count = var.env_slug == "prod" &&  var.media_storage == "s3-digitalocean" ? 1 : 0 
+
+  manifest = {
+    "apiVersion" = "batch/v1beta1"
+    "kind" = "CronJob"
+    "metadata" = {
+      "name" = "postgresql-dump-cron"
+      "namespace" = "${local.project_slug}-${var.env_slug}"
+    }
+    "spec" = {
+      "jobTemplate" = {
+        "spec" = {
+          "template" = {
+            "spec" = {
+              "containers" = [
+                {
+                  "args" = [
+                    "/pg_dump_to_s3.sh",
+                  ]
+                  "env" = [
+                    {
+                      "name" = "AWS_ACCESS_KEY_ID"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_ACCESS_KEY_ID"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "AWS_S3_BACKUP_PATH"
+                      "value" = "${var.env_slug}/backup"  # check and change me if necessary
+                    },
+                    {
+                      "name" = "AWS_S3_HOST"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_S3_HOST"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "AWS_SECRET_ACCESS_KEY"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_SECRET_ACCESS_KEY"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "AWS_STORAGE_BUCKET_NAME"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_STORAGE_BUCKET_NAME"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "DATABASE_URL"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "DATABASE_URL"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                  ]
+                  "image" = "registry.gitlab.com/deliverytools/pg-dump-restore-to-from-s3:latest"
+                  "name" = "postgresql-dump-to-s3"
+                },
+              ]
+              "imagePullSecrets" = [
+                {
+                  "name" = "${kubernetes_secrets.regcred[0].name}"
+                },
+              ]
+              "restartPolicy" = "OnFailure"
+            }
+          }
+        }
+      }
+      "schedule" = "0 0 * * *"
+    }
+  }
+}
+
+/* Restore database cron */
+
+resource "kubernetes_service_account" "postgres_restore_cron" {
+  count = var.env_slug == "stage" &&  var.media_storage == "s3-digitalocean" ? 1 : 0 
+
+  metadata {
+    name = "cronjob-user"
+    namespace = "${local.project_slug}-${var.env_slug}"
+  }
+}
+resource "kubernetes_cluster_role" "postgres_restore_cron" {
+  count = var.env_slug == "stage" &&  var.media_storage == "s3-digitalocean" ? 1 : 0 
+
+  metadata {
+    name = kubernetes_cluster_role.postgres_restore_cron.metadata[0].name
+    namespace = "${local.project_slug}-${var.env_slug}"
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods"]
+    verbs      = ["delete", "get", "list"]
+  }
+
+}
+
+resource "kubernetes_role_binding" "postgres_restore_cron" {
+  count = var.env_slug == "stage" &&  var.media_storage == "s3-digitalocean" ? 1 : 0 
+  metadata {
+    name = kubernetes_cluster_role.postgres_restore_cron.metadata[0].name
+    namespace = "${local.project_slug}-${var.env_slug}"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "RoleBinding"
+    name      = kubernetes_cluster_role.postgres_dump_cron.metadata[0].name
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_cluster_role.postgres_dump_cron.metadata[0].name
+  }
+}
+
+resource "kubernetes_manifest" "postgres_restore_cron" {
+  count = var.env_slug == "stage" &&  var.media_storage == "s3-digitalocean" ? 1 : 0 
+
+  manifest = {
+    "apiVersion" = "batch/v1beta1"
+    "kind" = "CronJob"
+    "metadata" = {
+      "name" = "postgresql-restore-cron"
+      "namespace" = "${local.project_slug}-${var.env_slug}"
+    }
+    "spec" = {
+      "jobTemplate" = {
+        "spec" = {
+          "template" = {
+            "spec" = {
+              "containers" = [
+                {
+                  "args" = [
+                    "/pg_restore_from_s3.sh",
+                  ]
+                  "env" = [
+                    {
+                      "name" = "AWS_ACCESS_KEY_ID"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_ACCESS_KEY_ID"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "AWS_S3_BACKUP_PATH"
+                      "value" = "prod/backup"  # check and change me if necessary
+                    },
+                    {
+                      "name" = "AWS_S3_HOST"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_S3_HOST"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "AWS_SECRET_ACCESS_KEY"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_SECRET_ACCESS_KEY"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "AWS_STORAGE_BUCKET_NAME"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "AWS_STORAGE_BUCKET_NAME"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "DATABASE_URL"
+                      "valueFrom" = {
+                        "secretKeyRef" = {
+                          "key" = "DATABASE_URL"
+                          "name" = "secrets"
+                        }
+                      }
+                    },
+                    {
+                      "name" = "S3_MEDIA_SRC_PATH"
+                      "value" = "prod/media"  # check and change me if necessary
+                    },
+                    {
+                      "name" = "S3_MEDIA_DEST_PATH"
+                      "value" = "${var.env_slug}/media"  # check and change me if necessary
+                    },
+                  ]
+                  "image" = "registry.gitlab.com/deliverytools/pg-dump-restore-to-from-s3:latest"
+                  "name" = "postgresql-restore-from-s3"
+                },
+              ]
+              "imagePullSecrets" = [
+                {
+                  "name" = "${kubernetes_secrets.regcred[0].name}"
+                },
+              ]
+              "restartPolicy" = "OnFailure"
+              "serviceAccountName" = "${kubernetes_cluster_role.postgres_restore_cron.metadata[0].name}"
+            }
+          }
+        }
+      }
+      "schedule" = "0 1 * * *"
+    }
+  }
+}
+
 /* Gitlab Variables */
