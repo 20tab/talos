@@ -4,23 +4,23 @@ This is the "{{ cookiecutter.project_name }}" orchestrator.
 
 ## Index <!-- omit in toc -->
 
-- [Quickstart](#quickstart)
-  - [Git](#git)
-    - [Clone](#clone)
-  - [Environment variables](#environment-variables)
-  - [Docker](#docker)
-    - [Build](#build)
-    - [Run](#run)
-  - [Makefile shortcuts](#makefile-shortcuts)
-    - [Pull](#pull)
-    - [Django manage command](#django-manage-command)
-    - [Restart and build services](#restart-and-build-services)
-  - [Create SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-ssl-certificate-sup-ida-setup-https-locally1sup)
-  - [Create and activate a local SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-and-activate-a-local-ssl-certificate-sup-ida-setup-https-locally1sup)
-    - [Install the cert utils](#install-the-cert-utils)
-    - [Import certificates](#import-certificates)
-    - [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
-- [Useful commands](#useful-commands)
+-   [Quickstart](#quickstart)
+    -   [Git](#git)
+        -   [Clone](#clone)
+    -   [Environment variables](#environment-variables)
+    -   [Docker](#docker)
+        -   [Build](#build)
+        -   [Run](#run)
+    -   [Makefile shortcuts](#makefile-shortcuts)
+        -   [Pull](#pull)
+        -   [Django manage command](#django-manage-command)
+        -   [Restart and build services](#restart-and-build-services)
+    -   [Create SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-ssl-certificate-sup-ida-setup-https-locally1sup)
+    -   [Create and activate a local SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-and-activate-a-local-ssl-certificate-sup-ida-setup-https-locally1sup)
+        -   [Install the cert utils](#install-the-cert-utils)
+        -   [Import certificates](#import-certificates)
+        -   [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
+-   [Useful commands](#useful-commands)
 
 ## Quickstart
 
@@ -36,7 +36,9 @@ This section explains the steps you need to clone and work wityh this project.
 ### Git
 
 #### Clone
+
 Clone the orchestrator and services repositories:
+
 ```console
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{ cookiecutter.project_dirname }}
 $ cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
@@ -44,6 +46,7 @@ $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/{{ cookiecutter.backend_s
 $ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
 $ cd ..
 ```
+
 **NOTE** : We're cloning the `develop` branch for all repo.
 
 ### Environment variables
@@ -72,6 +75,7 @@ $ docker-compose build
 ```console
 $ docker-compose up
 ```
+
 **NOTE**: It can be daemonized adding the `-d` flag.
 
 ### Makefile shortcuts
@@ -129,24 +133,27 @@ $ make rebuild s=backend
 ### Create and activate a local SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
 
 Move to the `nginx` directory:
+
 ```console
 $ cd nginx
 ```
 
 Install the certificate utils:
 
-- Linux
+-   Linux
+
     ```console
     $ sudo apt-get install openssl libnss3-tools
     ```
 
-- macOs
+-   macOs
     ```console
     $ brew install openssl nss
     ```
     **NOTE** : Follow all steps at the end of the installation (can be displayed again via `brew info <package-name>`).
 
 Create the certificate files:
+
 ```console
 $ openssl req -config localhost.conf -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout localhost.key -days 1024 -out localhost.crt
 ```
@@ -156,11 +163,13 @@ $ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.c
 ```
 
 Import certificate into shared database (password: `localhost`):
+
 ```console
 $ pk12util -d sql:$HOME/.pki/nssdb -i localhost.pfx
 ```
 
 **NOTE**: In the event of a `PR_FILE_NOT_FOUND_ERROR` or `SEC_ERROR_BAD_DATABASE` error, run the following commands and try again:
+
 ```console
 $ mkdir -p $HOME/.pki/nssdb
 $ certutil -d $HOME/.pki/nssdb -N
@@ -168,12 +177,13 @@ $ certutil -d $HOME/.pki/nssdb -N
 
 Trust the self-signed server certificate:
 
-- Linux
+-   Linux
+
     ```console
     $ certutil -d sql:$HOME/.pki/nssdb -A -t "P,," -n 'dev cert' -i localhost.crt
     ```
 
-- macOS
+-   macOS
     ```console
     $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.crt
     ```

@@ -10,17 +10,17 @@ Instructions to configure the Kubernetes cluster.
 
 Install the `kubectl` command-line tool:
 
-- 🍏 macOS
+-   🍏 macOS
 
-  ```console
-  $ brew install kubectl
-  ```
+    ```console
+    $ brew install kubectl
+    ```
 
-- 🐧 GNU/Linux
+-   🐧 GNU/Linux
 
-  ```console
-  $ sudo snap install kubectl --classic
-  ```
+    ```console
+    $ sudo snap install kubectl --classic
+    ```
 
 ### ☁️ DigitalOcean
 
@@ -28,19 +28,19 @@ Install the `kubectl` command-line tool:
 
 Install the `doctl` command-line tootl and authenticate:
 
-- 🍏 macOS
+-   🍏 macOS
 
-  ```console
-  $ brew install doctl
-  ```
+    ```console
+    $ brew install doctl
+    ```
 
-- 🐧 GNU/Linux
+-   🐧 GNU/Linux
 
-  ```console
-  $ snap install doctl
-  $ mkdir -p .kube
-  $ sudo snap connect doctl:kube-config
-  ```
+    ```console
+    $ snap install doctl
+    $ mkdir -p .kube
+    $ sudo snap connect doctl:kube-config
+    ```
 
 #### 🔑 Authenticate
 
@@ -76,7 +76,7 @@ $ export DIGITALOCEAN_ACCESS_TOKEN=<your_digitalocean_access_token>
 
 ### ☁️ DigitalOcean
 
-To connect the project with the DigitalOcean hosted Kubernetes cluster, select an existing Kubernetes cluster on DigitalOcean or create a new one ( *Digitalocean > Create -> Clusters* ) and then execute the script:
+To connect the project with the DigitalOcean hosted Kubernetes cluster, select an existing Kubernetes cluster on DigitalOcean or create a new one ( _Digitalocean > Create -> Clusters_ ) and then execute the script:
 
 ```console
 ./scripts/do_setup.sh
@@ -93,9 +93,11 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
 ```
 
 # TODO Write section on K8s managed using Gitlab env variables
+
 ### ☸️ Kubernetes
 
 ### 📃 Graphana logs
+
 1. Make you sure to have a Graphana/Loki instance.
 2. Create fluentd secret file from `k8s/cluster/fluentd/1_fluentd-secrets.yaml_template`.
     ```console
