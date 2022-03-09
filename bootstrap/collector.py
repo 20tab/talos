@@ -139,7 +139,7 @@ def collect(
             gitlab_group_maintainers,
             gitlab_group_developers,
         ) = clean_gitlab_group_data(
-            media_storage,
+            project_slug,
             gitlab_group_slug,
             gitlab_private_token,
             gitlab_group_owners,
@@ -152,7 +152,12 @@ def collect(
                 digitalocean_spaces_bucket_region,
                 digitalocean_spaces_access_id,
                 digitalocean_spaces_secret_key,
-            ) = clean_digitalocean_media_storage_data()
+            ) = clean_digitalocean_media_storage_data(
+                digitalocean_token,
+                digitalocean_spaces_bucket_region,
+                digitalocean_spaces_access_id,
+                digitalocean_spaces_secret_key,
+            )
     return {
         "uid": uid,
         "gid": gid,
