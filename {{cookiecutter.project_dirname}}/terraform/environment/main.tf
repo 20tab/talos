@@ -35,7 +35,7 @@ terraform {
     # }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "2.6.0"
+      version = "2.8.0"
     }
   }
 }
@@ -160,8 +160,8 @@ resource "kubernetes_ingress_v1" "main" {
             backend {
               service {
                 name = local.frontend_service_slug
-                port { 
-                  number = var.frontend_service_port 
+                port {
+                  number = var.frontend_service_port
                 }
               }
             }

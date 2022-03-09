@@ -162,8 +162,8 @@ stack_{{ stack_slug }}_networking_apply:
   extends:
     - .{{ stack_slug }}_env
   variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}
-    TF_VAR_domain_prefix: {{ env_conf.prefix }}
+    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}{% if env_conf.prefix %}
+    TF_VAR_domain_prefix: {{ env_conf.prefix }}{% endif %}
     TF_VAR_env_slug: {{ env_slug }}
     TF_VAR_project_url: {{ env_conf.url }}
   cache:

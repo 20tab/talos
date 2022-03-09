@@ -25,6 +25,7 @@ variable "frontend_service_port" {
 variable "domain_prefix" {
   description = "The environment domain prefix (e.g. 'www')."
   type        = string
+  default     = ""
 }
 
 variable "env_slug" {
