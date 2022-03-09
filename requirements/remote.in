@@ -1,2 +1,0 @@
-# pip-compile --output-file remote.txt remote.in
--r common.in

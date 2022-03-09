@@ -1,6 +1,6 @@
-# pip-compile --output-file common.txt common.in
--r base.in
+black~=22.1.0
 click~=8.0.0
 cookiecutter~=1.7.0
+pip-tools~=6.5.0
 types-python-slugify~=5.0.0
 validators~=0.18.0

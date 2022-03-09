@@ -457,7 +457,7 @@ def init_subrepo(service_slug, template_url, **options):
         service_slug=service_slug,
     )
     subprocess.run(
-        ["python", "-m", "pip", "install", "-r", "requirements/remote.txt"],
+        ["python", "-m", "pip", "install", "-r", "requirements/common.txt"],
         cwd=subrepo_dir,
     )
     subprocess.run(
