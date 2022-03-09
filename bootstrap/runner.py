@@ -1,6 +1,5 @@
 """Run the bootstrap."""
 
-import json
 import os
 import re
 import secrets
@@ -112,10 +111,13 @@ def run(
     if use_gitlab:
         gitlab_project_variables = {}
         gitlab_group_variables = dict(
-            BACKEND_SERVICE_PORT='{value = "%s"}' % backend_service_port,
-            FRONTEND_SERVICE_PORT='{value = "%s"}' % frontend_service_port,
-            STACKS='{value = "%s"}'
-            % json.dumps(stacks_environments, separators=(",", ":")),
+            BACKEND_SERVICE_PORT=f'{{value = "{backend_service_port}"}}',
+            FRONTEND_SERVICE_PORT=f'{{value = "{frontend_service_port}"}}',
+            **{
+                f"STACK_SLUG_{i.upper()}": f'{{value = "{k}"}}'
+                for k, v in stacks_environments.items()
+                for i in v
+            },
         )
         project_domain and gitlab_group_variables.update(
             DOMAIN='{value = "%s"}' % project_domain
@@ -198,6 +200,7 @@ def run(
         )
     common_options = {
         "uid": uid,
+        "gid": gid,
         "output_dir": service_dir,
         "project_name": project_name,
         "project_slug": project_slug,
@@ -464,11 +467,14 @@ def init_subrepo(service_slug, template_url, **options):
         cwd=subrepo_dir,
     )
     subprocess.run(
-        ["python", "-c", f"from bootstrap import run; run(**{options})"],
+        ["python", "-c", f"from setup import run; run(**{options})"],
         cwd=subrepo_dir,
     )
 
 
-def change_output_owner(service_dir, uid, gid):
+def change_output_owner(service_dir, uid, gid=None):
     """Change the owner of the output directory recursively."""
-    all((uid, gid)) and subprocess.run(["chown", "-R", f"{uid}:{gid}", service_dir])
+    if uid:
+        subprocess.run(
+            ["chown", "-R", ":".join(map(str, filter(None, (uid, gid)))), service_dir]
+        )

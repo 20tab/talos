@@ -9,7 +9,7 @@ backcall==0.2.0
 binaryornot==0.4.4
     # via cookiecutter
 black==22.1.0
-    # via -r requirements/common.in
+    # via -r requirements/local.in
 certifi==2021.10.8
     # via requests
 cfgv==3.3.1
@@ -96,7 +96,7 @@ pexpect==4.8.0
 pickleshare==0.7.5
     # via ipython
 pip-tools==6.5.1
-    # via -r requirements/common.in
+    # via -r requirements/local.in
 platformdirs==2.5.1
     # via
     #   black
@@ -122,7 +122,9 @@ pygments==2.11.2
 python-dateutil==2.8.2
     # via arrow
 python-slugify==6.1.1
-    # via cookiecutter
+    # via
+    #   -r requirements/common.in
+    #   cookiecutter
 pyupgrade==2.31.0
     # via -r requirements/local.in
 pyyaml==6.0
@@ -161,7 +163,7 @@ traitlets==5.1.1
     #   ipython
     #   matplotlib-inline
 types-python-slugify==5.0.3
-    # via -r requirements/common.in
+    # via -r requirements/local.in
 typing-extensions==4.1.1
     # via mypy
 urllib3==1.26.8

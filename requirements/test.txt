@@ -4,8 +4,6 @@ attrs==21.4.0
     # via flake8-bugbear
 binaryornot==0.4.4
     # via cookiecutter
-black==22.1.0
-    # via -r requirements/common.in
 certifi==2021.10.8
     # via requests
 chardet==4.0.0
@@ -15,9 +13,7 @@ charset-normalizer==2.0.12
 click==8.0.4
     # via
     #   -r requirements/common.in
-    #   black
     #   cookiecutter
-    #   pip-tools
 cookiecutter==1.7.3
     # via -r requirements/common.in
 coverage[toml]==6.3.2
@@ -55,17 +51,7 @@ mccabe==0.6.1
 mypy==0.931
     # via -r requirements/test.in
 mypy-extensions==0.4.3
-    # via
-    #   black
-    #   mypy
-pathspec==0.9.0
-    # via black
-pep517==0.12.0
-    # via pip-tools
-pip-tools==6.5.1
-    # via -r requirements/common.in
-platformdirs==2.5.1
-    # via black
+    # via mypy
 poyo==0.5.0
     # via cookiecutter
 pycodestyle==2.8.0
@@ -77,7 +63,9 @@ pyflakes==2.4.0
 python-dateutil==2.8.2
     # via arrow
 python-slugify==6.1.1
-    # via cookiecutter
+    # via
+    #   -r requirements/common.in
+    #   cookiecutter
 requests==2.27.1
     # via cookiecutter
 six==1.16.0
@@ -93,21 +81,11 @@ text-unidecode==1.3
     # via python-slugify
 tomli==2.0.1
     # via
-    #   black
     #   coverage
     #   mypy
-    #   pep517
-types-python-slugify==5.0.3
-    # via -r requirements/common.in
 typing-extensions==4.1.1
     # via mypy
 urllib3==1.26.8
     # via requests
 validators==0.18.2
     # via -r requirements/common.in
-wheel==0.37.1
-    # via pip-tools
-
-# The following packages are considered to be unsafe in a requirements file:
-# pip
-# setuptools
