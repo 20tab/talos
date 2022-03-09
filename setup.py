@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Initialize a web project Django service based on a template."""
+"""Initialize a template based web project."""
 
 import os
 
