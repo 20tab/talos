@@ -120,7 +120,7 @@ resource "digitalocean_record" "main" {
 
 /* Ingress */
 
-resource "kubernetes_ingress" "main" {
+resource "kubernetes_ingress_v1" "main" {
   metadata {
     name      = "${local.env_resource_name}-ingress"
     namespace = local.namespace
@@ -142,8 +142,12 @@ resource "kubernetes_ingress" "main" {
             path = path.key
 
             backend {
-              service_name = local.backend_service_slug
-              service_port = var.backend_service_port
+              service {
+                name = local.backend_service_slug
+                port {
+                  number = var.backend_service_port
+                }
+              }
             }
           }
         }
@@ -154,8 +158,12 @@ resource "kubernetes_ingress" "main" {
             path = path.key
 
             backend {
-              service_name = local.frontend_service_slug
-              service_port = var.frontend_service_port
+              service {
+                name = local.frontend_service_slug
+                port { 
+                  number = var.frontend_service_port 
+                }
+              }
             }
           }
         }
