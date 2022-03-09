@@ -113,6 +113,8 @@ def run(
         gitlab_group_variables = dict(
             BACKEND_SERVICE_PORT='{value = "%s"}' % backend_service_port,
             FRONTEND_SERVICE_PORT='{value = "%s"}' % frontend_service_port,
+            STACKS='{value = "%s"}'
+            % json.dumps(stacks_environments, separators=(",", ":")),
         )
         project_domain and gitlab_group_variables.update(
             DOMAIN='{value = "%s"}' % project_domain
