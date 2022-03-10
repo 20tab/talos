@@ -19,7 +19,7 @@ locals {
 
   namespace = kubernetes_namespace.main.metadata[0].name
 
-  basic_auth_enabled = var.basic_auth_enabled && var.basic_auth_username != "" && var.basic_auth_password != ""
+  basic_auth_enabled = var.basic_auth_enabled == "true" && var.basic_auth_username != "" && var.basic_auth_password != ""
 }
 
 terraform {

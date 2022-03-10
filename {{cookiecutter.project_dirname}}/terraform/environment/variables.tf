@@ -6,8 +6,8 @@ variable "backend_service_port" {
 
 variable "basic_auth_enabled" {
   description = "The basic_auth switch."
-  type        = bool
-  default     = false
+  type        = string
+  default     = ""
 }
 
 variable "basic_auth_password" {
