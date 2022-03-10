@@ -453,7 +453,7 @@ def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
 def clean_use_redis(use_redis):
     """Tell whether Redis should be configured."""
     if use_redis is None:
-        return click.confirm(warning("Do you want to configure Redis?"), default=True)
+        return click.confirm(warning("Do you want to configure Redis?"), default=False)
     return use_redis
 
 

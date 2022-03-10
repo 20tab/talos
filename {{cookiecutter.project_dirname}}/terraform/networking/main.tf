@@ -94,14 +94,14 @@ resource "helm_release" "traefik" {
           type    = "LoadBalancer"
           annotations = merge(
             {
-              "service.beta.kubernetes.io/do-loadbalancer-name"                   = "${local.resource_name}-load-balancer"
-              "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https" = "true"
+              "service.beta.kubernetes.io/do-loadbalancer-name" = "${local.resource_name}-load-balancer"
             },
             var.project_domain != "" ? {
               "service.beta.kubernetes.io/do-loadbalancer-protocol"                         = "http"
               "service.beta.kubernetes.io/do-loadbalancer-tls-ports"                        = "443"
               "service.beta.kubernetes.io/do-loadbalancer-certificate-id"                   = digitalocean_certificate.ssl_cert[0].uuid
               "service.beta.kubernetes.io/do-loadbalancer-disable-lets-encrypt-dns-records" = "true"
+              "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https"           = "true"
             } : {}
           )
         }

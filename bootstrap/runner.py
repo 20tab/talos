@@ -138,9 +138,7 @@ def run(
             SENTRY_URL='{value = "%s"}' % sentry_url,
             SENTRY_AUTH_TOKEN='{value = "%s", masked = true}' % sentry_auth_token,
         )
-        use_redis and gitlab_group_variables.update(
-            USE_REDIS='{value = "%s"}' % use_redis
-        )
+        use_redis and gitlab_group_variables.update(USE_REDIS='{value = "true"}')
         if use_pact:
             pact_broker_auth_url = re.sub(
                 r"^(https?)://(.*)$",

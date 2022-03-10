@@ -84,6 +84,8 @@ data "digitalocean_loadbalancer" "main" {
 }
 
 data "digitalocean_spaces_bucket" "postgres_dump" {
+  count = local.postgres_dump_enabled ? 1 : 0
+
   name   = "${local.stack_resource_name}-s3-bucket"
   region = var.s3_bucket_region
 }
@@ -112,7 +114,7 @@ resource "digitalocean_database_connection_pool" "postgres" {
 resource "digitalocean_database_db" "redis" {
   count = var.use_redis == "true" ? 1 : 0
 
-  cluster_id = data.digitalocean_database_cluster.redis.id
+  cluster_id = data.digitalocean_database_cluster.redis[0].id
   name       = "${local.project_slug}-${var.env_slug}-redis"
 }
 
@@ -252,7 +254,7 @@ resource "kubernetes_secret" "regcred" {
 
 /* Config Maps */
 
-resource "kubernetes_config_map_v1" "database_url" {
+resource "kubernetes_secret_v1" "database_url" {
   metadata {
     name      = "${local.env_resource_name}-database-url"
     namespace = local.namespace
@@ -263,7 +265,7 @@ resource "kubernetes_config_map_v1" "database_url" {
   }
 }
 
-resource "kubernetes_config_map_v1" "cache_url" {
+resource "kubernetes_secret_v1" "cache_url" {
   count = var.use_redis == "true" ? 1 : 0
   metadata {
     name      = "${local.env_resource_name}-cache-url"
@@ -271,7 +273,7 @@ resource "kubernetes_config_map_v1" "cache_url" {
   }
 
   data = {
-    CACHE_URL = digitalocean_database_cluster.redis.private_uri
+    CACHE_URL = data.digitalocean_database_cluster.redis[0].private_uri
   }
 }
 
@@ -287,7 +289,6 @@ resource "kubernetes_secret_v1" "postgres_dump" {
 
   data = {
     AWS_ACCESS_KEY_ID     = var.s3_bucket_access_id
-    AWS_S3_HOST           = "${data.digitalocean_spaces_bucket.postgres_dump.region}.digitaloceanspaces.com"
     AWS_SECRET_ACCESS_KEY = var.s3_bucket_secret_key
     DATABASE_URL          = digitalocean_database_connection_pool.postgres.private_uri
   }
@@ -302,8 +303,9 @@ resource "kubernetes_config_map_v1" "postgres_dump" {
   }
 
   data = {
-    AWS_STORAGE_BUCKET_NAME = data.digitalocean_spaces_bucket.postgres_dump.name
     AWS_S3_BACKUP_PATH      = "backup/postgres"
+    AWS_S3_HOST             = "${var.s3_bucket_region}.digitaloceanspaces.com"
+    AWS_STORAGE_BUCKET_NAME = data.digitalocean_spaces_bucket.postgres_dump[0].name
   }
 }
 

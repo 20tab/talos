@@ -145,7 +145,7 @@ variable "stack_slug" {
 }
 
 variable "use_redis" {
-  description = "If true, a DigitalOcean Redis is created."
-  type        = bool
-  default     = false
+  description = "If 'true', a DigitalOcean Redis database is created."
+  type        = string
+  default     = "false"
 }
