@@ -37,7 +37,7 @@ services:
     depends_on:
       - {{ cookiecutter.backend_service_slug }}{% endif %}
     environment:
-      - INTERNAL_URL=${INTERNAL_URL:-http://{{ cookiecutter.backend_service_slug }}:8000}
+      - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
       - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
       - REACT_ENVIRONMENT=${REACT_ENVIRONMENT:-Development}
     volumes:

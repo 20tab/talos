@@ -35,7 +35,7 @@ terraform {
     # }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "2.6.0"
+      version = "2.8.0"
     }
   }
 }
@@ -90,7 +90,7 @@ resource "digitalocean_database_db" "main" {
   name       = "${local.project_slug}-${var.env_slug}-database"
 }
 
-resource "digitalocean_database_connection_pool" "db-production-pool" {
+resource "digitalocean_database_connection_pool" "main" {
   cluster_id = data.digitalocean_database_cluster.main.id
   db_name    = digitalocean_database_db.main.name
   user       = digitalocean_database_user.main.name
@@ -120,7 +120,7 @@ resource "digitalocean_record" "main" {
 
 /* Ingress */
 
-resource "kubernetes_ingress" "main" {
+resource "kubernetes_ingress_v1" "main" {
   metadata {
     name      = "${local.env_resource_name}-ingress"
     namespace = local.namespace
@@ -142,8 +142,12 @@ resource "kubernetes_ingress" "main" {
             path = path.key
 
             backend {
-              service_name = local.backend_service_slug
-              service_port = var.backend_service_port
+              service {
+                name = local.backend_service_slug
+                port {
+                  number = var.backend_service_port
+                }
+              }
             }
           }
         }
@@ -154,8 +158,12 @@ resource "kubernetes_ingress" "main" {
             path = path.key
 
             backend {
-              service_name = local.frontend_service_slug
-              service_port = var.frontend_service_port
+              service {
+                name = local.frontend_service_slug
+                port {
+                  number = var.frontend_service_port
+                }
+              }
             }
           }
         }

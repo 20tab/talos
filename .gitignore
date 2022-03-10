@@ -166,3 +166,6 @@ cython_debug/
 terraform.tfstate
 terraform.tfstate.backup
 secrets.tf
+
+# Other
+*.bak

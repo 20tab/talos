@@ -9,8 +9,8 @@
 
 In the following instructions:
 
-- `projects` is your actual projects directory
-- `My Project Name` is your chosen project name
+-   `projects` is your actual projects directory
+-   `My Project Name` is your chosen project name
 
 ## 🧩 Requirements
 
@@ -26,17 +26,17 @@ $ python3 -m pip install cookiecutter
 
 Install the `git` command-line, if the GitLab integration is needed.
 
-- 🍏 macOS
+-   🍏 macOS
 
-  ```console
-  $ brew install git
-  ```
+    ```console
+    $ brew install git
+    ```
 
-- 🐧 GNU/Linux
+-   🐧 GNU/Linux
 
-  ```console
-  $ sudo apt install git
-  ```
+    ```console
+    $ sudo apt install git
+    ```
 
 ### 🦝 GitLab
 
@@ -68,7 +68,9 @@ section. Make sure to give it full permission. Beware that GitLab only shows the
 Change directory and create a new project as in this example:
 
 # TODO: update example
+
 ```console
+
 ```
 
 ## 🚚 Setup

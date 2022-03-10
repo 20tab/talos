@@ -133,6 +133,15 @@ resource "digitalocean_database_cluster" "main" {
   }
 }
 
+resource "digitalocean_database_firewall" "main" {
+  cluster_id = digitalocean_database_cluster.main.id
+
+  rule {
+    type  = "k8s"
+    value = digitalocean_kubernetes_cluster.main.id
+  }
+}
+
 /* Domain */
 
 resource "digitalocean_domain" "default" {
