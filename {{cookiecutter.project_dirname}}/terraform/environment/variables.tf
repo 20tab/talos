@@ -4,6 +4,25 @@ variable "backend_service_port" {
   default     = {{ cookiecutter.backend_service_port }}
 }
 
+variable "basic_auth_enabled" {
+  description = "The basic_auth switch."
+  type        = bool
+  default     = false
+}
+
+variable "basic_auth_password" {
+  description = "The basic_auth password."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "basic_auth_username" {
+  description = "The basic_auth username."
+  type        = string
+  default     = ""
+}
+
 variable "create_redis" {
   description = "If true, a Digital Ocean Redis is created."
   type        = bool
