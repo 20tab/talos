@@ -9,6 +9,11 @@ locals {
     var.database_cluster_region
   ) ? var.database_cluster_region : local.digitalocean_default_region
 
+  redis_cluster_region = contains(
+    local.digitalocean_regions,
+    var.redis_cluster_region
+  ) ? var.redis_cluster_region : local.digitalocean_default_region
+
   k8s_cluster_region = contains(
     local.digitalocean_regions,
     var.k8s_cluster_region
@@ -113,9 +118,9 @@ resource "digitalocean_spaces_bucket" "main" {
   ) ? var.s3_bucket_region : local.digitalocean_default_region
 }
 
-/* Database Cluster */
+/* Postgres Cluster */
 
-resource "digitalocean_database_cluster" "main" {
+resource "digitalocean_database_cluster" "postgres" {
   name       = "${local.resource_name}-database-cluster"
   region     = local.database_cluster_region
   engine     = var.database_cluster_engine
@@ -133,8 +138,31 @@ resource "digitalocean_database_cluster" "main" {
   }
 }
 
-resource "digitalocean_database_firewall" "main" {
-  cluster_id = digitalocean_database_cluster.main.id
+resource "digitalocean_database_firewall" "postgres" {
+  cluster_id = digitalocean_database_cluster.postgres.id
+
+  rule {
+    type  = "k8s"
+    value = digitalocean_kubernetes_cluster.main.id
+  }
+}
+
+/* Redis Cluster */
+resource "digitalocean_database_cluster" "redis" {
+  count = var.use_redis ? 1 : 0
+
+  name       = "${local.resource_name}-redis-cluster"
+  region     = local.redis_cluster_region
+  engine     = "redis"
+  version    = var.redis_cluster_version
+  size       = var.redis_cluster_node_size
+  node_count = var.redis_cluster_node_count
+}
+
+resource "digitalocean_database_firewall" "redis" {
+  count = var.use_redis ? 1 : 0
+
+  cluster_id = digitalocean_database_cluster.redis.id
 
   rule {
     type  = "k8s"

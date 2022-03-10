@@ -99,6 +99,28 @@ variable "project_domain" {
   default     = ""
 }
 
+variable "redis_cluster_node_count" {
+  description = "The Digital Ocean Redis cluster nodes count."
+  type        = number
+  default     = 1
+}
+
+variable "redis_cluster_node_size" {
+  description = "The Digital Ocean Redis cluster droplet size."
+  type        = string
+}
+
+variable "redis_cluster_region" {
+  description = "The Digital Ocean Redis cluster region."
+  type        = string
+  default     = ""
+}
+variable "redis_cluster_version" {
+  description = "The Digital Ocean Redis cluster major version."
+  type        = string
+  default     = "6"
+}
+
 variable "s3_bucket_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
@@ -120,4 +142,10 @@ variable "s3_bucket_secret_key" {
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
+}
+
+variable "use_redis" {
+  description = "If true, a Digital Ocean Redis is created."
+  type        = bool
+  default     = false
 }

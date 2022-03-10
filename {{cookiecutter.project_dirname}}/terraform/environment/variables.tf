@@ -98,3 +98,9 @@ variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
 }
+
+variable "use_redis" {
+  description = "If true, a Digital Ocean Redis is created."
+  type        = bool
+  default     = false
+}
