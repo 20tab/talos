@@ -58,6 +58,8 @@ def run(
     digitalocean_database_cluster_node_size,
     sentry_org,
     sentry_url,
+    backend_sentry_dsn,
+    frontend_sentry_dsn,
     sentry_auth_token,
     use_pact,
     pact_broker_url,
@@ -219,6 +221,7 @@ def run(
             internal_service_port=backend_service_port,
             logs_dir=logs_dir,
             media_storage=media_storage,
+            sentry_dsn=backend_sentry_dsn,
             terraform_dir=terraform_dir,
             **common_options,
         )
@@ -229,6 +232,7 @@ def run(
             frontend_template_url,
             internal_service_port=frontend_service_port,
             logs_dir=logs_dir,
+            sentry_dsn=frontend_sentry_dsn,
             terraform_dir=terraform_dir,
             **common_options,
         )
@@ -460,6 +464,7 @@ def init_subrepo(service_slug, template_url, **options):
     )
     options.update(
         project_dirname=service_slug,
+        service_dir=str((Path(options["output_dir"]) / service_slug).resolve()),
         service_slug=service_slug,
     )
     subprocess.run(

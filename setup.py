@@ -52,6 +52,8 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--digitalocean-database-cluster-node-size")
 @click.option("--sentry-org")
 @click.option("--sentry-url")
+@click.option("--backend-sentry-dsn")
+@click.option("--frontend-sentry-dsn")
 @click.option("--sentry-auth-token")
 @click.option("--use-pact/--no-pact", is_flag=True, default=None)
 @click.option("--pact-broker-url")
@@ -73,6 +75,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gitlab-group-developers", default="")
 @click.option("--terraform-dir")
 @click.option("--logs-dir")
+@click.option("--silent", is_flag=True)
 def main(**options):
     """Run the setup."""
     try:

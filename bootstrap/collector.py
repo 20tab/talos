@@ -10,6 +10,7 @@ from slugify import slugify
 
 from bootstrap.constants import (
     BACKEND_TYPE_CHOICES,
+    BACKEND_TYPE_DEFAULT,
     DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE,
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DEFAULT,
@@ -18,6 +19,7 @@ from bootstrap.constants import (
     ENVIRONMENT_DISTRIBUTION_DEFAULT,
     ENVIRONMENT_DISTRIBUTION_PROMPT,
     FRONTEND_TYPE_CHOICES,
+    FRONTEND_TYPE_DEFAULT,
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DEFAULT,
 )
@@ -55,6 +57,8 @@ def collect(
     digitalocean_database_cluster_node_size,
     sentry_org,
     sentry_url,
+    backend_sentry_dsn,
+    frontend_sentry_dsn,
     sentry_auth_token,
     use_pact,
     pact_broker_url,
@@ -72,6 +76,7 @@ def collect(
     gitlab_group_developers,
     terraform_dir,
     logs_dir,
+    silent,
 ):
     """Collect options and run the bootstrap."""
     project_slug = clean_project_slug(project_name, project_slug)
@@ -79,7 +84,7 @@ def collect(
     service_dir = clean_service_dir(output_dir, project_dirname)
     if backend_type := clean_backend_type(backend_type):
         backend_service_slug = clean_backend_service_slug(backend_service_slug)
-    if frontend_type := clean_frontend_type(frontend_service_slug):
+    if frontend_type := clean_frontend_type(frontend_type):
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
     environment_distribution = clean_environment_distribution(environment_distribution)
     deployment_type = clean_deployment_type(deployment_type)
@@ -124,6 +129,10 @@ def collect(
         sentry_auth_token = validate_or_prompt_password(
             sentry_auth_token, "Sentry auth token", required=True
         )
+        backend_sentry_dsn = clean_backend_sentry_dsn(backend_type, backend_sentry_dsn)
+        frontend_sentry_dsn = clean_frontend_sentry_dsn(
+            frontend_type, frontend_sentry_dsn
+        )
     if use_pact := clean_use_pact(use_pact):
         (
             pact_broker_url,
@@ -147,6 +156,7 @@ def collect(
             gitlab_group_owners,
             gitlab_group_maintainers,
             gitlab_group_developers,
+            silent,
         )
         if media_storage == "s3-digitalocean":
             (
@@ -191,6 +201,8 @@ def collect(
         ),
         "sentry_org": sentry_org,
         "sentry_url": sentry_url,
+        "backend_sentry_dsn": backend_sentry_dsn,
+        "frontend_sentry_dsn": frontend_sentry_dsn,
         "sentry_auth_token": sentry_auth_token,
         "use_pact": use_pact,
         "pact_broker_url": pact_broker_url,
@@ -261,7 +273,7 @@ def clean_backend_type(backend_type):
         and backend_type
         or click.prompt(
             "Backend type",
-            default=BACKEND_TYPE_CHOICES[0],
+            default=BACKEND_TYPE_DEFAULT,
             type=click.Choice(BACKEND_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
@@ -279,10 +291,9 @@ def clean_frontend_type(frontend_type):
     """Return the front end type."""
     return (
         frontend_type in FRONTEND_TYPE_CHOICES
-        and frontend_type
         or click.prompt(
             "Frontend type",
-            default=FRONTEND_TYPE_CHOICES[0],
+            default=FRONTEND_TYPE_DEFAULT,
             type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
@@ -301,7 +312,6 @@ def clean_deployment_type(deployment_type):
     """Return the deployment type."""
     return (
         deployment_type in DEPLOYMENT_TYPE_CHOICES
-        and deployment_type
         or click.prompt(
             "Deploy type",
             default=DEPLOYMENT_TYPE_DEFAULT,
@@ -312,14 +322,10 @@ def clean_deployment_type(deployment_type):
 
 def clean_environment_distribution(environment_distribution):
     """Return the environment distribution."""
-    return (
-        environment_distribution in ENVIRONMENT_DISTRIBUTION_CHOICES
-        and environment_distribution
-        or click.prompt(
-            ENVIRONMENT_DISTRIBUTION_PROMPT,
-            default=ENVIRONMENT_DISTRIBUTION_DEFAULT,
-            type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES),
-        )
+    return environment_distribution in ENVIRONMENT_DISTRIBUTION_CHOICES or click.prompt(
+        ENVIRONMENT_DISTRIBUTION_PROMPT,
+        default=ENVIRONMENT_DISTRIBUTION_DEFAULT,
+        type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES),
     )
 
 
@@ -385,10 +391,40 @@ def clean_project_urls(
 
 def clean_sentry_org(sentry_org):
     """Return the Sentry organization."""
-    return sentry_org or click.prompt(
-        'Sentry organization (e.g. "20tab", leave blank if unused)',
-        default="",
+    return (
+        sentry_org
+        if sentry_org is not None
+        else click.prompt(
+            'Sentry organization (e.g. "20tab", leave blank if unused)',
+            default="",
+        )
     )
+
+
+def clean_backend_sentry_dsn(backend_type, backend_sentry_dsn):
+    """Return the backend Sentry DSN."""
+    if backend_type:
+        return (
+            backend_sentry_dsn
+            if backend_sentry_dsn is not None
+            else click.prompt(
+                "Backend Sentry DSN (leave blank if unused)",
+                default="",
+            )
+        )
+
+
+def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
+    """Return the frontend Sentry DSN."""
+    if frontend_type:
+        return (
+            frontend_sentry_dsn
+            if frontend_sentry_dsn is not None
+            else click.prompt(
+                "Frontend Sentry DSN (leave blank if unused)",
+                default="",
+            )
+        )
 
 
 def clean_digitalocean_clusters_data(
@@ -470,12 +506,13 @@ def clean_gitlab_group_data(
     gitlab_group_owners,
     gitlab_group_maintainers,
     gitlab_group_developers,
+    silent=False,
 ):
     """Return Gitlab group data."""
     gitlab_group_slug = slugify(
         gitlab_group_slug or click.prompt("Gitlab group slug", default=project_slug)
     )
-    click.confirm(
+    silent or click.confirm(
         warning(
             f'Make sure the Gitlab "{gitlab_group_slug}" group exists '
             "before proceeding. Continue?"
