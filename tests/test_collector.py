@@ -209,13 +209,21 @@ class TestBootstrapCollector(TestCase):
     def test_clean_cluster_data(self):
         """Test cleaning the cluster data."""
         self.assertEqual(
-            clean_digitalocean_clusters_data("nyc1", "nyc1", "db-s-8vcpu-16gb"),
-            ("nyc1", "nyc1", "db-s-8vcpu-16gb"),
+            clean_digitalocean_clusters_data(
+                "nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb", True
+            ),
+            ("nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb", True),
         )
-        with input("nyc1", "nyc1", "db-s-8vcpu-16gb"):
+        self.assertEqual(
+            clean_digitalocean_clusters_data(
+                "nyc1", "nyc1", "db-s-8vcpu-16gb", None, None, False
+            ),
+            ("nyc1", "nyc1", "db-s-8vcpu-16gb", None, None, False),
+        )
+        with input("nyc1", "nyc1", "db-s-8vcpu-16gb", "Y", "nyc1", "db-s-8vcpu-16gb"):
             self.assertEqual(
-                clean_digitalocean_clusters_data(None, None, None),
-                ("nyc1", "nyc1", "db-s-8vcpu-16gb"),
+                clean_digitalocean_clusters_data(None, None, None, None, None, None),
+                ("nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb", True),
             )
 
     def test_clean_use_pact(self):
@@ -297,13 +305,7 @@ class TestBootstrapCollector(TestCase):
         ):
             self.assertEqual(
                 clean_gitlab_group_data("", "", "", "", "", ""),
-                (
-                    "my-project-group",
-                    "mYV4l1DT0k3N",
-                    "owner, owner.other",
-                    "maintainer, maintainer.other",
-                    "developer, developer.other",
-                ),
+                ("my-project-group", "mYV4l1DT0k3N", "", "", ""),
             )
 
     def test_clean_digitalocean_media_storage_data(self):
