@@ -4,6 +4,12 @@ variable "create_domain" {
   default     = true
 }
 
+variable "create_redis" {
+  description = "If true, a Digital Ocean Redis is created."
+  type        = bool
+  default     = false
+}
+
 variable "database_cluster_engine" {
   description = "The Digital Ocean database cluster engine."
   type        = string
@@ -97,6 +103,28 @@ variable "project_domain" {
   description = "The project domain."
   type        = string
   default     = ""
+}
+
+variable "redis_cluster_node_count" {
+  description = "The Digital Ocean Redis cluster nodes count."
+  type        = number
+  default     = 1
+}
+
+variable "redis_cluster_node_size" {
+  description = "The Digital Ocean Redis cluster droplet size."
+  type        = string
+}
+
+variable "redis_cluster_region" {
+  description = "The Digital Ocean Redis cluster region."
+  type        = string
+  default     = ""
+}
+variable "redis_cluster_version" {
+  description = "The Digital Ocean Redis cluster major version."
+  type        = string
+  default     = "6"
 }
 
 variable "s3_bucket_access_id" {

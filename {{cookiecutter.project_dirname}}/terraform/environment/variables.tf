@@ -4,6 +4,12 @@ variable "backend_service_port" {
   default     = {{ cookiecutter.backend_service_port }}
 }
 
+variable "create_redis" {
+  description = "If true, a Digital Ocean Redis is created."
+  type        = bool
+  default     = false
+}
+
 variable "database_connection_pool_size" {
   description = "The Digital Ocean database connection pool size."
   type        = number

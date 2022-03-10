@@ -64,8 +64,14 @@ data "digitalocean_kubernetes_cluster" "main" {
   name = "${local.stack_resource_name}-k8s-cluster"
 }
 
-data "digitalocean_database_cluster" "main" {
+data "digitalocean_database_cluster" "postgres" {
   name = "${local.stack_resource_name}-database-cluster"
+}
+
+data "digitalocean_database_cluster" "redis" {
+  count = var.create_redis ? 1 : 0
+
+  name = "${local.stack_resource_name}-redis-cluster"
 }
 
 data "digitalocean_domain" "main" {
@@ -80,23 +86,30 @@ data "digitalocean_loadbalancer" "main" {
 
 /* Database */
 
-resource "digitalocean_database_user" "main" {
-  cluster_id = data.digitalocean_database_cluster.main.id
+resource "digitalocean_database_user" "postgres" {
+  cluster_id = data.digitalocean_database_cluster.postgres.id
   name       = "${local.project_slug}-${var.env_slug}-database-user"
 }
 
-resource "digitalocean_database_db" "main" {
-  cluster_id = data.digitalocean_database_cluster.main.id
+resource "digitalocean_database_db" "postgres" {
+  cluster_id = data.digitalocean_database_cluster.postgres.id
   name       = "${local.project_slug}-${var.env_slug}-database"
 }
 
-resource "digitalocean_database_connection_pool" "main" {
-  cluster_id = data.digitalocean_database_cluster.main.id
-  db_name    = digitalocean_database_db.main.name
-  user       = digitalocean_database_user.main.name
+resource "digitalocean_database_connection_pool" "postgres" {
+  cluster_id = data.digitalocean_database_cluster.postgres.id
+  db_name    = digitalocean_database_db.postgres.name
+  user       = digitalocean_database_user.postgres.name
   name       = "${local.project_slug}-${var.env_slug}-database-pool"
   mode       = "transaction"
   size       = var.database_connection_pool_size
+}
+
+resource "digitalocean_database_db" "redis" {
+  count = var.create_redis ? 1 : 0
+
+  cluster_id = data.digitalocean_database_cluster.redis.id
+  name       = "${local.project_slug}-${var.env_slug}-redis"
 }
 
 /* Namespace */
