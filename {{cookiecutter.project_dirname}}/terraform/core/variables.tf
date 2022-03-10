@@ -30,7 +30,7 @@ variable "database_cluster_region" {
 variable "database_cluster_version" {
   description = "The Digital Ocean database cluster major version."
   type        = string
-  default     = "13"
+  default     = "14"
 }
 
 variable "digitalocean_token" {
