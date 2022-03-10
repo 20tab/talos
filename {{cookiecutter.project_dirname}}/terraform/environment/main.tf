@@ -18,6 +18,8 @@ locals {
   env_resource_name   = "${local.project_slug}-${var.env_slug}"
 
   namespace = kubernetes_namespace.main.metadata[0].name
+
+  basic_auth_enabled = var.basic_auth_enabled && var.basic_auth_username != "" && var.basic_auth_password != ""
 }
 
 terraform {
@@ -120,14 +122,54 @@ resource "digitalocean_record" "main" {
 
 /* Ingress */
 
+resource "kubernetes_secret_v1" "traefik_basic_auth" {
+  count = local.basic_auth_enabled ? 1 : 0
+
+  metadata {
+    name      = "basic-auth"
+    namespace = local.namespace
+  }
+
+  data = {
+    username = var.basic_auth_username
+    password = var.basic_auth_password
+  }
+
+  type = "kubernetes.io/basic-auth"
+}
+
+resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
+  count = local.basic_auth_enabled ? 1 : 0
+
+  manifest = {
+    "apiVersion" = "traefik.containo.us/v1alpha1"
+    "kind"       = "Middleware"
+    "metadata" = {
+      "name"      = "traefik-basic-auth-middleware"
+      "namespace" = local.namespace
+    }
+    "spec" = {
+      "basicAuth" = {
+        "removeHeader" = true
+        "secret"       = kubernetes_secret_v1.traefik_basic_auth[0].metadata[0].name
+      }
+    }
+  }
+}
+
 resource "kubernetes_ingress_v1" "main" {
   metadata {
     name      = "${local.env_resource_name}-ingress"
     namespace = local.namespace
-    annotations = {
-      "kubernetes.io/ingress.class"                      = "traefik"
-      "traefik.ingress.kubernetes.io/router.entrypoints" = var.project_domain == "" ? "web" : "websecure"
-    }
+    annotations = merge(
+      {
+        "kubernetes.io/ingress.class"                      = "traefik"
+        "traefik.ingress.kubernetes.io/router.entrypoints" = "web,websecure"
+      },
+      local.basic_auth_enabled ? {
+        "traefik.ingress.kubernetes.io/router.middlewares" = "${local.namespace}-${kubernetes_manifest.traefik_basic_auth_middleware[0].manifest.metadata.name}@kubernetescrd"
+      } : {}
+    )
   }
 
   spec {
