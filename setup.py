@@ -76,8 +76,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 def main(**options):
     """Run the setup."""
     try:
-        setup_data = collect(**options)
-        run(**setup_data)
+        run(**collect(**options))
     except BootstrapError as e:
         raise click.Abort() from e
 
