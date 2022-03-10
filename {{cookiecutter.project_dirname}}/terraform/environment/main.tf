@@ -20,6 +20,8 @@ locals {
   namespace = kubernetes_namespace.main.metadata[0].name
 
   basic_auth_enabled = var.basic_auth_enabled == "true" && var.basic_auth_username != "" && var.basic_auth_password != ""
+ 
+  postgres_dump_enabled = var.env_slug == "prod" && var.media_storage == "s3-digitalocean" && var.s3_bucket_access_id != "" && var.s3_bucket_secret_key != ""
 }
 
 terraform {
@@ -31,10 +33,6 @@ terraform {
       source  = "digitalocean/digitalocean"
       version = "~> 2.0"
     }
-    # gitlab = {
-    #   source  = "gitlabhq/gitlab"
-    #   version = "3.7.0"
-    # }
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "2.8.0"
@@ -46,11 +44,10 @@ terraform {
 
 provider "digitalocean" {
   token = var.digitalocean_token
-}
 
-# provider "gitlab" {
-#   token = var.gitlab_token
-# }
+  spaces_access_id  = var.s3_bucket_access_id
+  spaces_secret_key = var.s3_bucket_secret_key
+}
 
 provider "kubernetes" {
   host  = data.digitalocean_kubernetes_cluster.main.endpoint
@@ -84,6 +81,11 @@ data "digitalocean_domain" "main" {
 
 data "digitalocean_loadbalancer" "main" {
   name = "${local.stack_resource_name}-load-balancer"
+}
+
+data "digitalocean_spaces_bucket" "postgres_dump" {
+  name   = "${local.stack_resource_name}-s3-bucket"
+  region = var.s3_bucket_region
 }
 
 /* Database */
@@ -248,4 +250,74 @@ resource "kubernetes_secret" "regcred" {
   type = "kubernetes.io/dockerconfigjson"
 }
 
-/* Gitlab Variables */
+/* Database dump Cron Job */
+
+resource "kubernetes_secret_v1" "postgres_dump" {
+  count = local.postgres_dump_enabled ? 1 : 0
+
+  metadata {
+    name      = "${local.project_slug}-postgres-dump"
+    namespace = local.namespace
+  }
+
+  data = {
+    DATABASE_URL          = digitalocean_database_connection_pool.main.private_uri
+    AWS_ACCESS_KEY_ID     = var.s3_bucket_access_id
+    AWS_SECRET_ACCESS_KEY = var.s3_bucket_secret_key
+    AWS_S3_HOST           = "${data.digitalocean_spaces_bucket.postgres_dump.region}.digitaloceanspaces.com"
+  }
+}
+
+resource "kubernetes_config_map_v1" "postgres_dump" {
+  count = local.postgres_dump_enabled ? 1 : 0
+
+  metadata {
+    name      = "${local.project_slug}-postgres-dump"
+    namespace = local.namespace
+  }
+
+  data = {
+    AWS_STORAGE_BUCKET_NAME = data.digitalocean_spaces_bucket.postgres_dump.name
+    AWS_S3_BACKUP_PATH      = "backup/postgres"
+  }
+}
+
+resource "kubernetes_cron_job_v1" "postgres_dump" {
+  count = local.postgres_dump_enabled ? 1 : 0
+
+  metadata {
+    name      = "postgresql-dump-cron"
+    namespace = local.namespace
+  }
+
+  spec {
+    schedule = "0 0 * * *"  
+    job_template {
+      metadata {}
+      spec {
+        template {
+          metadata {}
+          spec {
+            container {
+              name    = "postgresql-dump-to-s3"
+              image   = "20tab/postgres-dump-restore-to-from-s3:latest"
+              command = ["/pg_dump_to_s3.sh"]
+              env_from {
+                config_map_ref {
+                  name = kubernetes_config_map_v1.postgres_dump[0].metadata[0].name
+                }
+              }
+
+              env_from {
+                secret_ref {
+                  name = kubernetes_secret_v1.postgres_dump[0].metadata[0].name
+                }
+              }
+            }
+            restart_policy = "OnFailure"
+          }
+        }
+      }
+    }
+  }
+}
