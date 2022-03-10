@@ -150,6 +150,7 @@ stack_{{ stack_slug }}_networking_apply:
   variables:
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment
     TF_VAR_backend_service_port: "${BACKEND_SERVICE_PORT}"
+    TF_VAR_basic_auth_enabled: "${BASIC_AUTH_ENABLED:-false}"
     TF_VAR_basic_auth_password: "${BASIC_AUTH_PASSWORD}"
     TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
     TF_VAR_frontend_service_port: "${FRONTEND_SERVICE_PORT}"
