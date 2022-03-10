@@ -5,12 +5,14 @@ from io import StringIO
 from unittest import TestCase, mock
 
 from bootstrap.collector import (
+    clean_backend_sentry_dsn,
     clean_backend_service_slug,
     clean_backend_type,
     clean_deployment_type,
     clean_digitalocean_clusters_data,
     clean_digitalocean_media_storage_data,
     clean_environment_distribution,
+    clean_frontend_sentry_dsn,
     clean_frontend_service_slug,
     clean_frontend_type,
     clean_gitlab_group_data,
@@ -181,6 +183,28 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(clean_sentry_org("My Project"), "My Project")
         with input("My Project"):
             self.assertEqual(clean_sentry_org(None), "My Project")
+
+    def test_clean_backend_sentry_dsn(self):
+        """Test cleaning the backend Sentry DSN."""
+        self.assertIsNone(clean_backend_sentry_dsn(None, None))
+        with input("https://public@sentry.example.com/1"):
+            self.assertEqual(
+                clean_backend_sentry_dsn(
+                    "django", "https://public@sentry.example.com/1"
+                ),
+                "https://public@sentry.example.com/1",
+            )
+
+    def test_clean_frontend_sentry_dsn(self):
+        """Test cleaning the frontend Sentry DSN."""
+        self.assertIsNone(clean_frontend_sentry_dsn(None, None))
+        with input("https://public@sentry.example.com/1"):
+            self.assertEqual(
+                clean_frontend_sentry_dsn(
+                    "django", "https://public@sentry.example.com/1"
+                ),
+                "https://public@sentry.example.com/1",
+            )
 
     def test_clean_cluster_data(self):
         """Test cleaning the cluster data."""
