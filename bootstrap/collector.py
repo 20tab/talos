@@ -468,11 +468,11 @@ def clean_digitalocean_clusters_data(
     """Return DigitalOcean k8s and database clusters data."""
     # TODO: ask these settings for each stack
     digitalocean_k8s_cluster_region = digitalocean_k8s_cluster_region or click.prompt(
-        "Kubernetes cluster Digital Ocean region", default="fra1"
+        "Kubernetes cluster DigitalOcean region", default="fra1"
     )
     digitalocean_database_cluster_region = (
         digitalocean_database_cluster_region
-        or click.prompt("Database cluster Digital Ocean region", default="fra1")
+        or click.prompt("Database cluster DigitalOcean region", default="fra1")
     )
     digitalocean_database_cluster_node_size = (
         digitalocean_database_cluster_node_size
@@ -485,7 +485,7 @@ def clean_digitalocean_clusters_data(
         digitalocean_redis_cluster_region = (
             digitalocean_redis_cluster_region
             if digitalocean_redis_cluster_region is not None
-            else click.prompt("Redis cluster Digital Ocean region", default="fra1")
+            else click.prompt("Redis cluster DigitalOcean region", default="fra1")
         )
         digitalocean_redis_cluster_node_size = (
             digitalocean_redis_cluster_node_size

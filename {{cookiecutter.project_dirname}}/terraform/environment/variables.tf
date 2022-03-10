@@ -24,13 +24,13 @@ variable "basic_auth_username" {
 }
 
 variable "database_connection_pool_size" {
-  description = "The Digital Ocean database connection pool size."
+  description = "The DigitalOcean database connection pool size."
   type        = number
   default     = 1
 }
 
 variable "digitalocean_token" {
-  description = "The Digital Ocean access token."
+  description = "The DigitalOcean access token."
   type        = string
   sensitive   = true
 }
@@ -96,7 +96,7 @@ variable "s3_bucket_access_id" {
 }
 
 variable "s3_bucket_region" {
-  description = "The Digital Ocean S3 Spaces region."
+  description = "The DigitalOcean S3 Spaces region."
   type        = string
   default     = ""
 }
@@ -114,7 +114,7 @@ variable "stack_slug" {
 }
 
 variable "use_redis" {
-  description = "If 'true', a Digital Ocean Redis database is created."
+  description = "If 'true', a DigitalOcean Redis database is created."
   type        = string
   default     = "false"
 }

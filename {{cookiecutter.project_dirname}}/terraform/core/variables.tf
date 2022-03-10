@@ -1,88 +1,88 @@
 variable "create_domain" {
-  description = "If true, a Digital Ocean domain is created."
+  description = "If true, a DigitalOcean domain is created."
   type        = bool
   default     = true
 }
 
 variable "database_cluster_engine" {
-  description = "The Digital Ocean database cluster engine."
+  description = "The DigitalOcean database cluster engine."
   type        = string
   default     = "pg"
 }
 
 variable "database_cluster_node_count" {
-  description = "The Digital Ocean database cluster nodes count."
+  description = "The DigitalOcean database cluster nodes count."
   type        = number
   default     = 1
 }
 
 variable "database_cluster_node_size" {
-  description = "The Digital Ocean database cluster droplet size."
+  description = "The DigitalOcean database cluster droplet size."
   type        = string
 }
 
 variable "database_cluster_region" {
-  description = "The Digital Ocean database cluster region."
+  description = "The DigitalOcean database cluster region."
   type        = string
   default     = ""
 }
 
 variable "database_cluster_version" {
-  description = "The Digital Ocean database cluster major version."
+  description = "The DigitalOcean database cluster major version."
   type        = string
   default     = "14"
 }
 
 variable "digitalocean_token" {
-  description = "The Digital Ocean access token."
+  description = "The DigitalOcean access token."
   type        = string
   sensitive   = true
 }
 
 variable "k8s_cluster_region" {
-  description = "The Digital Ocean Kubernetes cluster region."
+  description = "The DigitalOcean Kubernetes cluster region."
   type        = string
   default     = ""
 }
 
 variable "k8s_cluster_node_count" {
-  description = "The Digital Ocean Kubernetes nodes count."
+  description = "The DigitalOcean Kubernetes nodes count."
   type        = number
   default     = 1
 }
 
 variable "k8s_cluster_node_min_memory" {
-  description = "The Digital Ocean Kubernetes nodes candidate minimum memory (in GB)."
+  description = "The DigitalOcean Kubernetes nodes candidate minimum memory (in GB)."
   type        = number
   default     = 2
 }
 
 variable "k8s_cluster_node_min_vcpus" {
-  description = "The Digital Ocean Kubernetes nodes candidate minimum number of vCPUs."
+  description = "The DigitalOcean Kubernetes nodes candidate minimum number of vCPUs."
   type        = number
   default     = 1
 }
 
 variable "k8s_cluster_node_max_memory" {
-  description = "The Digital Ocean Kubernetes nodes candidate maximum memory (in GB)."
+  description = "The DigitalOcean Kubernetes nodes candidate maximum memory (in GB)."
   type        = number
   default     = 16
 }
 
 variable "k8s_cluster_node_max_vcpus" {
-  description = "The Digital Ocean Kubernetes nodes candidate maximum number of vCPUs."
+  description = "The DigitalOcean Kubernetes nodes candidate maximum number of vCPUs."
   type        = number
   default     = 4
 }
 
 variable "k8s_cluster_node_size" {
-  description = "The Digital Ocean Kubernetes node size."
+  description = "The DigitalOcean Kubernetes node size."
   type        = string
   default     = ""
 }
 
 variable "k8s_cluster_version" {
-  description = "The Digital Ocean Kubernetes cluster version."
+  description = "The DigitalOcean Kubernetes cluster version."
   type        = string
   default     = ""
 }
@@ -100,23 +100,23 @@ variable "project_domain" {
 }
 
 variable "redis_cluster_node_count" {
-  description = "The Digital Ocean Redis cluster nodes count."
+  description = "The DigitalOcean Redis cluster nodes count."
   type        = number
   default     = 1
 }
 
 variable "redis_cluster_node_size" {
-  description = "The Digital Ocean Redis cluster droplet size."
+  description = "The DigitalOcean Redis cluster droplet size."
   type        = string
 }
 
 variable "redis_cluster_region" {
-  description = "The Digital Ocean Redis cluster region."
+  description = "The DigitalOcean Redis cluster region."
   type        = string
   default     = ""
 }
 variable "redis_cluster_version" {
-  description = "The Digital Ocean Redis cluster major version."
+  description = "The DigitalOcean Redis cluster major version."
   type        = string
   default     = "6"
 }
@@ -128,7 +128,7 @@ variable "s3_bucket_access_id" {
 }
 
 variable "s3_bucket_region" {
-  description = "The Digital Ocean S3 Spaces region."
+  description = "The DigitalOcean S3 Spaces region."
   type        = string
   default     = ""
 }
@@ -145,7 +145,7 @@ variable "stack_slug" {
 }
 
 variable "use_redis" {
-  description = "If true, a Digital Ocean Redis is created."
+  description = "If true, a DigitalOcean Redis is created."
   type        = bool
   default     = false
 }
