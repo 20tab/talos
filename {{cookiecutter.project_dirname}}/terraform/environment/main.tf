@@ -20,7 +20,7 @@ locals {
   namespace = kubernetes_namespace.main.metadata[0].name
 
   basic_auth_enabled = var.basic_auth_enabled == "true" && var.basic_auth_username != "" && var.basic_auth_password != ""
- 
+
   postgres_dump_enabled = var.env_slug == "prod" && var.media_storage == "s3-digitalocean" && var.s3_bucket_access_id != "" && var.s3_bucket_secret_key != ""
 }
 
@@ -68,7 +68,7 @@ data "digitalocean_database_cluster" "postgres" {
 }
 
 data "digitalocean_database_cluster" "redis" {
-  count = var.use_redis ? 1 : 0
+  count = var.use_redis == "true" ? 1 : 0
 
   name = "${local.stack_resource_name}-redis-cluster"
 }
@@ -110,7 +110,7 @@ resource "digitalocean_database_connection_pool" "postgres" {
 }
 
 resource "digitalocean_database_db" "redis" {
-  count = var.use_redis ? 1 : 0
+  count = var.use_redis == "true" ? 1 : 0
 
   cluster_id = data.digitalocean_database_cluster.redis.id
   name       = "${local.project_slug}-${var.env_slug}-redis"
@@ -250,6 +250,31 @@ resource "kubernetes_secret" "regcred" {
   type = "kubernetes.io/dockerconfigjson"
 }
 
+/* Config Maps */
+
+resource "kubernetes_config_map_v1" "database_url" {
+  metadata {
+    name      = "${local.env_resource_name}-database-url"
+    namespace = local.namespace
+  }
+
+  data = {
+    DATABASE_URL = digitalocean_database_connection_pool.postgres.private_uri
+  }
+}
+
+resource "kubernetes_config_map_v1" "cache_url" {
+  count = var.use_redis == "true" ? 1 : 0
+  metadata {
+    name      = "${local.env_resource_name}-cache-url"
+    namespace = local.namespace
+  }
+
+  data = {
+    CACHE_URL = digitalocean_database_cluster.redis.private_uri
+  }
+}
+
 /* Database dump Cron Job */
 
 resource "kubernetes_secret_v1" "postgres_dump" {
@@ -261,10 +286,10 @@ resource "kubernetes_secret_v1" "postgres_dump" {
   }
 
   data = {
-    DATABASE_URL          = digitalocean_database_connection_pool.main.private_uri
     AWS_ACCESS_KEY_ID     = var.s3_bucket_access_id
-    AWS_SECRET_ACCESS_KEY = var.s3_bucket_secret_key
     AWS_S3_HOST           = "${data.digitalocean_spaces_bucket.postgres_dump.region}.digitaloceanspaces.com"
+    AWS_SECRET_ACCESS_KEY = var.s3_bucket_secret_key
+    DATABASE_URL          = digitalocean_database_connection_pool.postgres.private_uri
   }
 }
 
@@ -291,7 +316,7 @@ resource "kubernetes_cron_job_v1" "postgres_dump" {
   }
 
   spec {
-    schedule = "0 0 * * *"  
+    schedule = "0 0 * * *"
     job_template {
       metadata {}
       spec {
@@ -307,7 +332,6 @@ resource "kubernetes_cron_job_v1" "postgres_dump" {
                   name = kubernetes_config_map_v1.postgres_dump[0].metadata[0].name
                 }
               }
-
               env_from {
                 secret_ref {
                   name = kubernetes_secret_v1.postgres_dump[0].metadata[0].name

@@ -138,6 +138,9 @@ def run(
             SENTRY_URL='{value = "%s"}' % sentry_url,
             SENTRY_AUTH_TOKEN='{value = "%s", masked = true}' % sentry_auth_token,
         )
+        use_redis and gitlab_group_variables.update(
+            USE_REDIS='{value = "%s"}' % use_redis
+        )
         if use_pact:
             pact_broker_auth_url = re.sub(
                 r"^(https?)://(.*)$",
@@ -191,7 +194,6 @@ def run(
                 % digitalocean_redis_cluster_region,
                 DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE='{value = "%s"}'
                 % digitalocean_redis_cluster_node_size,
-                USE_REDIS='{value = "%s"}' % use_redis,
             )
         init_gitlab(
             gitlab_group_slug,
