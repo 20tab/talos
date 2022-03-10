@@ -290,8 +290,9 @@ def clean_backend_service_slug(backend_service_slug):
 def clean_frontend_type(frontend_type):
     """Return the front end type."""
     return (
-        frontend_type in FRONTEND_TYPE_CHOICES
-        or click.prompt(
+        frontend_type
+        if frontend_type in FRONTEND_TYPE_CHOICES
+        else click.prompt(
             "Frontend type",
             default=FRONTEND_TYPE_DEFAULT,
             type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
@@ -311,8 +312,9 @@ def clean_frontend_service_slug(frontend_service_slug):
 def clean_deployment_type(deployment_type):
     """Return the deployment type."""
     return (
-        deployment_type in DEPLOYMENT_TYPE_CHOICES
-        or click.prompt(
+        deployment_type
+        if deployment_type in DEPLOYMENT_TYPE_CHOICES
+        else click.prompt(
             "Deploy type",
             default=DEPLOYMENT_TYPE_DEFAULT,
             type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
@@ -322,10 +324,14 @@ def clean_deployment_type(deployment_type):
 
 def clean_environment_distribution(environment_distribution):
     """Return the environment distribution."""
-    return environment_distribution in ENVIRONMENT_DISTRIBUTION_CHOICES or click.prompt(
-        ENVIRONMENT_DISTRIBUTION_PROMPT,
-        default=ENVIRONMENT_DISTRIBUTION_DEFAULT,
-        type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES),
+    return (
+        environment_distribution
+        if environment_distribution in ENVIRONMENT_DISTRIBUTION_CHOICES
+        else click.prompt(
+            ENVIRONMENT_DISTRIBUTION_PROMPT,
+            default=ENVIRONMENT_DISTRIBUTION_DEFAULT,
+            type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES),
+        )
     )
 
 
