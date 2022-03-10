@@ -56,6 +56,9 @@ def run(
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
+    use_redis,
+    digitalocean_redis_cluster_region,
+    digitalocean_redis_cluster_node_size,
     sentry_org,
     sentry_url,
     backend_sentry_dsn,
@@ -184,6 +187,11 @@ def run(
                 % digitalocean_database_cluster_region,
                 DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE='{value = "%s"}'
                 % digitalocean_database_cluster_node_size,
+                DIGITALOCEAN_REDIS_CLUSTER_REGION='{value = "%s"}'
+                % digitalocean_redis_cluster_region,
+                DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE='{value = "%s"}'
+                % digitalocean_redis_cluster_node_size,
+                USE_REDIS='{value = "%s"}' % use_redis,
             )
         init_gitlab(
             gitlab_group_slug,

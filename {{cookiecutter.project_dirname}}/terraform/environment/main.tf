@@ -71,7 +71,7 @@ data "digitalocean_database_cluster" "postgres" {
 }
 
 data "digitalocean_database_cluster" "redis" {
-  count = var.create_redis ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   name = "${local.stack_resource_name}-redis-cluster"
 }
@@ -108,7 +108,7 @@ resource "digitalocean_database_connection_pool" "postgres" {
 }
 
 resource "digitalocean_database_db" "redis" {
-  count = var.create_redis ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   cluster_id = data.digitalocean_database_cluster.redis.id
   name       = "${local.project_slug}-${var.env_slug}-redis"

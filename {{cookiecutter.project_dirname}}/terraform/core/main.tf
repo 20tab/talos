@@ -149,7 +149,7 @@ resource "digitalocean_database_firewall" "postgres" {
 
 /* Redis Cluster */
 resource "digitalocean_database_cluster" "redis" {
-  count = var.create_redis ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   name       = "${local.resource_name}-redis-cluster"
   region     = local.redis_cluster_region
@@ -160,7 +160,7 @@ resource "digitalocean_database_cluster" "redis" {
 }
 
 resource "digitalocean_database_firewall" "redis" {
-  count = var.create_redis ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   cluster_id = digitalocean_database_cluster.redis.id
 

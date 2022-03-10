@@ -4,12 +4,6 @@ variable "create_domain" {
   default     = true
 }
 
-variable "create_redis" {
-  description = "If true, a Digital Ocean Redis is created."
-  type        = bool
-  default     = false
-}
-
 variable "database_cluster_engine" {
   description = "The Digital Ocean database cluster engine."
   type        = string
@@ -148,4 +142,10 @@ variable "s3_bucket_secret_key" {
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
+}
+
+variable "use_redis" {
+  description = "If true, a Digital Ocean Redis is created."
+  type        = bool
+  default     = false
 }

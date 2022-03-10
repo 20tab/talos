@@ -12,6 +12,7 @@ from bootstrap.constants import (
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
     DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE,
+    DEFAULT_DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE,
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
@@ -55,6 +56,9 @@ def collect(
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
+    use_redis,
+    digitalocean_redis_cluster_region,
+    digitalocean_redis_cluster_node_size,
     sentry_org,
     sentry_url,
     backend_sentry_dsn,
@@ -117,10 +121,16 @@ def collect(
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
+            digitalocean_redis_cluster_region,
+            digitalocean_redis_cluster_node_size,
+            use_redis,
         ) = clean_digitalocean_clusters_data(
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
+            digitalocean_redis_cluster_region,
+            digitalocean_redis_cluster_node_size,
+            use_redis,
         )
     if sentry_org := clean_sentry_org(sentry_org):
         sentry_url = validate_or_prompt_url(
@@ -199,6 +209,9 @@ def collect(
         "digitalocean_database_cluster_node_size": (
             digitalocean_database_cluster_node_size
         ),
+        "use_redis": use_redis,
+        "digitalocean_redis_cluster_region": digitalocean_redis_cluster_region,
+        "digitalocean_redis_cluster_node_size": digitalocean_redis_cluster_node_size,
         "sentry_org": sentry_org,
         "sentry_url": sentry_url,
         "backend_sentry_dsn": backend_sentry_dsn,
@@ -437,10 +450,20 @@ def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
         )
 
 
+def clean_use_redis(use_redis):
+    """Tell whether Redis should be configured."""
+    if use_redis is None:
+        return click.confirm(warning("Do you want to configure Redis?"), default=True)
+    return use_redis
+
+
 def clean_digitalocean_clusters_data(
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
+    digitalocean_redis_cluster_region,
+    digitalocean_redis_cluster_node_size,
+    use_redis,
 ):
     """Return DigitalOcean k8s and database clusters data."""
     # TODO: ask these settings for each stack
@@ -458,10 +481,27 @@ def clean_digitalocean_clusters_data(
             default=DEFAULT_DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE,
         )
     )
+    if use_redis := clean_use_redis(use_redis):
+        digitalocean_redis_cluster_region = (
+            digitalocean_redis_cluster_region
+            if digitalocean_redis_cluster_region is not None
+            else click.prompt("Redis cluster Digital Ocean region", default="fra1")
+        )
+        digitalocean_redis_cluster_node_size = (
+            digitalocean_redis_cluster_node_size
+            if digitalocean_redis_cluster_node_size is not None
+            else click.prompt(
+                "Redis cluster node size",
+                default=DEFAULT_DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE,
+            )
+        )
     return (
         digitalocean_k8s_cluster_region,
         digitalocean_database_cluster_region,
         digitalocean_database_cluster_node_size,
+        digitalocean_redis_cluster_region,
+        digitalocean_redis_cluster_node_size,
+        use_redis,
     )
 
 

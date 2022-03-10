@@ -23,12 +23,6 @@ variable "basic_auth_username" {
   default     = ""
 }
 
-variable "create_redis" {
-  description = "If true, a Digital Ocean Redis is created."
-  type        = bool
-  default     = false
-}
-
 variable "database_connection_pool_size" {
   description = "The Digital Ocean database connection pool size."
   type        = number
@@ -103,4 +97,10 @@ variable "registry_server" {
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
+}
+
+variable "use_redis" {
+  description = "If true, a Digital Ocean Redis is created."
+  type        = bool
+  default     = false
 }
