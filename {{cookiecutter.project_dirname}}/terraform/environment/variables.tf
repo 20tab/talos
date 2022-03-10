@@ -52,12 +52,6 @@ variable "env_slug" {
   type        = string
 }
 
-# variable "gitlab_token" {
-#   description = "The Gitlab token."
-#   type        = string
-#   sensitive   = true
-# }
-
 variable "media_storage" {
   description = "The media storage solution."
   type        = string
@@ -92,6 +86,26 @@ variable "registry_server" {
   description = "The image registry server."
   type        = string
   default     = "registry.gitlab.com"
+}
+
+variable "s3_bucket_access_id" {
+  description = "The S3 bucket access key ID."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "s3_bucket_region" {
+  description = "The Digital Ocean S3 Spaces region."
+  type        = string
+  default     = ""
+}
+
+variable "s3_bucket_secret_key" {
+  description = "The S3 bucket secret access key."
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "stack_slug" {
