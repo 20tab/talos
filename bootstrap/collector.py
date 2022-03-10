@@ -337,10 +337,14 @@ def clean_environment_distribution(environment_distribution):
 
 def clean_project_domain(project_domain):
     """Return the project domain."""
-    return project_domain or click.prompt(
-        "Project domain (e.g. 20tab.com, "
-        "if you prefer to skip DigitalOcean DNS configuration, leave blank)",
-        default="",
+    return (
+        project_domain
+        if project_domain is not None
+        else click.prompt(
+            "Project domain (e.g. 20tab.com, "
+            "if you prefer to skip DigitalOcean DNS configuration, leave blank)",
+            default="",
+        )
     )
 
 
@@ -528,14 +532,20 @@ def clean_gitlab_group_data(
     gitlab_private_token = gitlab_private_token or click.prompt(
         "Gitlab private token (with API scope enabled)", hide_input=True
     )
-    gitlab_group_owners = gitlab_group_owners or click.prompt(
-        "Comma-separated Gitlab group owners", default=""
+    gitlab_group_owners = (
+        gitlab_group_owners
+        if gitlab_group_owners is not None
+        else click.prompt("Comma-separated Gitlab group owners", default="")
     )
-    gitlab_group_maintainers = gitlab_group_maintainers or click.prompt(
-        "Comma-separated Gitlab group maintainers", default=""
+    gitlab_group_maintainers = (
+        gitlab_group_maintainers
+        if gitlab_group_maintainers is not None
+        else click.prompt("Comma-separated Gitlab group maintainers", default="")
     )
-    gitlab_group_developers = gitlab_group_developers or click.prompt(
-        "Comma-separated Gitlab group developers", default=""
+    gitlab_group_developers = (
+        gitlab_group_developers
+        if gitlab_group_developers is not None
+        else click.prompt("Comma-separated Gitlab group developers", default="")
     )
     return (
         gitlab_group_slug,
