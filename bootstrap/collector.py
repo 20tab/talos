@@ -64,14 +64,12 @@ def collect(
     backend_sentry_dsn,
     frontend_sentry_dsn,
     sentry_auth_token,
+    use_monitoring,
     use_pact,
     pact_broker_url,
     pact_broker_username,
     pact_broker_password,
     media_storage,
-    monitoring,
-    grafana_user,
-    grafana_password,
     digitalocean_spaces_bucket_region,
     digitalocean_spaces_access_id,
     digitalocean_spaces_secret_key,
@@ -146,6 +144,7 @@ def collect(
         frontend_sentry_dsn = clean_frontend_sentry_dsn(
             frontend_type, frontend_sentry_dsn
         )
+    use_monitoring = clean_use_monitoring(use_monitoring)
     if use_pact := clean_use_pact(use_pact):
         (
             pact_broker_url,
@@ -182,13 +181,6 @@ def collect(
                 digitalocean_spaces_bucket_region,
                 digitalocean_spaces_access_id,
                 digitalocean_spaces_secret_key,
-            )
-        if monitoring := clean_monitoring_enabled(monitoring):
-            (
-                grafana_user,
-                grafana_password,
-            ) = clean_grafana_credentials(
-                grafana_user, grafana_password
             )
     return {
         "uid": uid,
@@ -227,6 +219,7 @@ def collect(
         "backend_sentry_dsn": backend_sentry_dsn,
         "frontend_sentry_dsn": frontend_sentry_dsn,
         "sentry_auth_token": sentry_auth_token,
+        "use_monitoring": use_monitoring,
         "use_pact": use_pact,
         "pact_broker_url": pact_broker_url,
         "pact_broker_username": pact_broker_username,
@@ -242,9 +235,6 @@ def collect(
         "gitlab_group_maintainers": gitlab_group_maintainers,
         "gitlab_group_developers": gitlab_group_developers,
         "terraform_dir": terraform_dir,
-        "monitoring": monitoring,
-        "grafana_user": grafana_user,
-        "grafana_password": grafana_password,
         "logs_dir": logs_dir,
     }
 
@@ -467,7 +457,7 @@ def clean_use_redis(use_redis):
     """Tell whether Redis should be configured."""
     if use_redis is None:
         return click.confirm(warning("Do you want to configure Redis?"), default=False)
-    return use_redis
+    return bool(use_redis)
 
 
 def clean_digitalocean_clusters_data(
@@ -518,11 +508,20 @@ def clean_digitalocean_clusters_data(
     )
 
 
+def clean_use_monitoring(use_monitoring):
+    """Tell whether the monitoring stack should be enabled."""
+    if use_monitoring is None:
+        return click.confirm(
+            warning("Do you want to enable the monitoring stack?"), default=False
+        )
+    return bool(use_monitoring)
+
+
 def clean_use_pact(use_pact):
     """Tell whether Pact should be configured."""
     if use_pact is None:
         return click.confirm(warning("Do you want to configure Pact?"), default=True)
-    return use_pact
+    return bool(use_pact)
 
 
 def clean_pact_broker_data(pact_broker_url, pact_broker_username, pact_broker_password):
@@ -555,33 +554,11 @@ def clean_media_storage(media_storage):
     )
 
 
-def clean_monitoring_enabled(monitoring_enabled):
-    """Tell whether Monitoring should be enabled."""
-    if monitoring_enabled is None:
-        return click.confirm(
-            warning("Do you want to configure Monitoring?"), default=True
-        )
-    return monitoring_enabled
-
-
-def clean_grafana_credentials(grafana_user, grafana_password):
-    """Return grafana admin credentials."""
-    grafana_user = click.prompt(
-        "Grafana username", default="",
-    )
-    grafana_password = validate_or_prompt_password(
-        None,
-        "Grafana password",
-        required=True,
-    )
-    return grafana_user, grafana_password
-
-
 def clean_use_gitlab(use_gitlab):
     """Tell whether Gitlab should be used."""
     if use_gitlab is None:
         return click.confirm(warning("Do you want to configure Gitlab?"), default=True)
-    return use_gitlab
+    return bool(use_gitlab)
 
 
 def clean_gitlab_group_data(

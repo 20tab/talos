@@ -82,7 +82,7 @@ resource "helm_release" "traefik" {
   name             = "traefik"
   chart            = "traefik"
   namespace        = "traefik"
-  create_namespace = "true"
+  create_namespace = true
   repository       = "https://helm.traefik.io/traefik"
   timeout          = 900
 

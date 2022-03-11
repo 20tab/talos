@@ -58,6 +58,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--backend-sentry-dsn")
 @click.option("--frontend-sentry-dsn")
 @click.option("--sentry-auth-token")
+@click.option("--use-monitoring/--no-monitoring", is_flag=True, default=None)
 @click.option("--use-pact/--no-pact", is_flag=True, default=None)
 @click.option("--pact-broker-url")
 @click.option("--pact-broker-username")
@@ -77,9 +78,6 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gitlab-group-maintainers", default="")
 @click.option("--gitlab-group-developers", default="")
 @click.option("--terraform-dir")
-@click.option("--monitoring/--no-monitoring", is_flag=True, default=None)
-@click.option("--grafana-user")
-@click.option("--grafana-password")
 @click.option("--logs-dir")
 @click.option("--silent", is_flag=True)
 def main(**options):
