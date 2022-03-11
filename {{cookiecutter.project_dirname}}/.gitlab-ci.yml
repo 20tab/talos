@@ -109,7 +109,9 @@ stack_{{ stack_slug }}_core_apply:
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_networking
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
+    TV_VAR_grafana_password: "${GRAFANA_PASSWORD}"
     TF_VAR_stack_slug: {{ stack_slug }}
+    TV_VAR_use_monitoring: "${USE_MONITORING}"
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-networking
     paths:
