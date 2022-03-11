@@ -82,7 +82,7 @@ resource "helm_release" "traefik" {
   name             = "traefik"
   chart            = "traefik"
   namespace        = "traefik"
-  create_namespace = "true"
+  create_namespace = true
   repository       = "https://helm.traefik.io/traefik"
   timeout          = 900
 
@@ -136,4 +136,25 @@ resource "helm_release" "reloader" {
   name       = "reloader"
   chart      = "reloader"
   repository = "https://stakater.github.io/stakater-charts"
+}
+
+
+/* Monitoring stack */
+
+module "monitoring" {
+  count = var.use_monitoring == "true" && var.stack_slug == "main" ? 1 : 0
+
+  source = "./monitoring"
+
+  project_domain = var.project_domain
+
+  grafana_user     = var.grafana_user
+  grafana_password = var.grafana_password
+  grafana_version  = var.grafana_version
+
+  domain_prefix = local.monitoring_prefix
+
+  depends_on = [
+    helm_release.traefik
+  ]
 }

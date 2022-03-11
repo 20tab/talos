@@ -56,12 +56,14 @@ class TestBootstrapCollector(TestCase):
     @mock.patch("pathlib.Path.is_absolute", return_value=True)
     def test_clean_service_dir(self, m):
         """Test cleaning the service directory."""
-        self.assertEqual(clean_service_dir("tests", "my_project"), "/tests/my_project")
+        self.assertTrue(
+            clean_service_dir("tests", "my_project").endswith("/tests/my_project")
+        )
         with mock.patch("shutil.rmtree", return_value=None), mock.patch(
             "pathlib.Path.is_dir", return_value=True
         ), input("Y"):
-            self.assertEqual(
-                clean_service_dir("tests", "my_project"), "/tests/my_project"
+            self.assertTrue(
+                clean_service_dir("tests", "my_project").endswith("/tests/my_project")
             )
 
     def test_clean_backend_type(self):

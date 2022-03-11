@@ -64,6 +64,7 @@ def run(
     backend_sentry_dsn,
     frontend_sentry_dsn,
     sentry_auth_token,
+    use_monitoring,
     use_pact,
     pact_broker_url,
     pact_broker_username,
@@ -138,7 +139,13 @@ def run(
             SENTRY_URL='{value = "%s"}' % sentry_url,
             SENTRY_AUTH_TOKEN='{value = "%s", masked = true}' % sentry_auth_token,
         )
-        use_redis and gitlab_group_variables.update(USE_REDIS='{value = "true"}')
+        use_redis and gitlab_project_variables.update(USE_REDIS='{value = "true"}')
+        if use_monitoring:
+            gitlab_project_variables.update(
+                USE_MONITORING='{value = "true"}',
+                GRAFANA_PASSWORD='{value = "%s", masked = true}'
+                % secrets.token_urlsafe(12),
+            )
         if use_pact:
             pact_broker_auth_url = re.sub(
                 r"^(https?)://(.*)$",
@@ -217,6 +224,7 @@ def run(
         "project_url_dev": project_url_dev,
         "project_url_stage": project_url_stage,
         "project_url_prod": project_url_prod,
+        "use_redis": use_redis,
         "use_gitlab": use_gitlab,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,

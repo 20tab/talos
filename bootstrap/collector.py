@@ -64,6 +64,7 @@ def collect(
     backend_sentry_dsn,
     frontend_sentry_dsn,
     sentry_auth_token,
+    use_monitoring,
     use_pact,
     pact_broker_url,
     pact_broker_username,
@@ -143,6 +144,7 @@ def collect(
         frontend_sentry_dsn = clean_frontend_sentry_dsn(
             frontend_type, frontend_sentry_dsn
         )
+    use_monitoring = clean_use_monitoring(use_monitoring)
     if use_pact := clean_use_pact(use_pact):
         (
             pact_broker_url,
@@ -217,6 +219,7 @@ def collect(
         "backend_sentry_dsn": backend_sentry_dsn,
         "frontend_sentry_dsn": frontend_sentry_dsn,
         "sentry_auth_token": sentry_auth_token,
+        "use_monitoring": use_monitoring,
         "use_pact": use_pact,
         "pact_broker_url": pact_broker_url,
         "pact_broker_username": pact_broker_username,
@@ -454,7 +457,7 @@ def clean_use_redis(use_redis):
     """Tell whether Redis should be configured."""
     if use_redis is None:
         return click.confirm(warning("Do you want to configure Redis?"), default=False)
-    return use_redis
+    return bool(use_redis)
 
 
 def clean_digitalocean_clusters_data(
@@ -505,11 +508,20 @@ def clean_digitalocean_clusters_data(
     )
 
 
+def clean_use_monitoring(use_monitoring):
+    """Tell whether the monitoring stack should be enabled."""
+    if use_monitoring is None:
+        return click.confirm(
+            warning("Do you want to enable the monitoring stack?"), default=False
+        )
+    return bool(use_monitoring)
+
+
 def clean_use_pact(use_pact):
     """Tell whether Pact should be configured."""
     if use_pact is None:
         return click.confirm(warning("Do you want to configure Pact?"), default=True)
-    return use_pact
+    return bool(use_pact)
 
 
 def clean_pact_broker_data(pact_broker_url, pact_broker_username, pact_broker_password):
@@ -546,7 +558,7 @@ def clean_use_gitlab(use_gitlab):
     """Tell whether Gitlab should be used."""
     if use_gitlab is None:
         return click.confirm(warning("Do you want to configure Gitlab?"), default=True)
-    return use_gitlab
+    return bool(use_gitlab)
 
 
 def clean_gitlab_group_data(
