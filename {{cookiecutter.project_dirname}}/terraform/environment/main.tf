@@ -111,13 +111,6 @@ resource "digitalocean_database_connection_pool" "postgres" {
   size       = var.database_connection_pool_size
 }
 
-resource "digitalocean_database_db" "redis" {
-  count = var.use_redis == "true" ? 1 : 0
-
-  cluster_id = data.digitalocean_database_cluster.redis[0].id
-  name       = "${local.project_slug}-${var.env_slug}-redis"
-}
-
 /* Namespace */
 
 resource "kubernetes_namespace" "main" {
@@ -267,6 +260,7 @@ resource "kubernetes_secret_v1" "database_url" {
 
 resource "kubernetes_secret_v1" "cache_url" {
   count = var.use_redis == "true" ? 1 : 0
+
   metadata {
     name      = "${local.env_resource_name}-cache-url"
     namespace = local.namespace

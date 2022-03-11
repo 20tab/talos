@@ -1,7 +1,7 @@
 # 20tab standard project
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
-[![Build Status](https://travis-ci.com/20tab/20tab-standard-project.svg?branch=master)](https://travis-ci.com/20tab/20tab-standard-project?branch=master)
+[![Build Status](https://travis-ci.com/20tab/20tab-standard-project.svg?branch=main)](https://travis-ci.com/20tab/20tab-standard-project?branch=main)
 
 > A [20tab](https://www.20tab.com/) standard project cookiecutter template.
 
