@@ -368,6 +368,7 @@ def init_gitlab(
     terraform_dir = Path(terraform_dir) / service_slug
     os.makedirs(terraform_dir, exist_ok=True)
     env = dict(
+        PATH=os.environ.get("PATH"),
         TF_DATA_DIR=str((Path(terraform_dir) / "data").resolve()),
         TF_LOG="INFO",
         TF_VAR_gitlab_group_variables="{%s}"
