@@ -386,7 +386,7 @@ def init_gitlab(
         TF_VAR_service_slug=service_slug,
     )
     state_path = Path(terraform_dir) / "state.tfstate"
-    cwd = Path("terraform")
+    cwd = Path(__file__).parent.parent / "terraform"
     logs_dir = Path(logs_dir) / service_slug / "terraform"
     os.makedirs(logs_dir)
     init_log_path = logs_dir / "init.log"
