@@ -46,7 +46,7 @@ services:
   nginx:
     build: ./nginx{% if cookiecutter.backend_type != 'none' or cookiecutter.frontend_type != 'none' %}
     depends_on:{% if cookiecutter.backend_type != 'none' %}
-      - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.backend_type != 'none' %}
+      - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
       - {{ cookiecutter.frontend_service_slug }}{% endif %}{% endif %}
     ports:
       - ${LOCAL_HTTP_PORT:-8080}:80
