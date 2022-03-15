@@ -32,3 +32,9 @@ variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
 }
+
+variable "use_monitoring" {
+  description = "If 'true', enable the monitoring stack."
+  type        = string
+  default     = "true"
+}

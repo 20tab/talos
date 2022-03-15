@@ -152,7 +152,7 @@ module "monitoring" {
   grafana_password = var.grafana_password
   grafana_version  = var.grafana_version
 
-  domain_prefix = local.monitoring_prefix
+  domain_prefix = "logs"
 
   depends_on = [
     helm_release.traefik

@@ -25,4 +25,3 @@ variable "project_domain" {
   type        = string
   default     = ""
 }
-
