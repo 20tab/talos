@@ -1,16 +1,13 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
-  backend_service_slug  = "{{ cookiecutter.backend_service_slug }}"
-  frontend_service_slug = "{{ cookiecutter.frontend_service_slug }}"
-
-  backend_paths = local.backend_service_slug != "" ? (
-    local.frontend_service_slug != "" ? concat(
+  backend_paths = var.backend_service_slug != "" ? (
+    var.frontend_service_slug != "" ? concat(
       ["/admin", "/api", "/static"],
       var.media_storage == "local" ? ["/media"] : []
     ) : ["/"]
   ) : []
-  frontend_paths = local.frontend_service_slug != "" ? ["/"] : []
+  frontend_paths = var.frontend_service_slug != "" ? ["/"] : []
 
   registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
 
@@ -195,7 +192,7 @@ resource "kubernetes_ingress_v1" "main" {
 
             backend {
               service {
-                name = local.backend_service_slug
+                name = var.backend_service_slug
                 port {
                   number = var.backend_service_port
                 }
@@ -211,7 +208,7 @@ resource "kubernetes_ingress_v1" "main" {
 
             backend {
               service {
-                name = local.frontend_service_slug
+                name = var.frontend_service_slug
                 port {
                   number = var.frontend_service_port
                 }

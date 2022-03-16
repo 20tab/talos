@@ -116,14 +116,22 @@ def run(
     create_env_file(service_dir)
     if use_gitlab:
         gitlab_project_variables = {}
-        gitlab_group_variables = dict(
-            BACKEND_SERVICE_PORT=f'{{value = "{backend_service_port}"}}',
-            FRONTEND_SERVICE_PORT=f'{{value = "{frontend_service_port}"}}',
-            **{
-                f"STACK_SLUG_{i.upper()}": f'{{value = "{k}"}}'
-                for k, v in stacks_environments.items()
-                for i in v
-            },
+        backend_service_slug and gitlab_project_variables.update(
+            BACKEND_SERVICE_SLUG=f'{{value = "{backend_service_slug}"}}'
+        )
+        frontend_service_slug and gitlab_project_variables.update(
+            FRONTEND_SERVICE_SLUG=f'{{value = "{frontend_service_slug}"}}'
+        )
+        gitlab_group_variables = {
+            f"STACK_SLUG_{i.upper()}": f'{{value = "{k}"}}'
+            for k, v in stacks_environments.items()
+            for i in v
+        }
+        backend_service_slug and gitlab_project_variables.update(
+            BACKEND_SERVICE_PORT=f'{{value = "{backend_service_port}"}}'
+        )
+        frontend_service_slug and gitlab_project_variables.update(
+            FRONTEND_SERVICE_PORT=f'{{value = "{frontend_service_port}"}}'
         )
         project_domain and gitlab_group_variables.update(
             DOMAIN='{value = "%s"}' % project_domain

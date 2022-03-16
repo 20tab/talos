@@ -1,10 +1,12 @@
 """Web project initialization CLI constants."""
 
+EMPTY_SERVICE_TYPE = "none"
+
 BACKEND_TEMPLATE_URLS = {
     "django": "https://github.com/20tab/django-continuous-delivery"
 }
 
-BACKEND_TYPE_CHOICES = ["django", "none"]
+BACKEND_TYPE_CHOICES = ["django", EMPTY_SERVICE_TYPE]
 
 BACKEND_TYPE_DEFAULT = "django"
 
@@ -34,7 +36,7 @@ FRONTEND_TEMPLATE_URLS = {
     "nextjs": "https://github.com/20tab/react-ts-continuous-delivery"
 }
 
-FRONTEND_TYPE_CHOICES = ["nextjs", "none"]
+FRONTEND_TYPE_CHOICES = ["nextjs", EMPTY_SERVICE_TYPE]
 
 FRONTEND_TYPE_DEFAULT = "nextjs"
 

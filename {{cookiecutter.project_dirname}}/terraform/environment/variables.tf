@@ -4,6 +4,12 @@ variable "backend_service_port" {
   default     = {{ cookiecutter.backend_service_port }}
 }
 
+variable "backend_service_slug" {
+  description = "The backend service slug."
+  type        = string
+  default     = ""
+}
+
 variable "basic_auth_enabled" {
   description = "The basic_auth switch."
   type        = string
@@ -39,6 +45,12 @@ variable "frontend_service_port" {
   description = "The frontend service port."
   type        = number
   default     = {{ cookiecutter.frontend_service_port }}
+}
+
+variable "frontend_service_slug" {
+  description = "The frontend service slug."
+  type        = string
+  default     = ""
 }
 
 variable "domain_prefix" {

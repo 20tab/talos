@@ -16,6 +16,7 @@ from bootstrap.constants import (
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
+    EMPTY_SERVICE_TYPE,
     ENVIRONMENT_DISTRIBUTION_CHOICES,
     ENVIRONMENT_DISTRIBUTION_DEFAULT,
     ENVIRONMENT_DISTRIBUTION_PROMPT,
@@ -87,9 +88,9 @@ def collect(
     project_slug = clean_project_slug(project_name, project_slug)
     project_dirname = slugify(project_slug, separator="")
     service_dir = clean_service_dir(output_dir, project_dirname)
-    if backend_type := clean_backend_type(backend_type):
+    if (backend_type := clean_backend_type(backend_type)) != EMPTY_SERVICE_TYPE:
         backend_service_slug = clean_backend_service_slug(backend_service_slug)
-    if frontend_type := clean_frontend_type(frontend_type):
+    if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
     environment_distribution = clean_environment_distribution(environment_distribution)
     deployment_type = clean_deployment_type(deployment_type)
