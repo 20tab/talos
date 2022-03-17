@@ -14,8 +14,8 @@ from cookiecutter.main import cookiecutter
 
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
-    DEFAULT_SERVICE_SLUG,
     FRONTEND_TEMPLATE_URLS,
+    SERVICE_SLUG_DEFAULT,
     SUBREPOS_DIR,
     TERRAFORM_BACKEND_TFC,
 )
@@ -86,7 +86,7 @@ def run(
     logs_dir,
 ):
     """Run the bootstrap."""
-    service_slug = DEFAULT_SERVICE_SLUG
+    service_slug = SERVICE_SLUG_DEFAULT
     run_id = f"{time():.0f}"
     terraform_dir = str(Path(terraform_dir or f".terraform/{run_id}").resolve())
     logs_dir = str(Path(logs_dir or f".logs/{run_id}").resolve())
