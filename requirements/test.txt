@@ -44,11 +44,11 @@ jinja2==3.0.3
     #   jinja2-time
 jinja2-time==0.2.0
     # via cookiecutter
-markupsafe==2.1.0
+markupsafe==2.1.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
-mypy==0.931
+mypy==0.941
     # via -r requirements/test.in
 mypy-extensions==0.4.3
     # via mypy
@@ -85,7 +85,7 @@ tomli==2.0.1
     #   mypy
 typing-extensions==4.1.1
     # via mypy
-urllib3==1.26.8
+urllib3==1.26.9
     # via requests
 validators==0.18.2
     # via -r requirements/common.in

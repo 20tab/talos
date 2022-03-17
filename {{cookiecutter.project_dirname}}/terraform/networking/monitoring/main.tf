@@ -1,7 +1,7 @@
 /* Kube State Metrics */
 
 resource "helm_release" "kube_state_metrics" {
-  name       = "kube-state-metrics" 
+  name       = "kube-state-metrics"
   namespace  = "kube-system"
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "kube-state-metrics"
@@ -16,7 +16,7 @@ resource "kubernetes_namespace" "log_storage" {
 }
 
 resource "helm_release" "loki" {
-  name       = "loki" 
+  name       = "loki"
   namespace  = kubernetes_namespace.log_storage.metadata[0].name
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
@@ -36,11 +36,11 @@ resource "helm_release" "loki" {
       value = set.value
     }
   }
- 
+
 }
 
 resource "helm_release" "grafana" {
-  name       = "grafana" 
+  name       = "grafana"
   namespace  = kubernetes_namespace.log_storage.metadata[0].name
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana"

@@ -5,12 +5,14 @@ check:  ## Check code formatting and import sorting
 	python3 -m black --check .
 	python3 -m isort --check .
 	python3 -m flake8
+	python3 -m mypy .
 
 .PHONY: fix
 fix:  ## Fix code formatting, linting and sorting imports
 	python3 -m black .
 	python3 -m isort .
 	python3 -m flake8
+	python3 -m mypy .
 
 .PHONY: local
 local: pip_update  ## Install local requirements and dependencies
@@ -28,7 +30,7 @@ pip: pip_update  ## Compile requirements
 
 .PHONY: pip_update
 pip_update:  ## Update requirements and dependencies
-	python3 -m pip install -q -U pip~=22.0.0 pip-tools~=6.5.0 setuptools~=60.9.0 wheel~=0.37.0
+	python3 -m pip install -q -U pip~=22.0.0 pip-tools~=6.5.0 setuptools~=60.10.0 wheel~=0.37.0
 
 .PHONY: precommit
 precommit:  ## Fix code formatting, linting and sorting imports
