@@ -4,14 +4,20 @@ variable "digitalocean_token" {
   sensitive   = true
 }
 
+variable "grafana_domain" {
+  description = "The Grafana domain url."
+  type        = string
+  default     = ""
+}
+
 variable "grafana_password" {
-  description = "The grafana admin password."
+  description = "The Grafana admin password."
   type        = string
   sensitive   = true
 }
 
 variable "grafana_user" {
-  description = "The grafana admin username."
+  description = "The Grafana admin username."
   type        = string
   default     = "admin"
 }

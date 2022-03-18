@@ -64,8 +64,8 @@ resource "helm_release" "grafana" {
 
 /* Grafana Ingress */
 
-resource "kubernetes_ingress" "grafana" {
-  count = var.project_domain != "" ? 1 : 0
+resource "kubernetes_ingress_v1" "grafana" {
+  count = var.grafana_domain != "" ? 1 : 0
 
   metadata {
     name      = "log-storage-ingress"
@@ -80,15 +80,19 @@ resource "kubernetes_ingress" "grafana" {
 
   spec {
     tls {
-      hosts = ["${var.domain_prefix}.${var.project_domain}"]
+      hosts = ["${var.grafana_domain}"]
     }
     rule {
-      host = "${var.domain_prefix}.${var.project_domain}"
+      host = "${var.grafana_domain}"
       http {
         path {
           backend {
-            service_name = "grafana"
-            service_port = 80
+            service {
+              name = "grafana"
+              port {
+                number = 80
+              }
+            }
           }
           path = "/"
         }

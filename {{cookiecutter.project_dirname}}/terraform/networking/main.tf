@@ -138,7 +138,6 @@ resource "helm_release" "reloader" {
   repository = "https://stakater.github.io/stakater-charts"
 }
 
-
 /* Monitoring stack */
 
 module "monitoring" {
@@ -146,13 +145,10 @@ module "monitoring" {
 
   source = "./monitoring"
 
-  project_domain = var.project_domain
-
+  grafana_domain = var.grafana_domain
   grafana_user     = var.grafana_user
   grafana_password = var.grafana_password
   grafana_version  = var.grafana_version
-
-  domain_prefix = "logs"
 
   depends_on = [
     helm_release.traefik
