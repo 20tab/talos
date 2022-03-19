@@ -160,6 +160,7 @@ def run(
                 USE_MONITORING='{value = "true"}',
                 GRAFANA_PASSWORD='{value = "%s", masked = true}'
                 % secrets.token_urlsafe(12),
+                GRAFANA_DOMAIN='{value = ""}',
             )
         if use_pact:
             pact_broker_auth_url = re.sub(
