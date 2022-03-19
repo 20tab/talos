@@ -53,6 +53,12 @@ resource "helm_release" "grafana" {
       "persistence.size" = "10Gi"
       "adminUser" = var.grafana_user
       "adminPassword" = var.grafana_password
+      "datasources.datasources\\.yaml.apiVersion" = "1"
+      "datasources.datasources\\.yaml.datasources[0].name" = "Loki"
+      "datasources.datasources\\.yaml.datasources[0].type" = "loki"
+      "datasources.datasources\\.yaml.datasources[0].url" = "http://loki:3100"
+      "datasources.datasources\\.yaml.datasources[0].access" = "proxy"
+      "datasources.datasources\\.yaml.datasources[0].isDefault" = "true"
     }
     content {
       name  = set.key
