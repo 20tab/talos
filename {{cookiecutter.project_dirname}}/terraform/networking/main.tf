@@ -149,6 +149,8 @@ module "monitoring" {
   grafana_user     = var.grafana_user
   grafana_password = var.grafana_password
   grafana_version  = var.grafana_version
+  project_domain  = var.project_domain
+  stack_slug  = var.stack_slug
 
   depends_on = [
     helm_release.traefik

@@ -1,3 +1,26 @@
+locals {
+  project_slug = "{{ cookiecutter.project_slug }}"
+
+  stack_resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+  
+  domain_prefix = "logs"
+
+  grafana_domain = var.grafana_domain != "" ? var.grafana_domain :  "${local.domain_prefix}.${var.project_domain}"
+
+}
+
+/* Data Sources */
+
+data "digitalocean_domain" "main" {
+  count = var.project_domain != "" ? 1 : 0
+
+  name = var.project_domain
+}
+
+data "digitalocean_loadbalancer" "main" {
+  name = "${local.stack_resource_name}-load-balancer"
+}
+
 /* Kube State Metrics */
 
 resource "helm_release" "kube_state_metrics" {
@@ -68,10 +91,21 @@ resource "helm_release" "grafana" {
 
 }
 
+/* DNS Records */
+
+resource "digitalocean_record" "main" {
+  count = var.project_domain != "" ? 1 : 0
+
+  domain = data.digitalocean_domain.main[0].name
+  type   = "A"
+  name   = local.domain_prefix
+  value  = data.digitalocean_loadbalancer.main.ip
+}
+
 /* Grafana Ingress */
 
 resource "kubernetes_ingress_v1" "grafana" {
-  count = var.grafana_domain != "" ? 1 : 0
+  count = local.grafana_domain != "" || local.grafana_domain != "${local.domain_prefix}." ? 1 : 0
 
   metadata {
     name      = "log-storage-ingress"
@@ -86,10 +120,10 @@ resource "kubernetes_ingress_v1" "grafana" {
 
   spec {
     tls {
-      hosts = ["${var.grafana_domain}"]
+      hosts = ["${local.grafana_domain}"]
     }
     rule {
-      host = "${var.grafana_domain}"
+      host = "${local.grafana_domain}"
       http {
         path {
           backend {
