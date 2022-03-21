@@ -82,6 +82,18 @@ resource "helm_release" "grafana" {
       "datasources.datasources\\.yaml.datasources[0].url" = "http://loki:3100"
       "datasources.datasources\\.yaml.datasources[0].access" = "proxy"
       "datasources.datasources\\.yaml.datasources[0].isDefault" = "true"
+      "dashboardProviders.dashboardproviders\\.yaml.apiVersion" = "1"
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].name" = "default"
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].orgId" = "1"
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].folder" = ""
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].folderUid" = ""
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].type" = "file"
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].editable" = "true"
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].disableDeletion" = "false"
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].options.path" = "/var/lib/grafana/dashboards/default"
+      "dashboardProviders.dashboardproviders\\.yaml.providers[0].options.foldersFromFilesStructure" = "true"
+      "dashboards.default.log-storage.url" = "https://raw.githubusercontent.com/20tab/20tab-standard-project/main/grafana/dashboards/k8s-logs.json"
+
     }
     content {
       name  = set.key
