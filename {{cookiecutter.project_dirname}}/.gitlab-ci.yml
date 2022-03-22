@@ -71,10 +71,10 @@ before_script:
     TF_VAR_database_cluster_region: "${DIGITALOCEAN_DATABASE_CLUSTER_REGION}"
     TF_VAR_redis_cluster_node_size: "${DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE}"
     TF_VAR_redis_cluster_region: "${DIGITALOCEAN_REDIS_CLUSTER_REGION}"
-    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% endif %}
-    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"{% if cookiecutter.media_storage == "s3-digitalocean" %}
-    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"{% endif %}
-    TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"
+    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% endif %}{% if cookiecutter.media_storage == "s3-digitalocean" %}
+    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"
+    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"
+    TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"{% endif %}
     TF_VAR_stack_slug: {{ stack_slug }}
     TF_VAR_use_redis: "${USE_REDIS}"
   cache:
@@ -176,7 +176,9 @@ stack_{{ stack_slug }}_networking_apply:
     TF_VAR_frontend_service_port: "${FRONTEND_SERVICE_PORT}"
     TF_VAR_frontend_service_slug: "${FRONTEND_SERVICE_SLUG}"
     TF_VAR_registry_password: "${K8S_REGCRED}"{% if cookiecutter.media_storage == "s3-digitalocean" %}
-    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"{% endif %}
+    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"
+    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"
+    TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"{% endif %}
     TF_VAR_stack_slug: {{ stack_slug }}
     TF_VAR_use_redis: "${USE_REDIS}"{% for  env_slug, env_conf in stack_envs.items() %}
 

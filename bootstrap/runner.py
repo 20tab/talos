@@ -494,7 +494,17 @@ def init_subrepo(service_slug, template_url, **options):
     """Initialize a subrepo using the given template and options."""
     subrepo_dir = str((Path(SUBREPOS_DIR) / service_slug).resolve())
     shutil.rmtree(subrepo_dir, ignore_errors=True)
-    subprocess.run(["git", "clone", template_url, subrepo_dir, "-q"])
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            template_url,
+            subrepo_dir,
+            "--branch",
+            "feature/terraform-cloud",
+            "-q",
+        ]
+    )
     options.update(
         project_dirname=service_slug,
         service_dir=str((Path(options["output_dir"]) / service_slug).resolve()),
