@@ -24,7 +24,7 @@ variables:
 
 before_script:
   - cd ${TF_ROOT}{% if cookiecutter.terraform_backend == "terraform-cloud" %}
-  - export TF_WORKSPACE=vection-frames-${ENVIRONMENT_SLUG}
+  - export TF_WORKSPACE={{ cookiecutter.project_slug }}-${ENVIRONMENT_SLUG}
   - |
     cat > ${TF_CLI_CONFIG_FILE} <<EOF
     {
