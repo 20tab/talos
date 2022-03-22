@@ -193,7 +193,7 @@ If you don't want DigitalOcean DNS configuration the following args are required
 #### Media storage
 
 Value  | Description | Argument
-- | - | -------------
+------------- | ------------- | -------------
 local  | Docker Volume are used for store media | `--media-storage=local`
 s3-digitalocean  | DigitalOcean Spaces are used for store media | [DigitalOcean Media storage](#media-storage)
 none  | Project have no media | `--media-storage=none`
