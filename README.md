@@ -1,4 +1,3 @@
-
 # Talos
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
@@ -213,13 +212,8 @@ else the following args are required
 Value  | Description | Argument
 ------------- | ------------- | -------------
 local  | Docker Volume are used for store media | `--media-storage=local`
-s3-digitalocean  | DigitalOcean Spaces are used for store media | `--media-storage=s3-digitalocean`
+s3-digitalocean  | DigitalOcean Spaces are used for store media | `--media-storage=s3-digitalocean`<br/>`--digitalocean-spaces-bucket-region=fra1`<br/>`--digitalocean-spaces-access-id`<br/>`--digitalocean-spaces-secret-key`
 none  | Project have no media | `--media-storage=none`
-
-##### s3-digitalocean
-`--digitalocean-spaces-bucket-region=fra1`
-`--digitalocean-spaces-access-id={{digitalocean-spaces-access-id}}`
-`--digitalocean-spaces-secret-key={{digitalocean-spaces-secret-key}}`
 
 #### Monitoring
 For enable monitoring the following arguments are needed:
