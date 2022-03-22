@@ -618,9 +618,9 @@ def clean_media_storage(media_storage):
 
 
 def clean_use_gitlab(use_gitlab):
-    """Tell whether Gitlab should be used."""
+    """Tell whether GitLab should be used."""
     if use_gitlab is None:
-        return click.confirm(warning("Do you want to configure Gitlab?"), default=True)
+        return click.confirm(warning("Do you want to configure GitLab?"), default=True)
     return bool(use_gitlab)
 
 
@@ -633,34 +633,34 @@ def clean_gitlab_group_data(
     gitlab_group_developers,
     silent=False,
 ):
-    """Return Gitlab group data."""
+    """Return GitLab group data."""
     gitlab_group_slug = slugify(
-        gitlab_group_slug or click.prompt("Gitlab group slug", default=project_slug)
+        gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
     )
     silent or click.confirm(
         warning(
-            f'Make sure the Gitlab "{gitlab_group_slug}" group exists '
+            f'Make sure the GitLab "{gitlab_group_slug}" group exists '
             "before proceeding. Continue?"
         ),
         abort=True,
     )
     gitlab_private_token = gitlab_private_token or click.prompt(
-        "Gitlab private token (with API scope enabled)", hide_input=True
+        "GitLab private token (with API scope enabled)", hide_input=True
     )
     gitlab_group_owners = (
         gitlab_group_owners
         if gitlab_group_owners is not None
-        else click.prompt("Comma-separated Gitlab group owners", default="")
+        else click.prompt("Comma-separated GitLab group owners", default="")
     )
     gitlab_group_maintainers = (
         gitlab_group_maintainers
         if gitlab_group_maintainers is not None
-        else click.prompt("Comma-separated Gitlab group maintainers", default="")
+        else click.prompt("Comma-separated GitLab group maintainers", default="")
     )
     gitlab_group_developers = (
         gitlab_group_developers
         if gitlab_group_developers is not None
-        else click.prompt("Comma-separated Gitlab group developers", default="")
+        else click.prompt("Comma-separated GitLab group developers", default="")
     )
     return (
         gitlab_group_slug,
