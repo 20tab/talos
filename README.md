@@ -28,17 +28,18 @@ Then, install the following requirements
 ## 🔑 Credentials
 
 ### 🌊 DigitalOcean
-If DigitalOcean is chosen for deployment, a Personal Access Token with _write_ permission is required.
+If DigitalOcean is chosen for deployment, a Personal Access Token with _write_ permission is required.<br/>
 Additionally if DigitalOcean Spaces is the chosen media storage backend, a pair of S3 access keys is required.
+[DigitalOcean API Slugs](https://slugs.do-api.dev/)
 
-**Note:** all credentials can be generated in the DigitalOcean API configuration section.
+**Note:** all credentials can be generated in the DigitalOcean API configuration section.<br/>
 ⚠️ Beware that the token is shown only once after creation.
 
 ### 🦊 GitLab
-If the GitLab integration is enabled, a Personal Access Token with _api_ permission is required.
+If the GitLab integration is enabled, a Personal Access Token with _api_ permission is required.<br/>
 It can be generated in the GitLab User Settings panel.
 
-**Note:** the token can be generated in the Access Tokens section of the GitLab User Settings panel.
+**Note:** the token can be generated in the Access Tokens section of the GitLab User Settings panel.<br/>
 ⚠️ Beware that the token is shown only once after creation.
 
 ## 🚀️ Quickstart
@@ -120,7 +121,7 @@ Initializing the frontend service:
 ```
 ## 🗒️ Arguments
 
-The following arguments can be append to docker and shell commands
+The following arguments can be appended to the Docker and shell commands
 
 #### User id
 `--uid=$UID`
@@ -139,6 +140,8 @@ The following arguments can be append to docker and shell commands
 
 #### Project dirname
 `--project-dirname="myprojectname"`
+
+### 🎖️ Services
 
 #### Backend type
 Value | Description | Argument
@@ -164,6 +167,8 @@ none | the frontend service will not be initialized | `--frontend-type=none`
 #### Frontend service port
 `--frontend-service-port=3000`
 
+### 📐 Architecture
+
 #### Environment distribution
 Choose the environments distribution:
 Value  | Description | Argument
@@ -178,22 +183,33 @@ Value  | Description | Argument
 k8s-digitalocean  | It will use the DigitalOcean | `--deployment-type=k8s-digitalocean`
 k8s-other  | The configuration is custom and must be done manually | `--deployment-type=k8s-other`
 
+#### Project Domain
+If you don't want DigitalOcean DNS configuration the following args are required
+
+`--project-url-dev=https://dev.project-domain.com`<br/>
+`--project-url-stage=https://stage.project-domain.com`<br/>
+`--project-url-prod=https://www.project-domain.com`
+
+#### Media storage
+
+Value  | Description | Argument
+- | - | -------------
+local  | Docker Volume are used for store media | `--media-storage=local`
+s3-digitalocean  | DigitalOcean Spaces are used for store media | `--media-storage=s3-digitalocean`<br/>`--digitalocean-spaces-bucket-region=fra1`<br/>`--digitalocean-spaces-access-id`<br/>`--digitalocean-spaces-secret-key`
+none  | Project have no media | `--media-storage=none`
+
+### 🌊 DigitalOcean
+
 #### DigitalOcean Token
 `--digitalocean-token={{digitalocean-token}}`
 
 #### Project Domain
 If you want DigitalOcean DNS configuration the following args are required
 
-`--project-domain=project-domain.com`
-`--domain-prefix-dev=dev`
-`--domain-prefix-stage=test`
+`--project-domain=project-domain.com`<br/>
+`--domain-prefix-dev=dev`<br/>
+`--domain-prefix-stage=test`<br/>
 `--domain-prefix-prod=www`
-
-else the following args are required
-
-`--project-url-dev=https://dev.project-domain.com`
-`--project-url-stage=https://stage.project-domain.com`
-`--project-url-prod=https://www.project-domain.com`
 
 #### Kubernetes cluster DigitalOcean region
 `"--digitalocean-k8s-cluster-region=fra1`
@@ -204,17 +220,6 @@ else the following args are required
 #### Database cluster DigitalOcean node size
 `"--digitalocean-database-cluster-node-size=db-s-1vcpu-2gb`
 
-#### Database cluster DigitalOcean node size
-`"--digitalocean-database-cluster-node-size=db-s-1vcpu-2gb`
-
-#### Media storage
-
-Value  | Description | Argument
-------------- | ------------- | -------------
-local  | Docker Volume are used for store media | `--media-storage=local`
-s3-digitalocean  | DigitalOcean Spaces are used for store media | `--media-storage=s3-digitalocean`<br/>`--digitalocean-spaces-bucket-region=fra1`<br/>`--digitalocean-spaces-access-id`<br/>`--digitalocean-spaces-secret-key`
-none  | Project have no media | `--media-storage=none`
-
 #### Monitoring
 For enable monitoring the following arguments are needed:
 `--use-monitoring`
@@ -222,27 +227,44 @@ For enable monitoring the following arguments are needed:
 Disabled args
 `--no-monitoring`
 
-#### Pact
-For enable pact the following arguments are needed:
-
-`--pact-broker-url={{pact-broker-url}}`
-`--pact-broker-username={{pact-broker-username}}`
-`--pact-broker-password={{pact-broker-password}}`
-
 #### Redis
 For enable redis integration the following arguments are needed:
 
-`--use-redis`
-`--digitalocean-redis-cluster-region=fra1`
+`--use-redis`<br/>
+`--digitalocean-redis-cluster-region=fra1`<br/>
 `--digitalocean-redis-cluster-node-size=db-s-1vcpu-2gb`
 
 Disabled args
 `--no-redis`
 
-#### Sentry
+### 🦊 GitLab
+> **⚠️ Important:  Make sure the GitLab group exists before create.**
+> https://gitlab.com/gitlab-org/gitlab/-/issues/244345
+>
+For enable gitlab integration the following arguments are needed:
+`--use-gitlab`<br/>
+`--gitlab-private-token={{gitlab-private-token}}`<br/>
+`--gitlab-group-slug={{gitlab-group-slug}}`
+
+Disabled args
+`--no-gitlab`
+
+Add user to repository using comma separeted arguments
+`--gitlab-group-owners=user1, user@example.org`<br/>
+`--gitlab-group-maintainers=user1, user@example.org`<br/>
+`--gitlab-group-developers=user1, user@example.org`
+
+#### 👨‍⚖️ Pact
+For enable pact the following arguments are needed:
+
+`--pact-broker-url={{pact-broker-url}}`<br/>
+`--pact-broker-username={{pact-broker-username}}`<br/>
+`--pact-broker-password={{pact-broker-password}}`
+
+#### 🪖 Sentry
 For enable sentry integration the following arguments are needed:
-`--sentry-url=https://sentry.io/`
-`--sentry-org={{sentry-org}}`
+`--sentry-url=https://sentry.io/`<br/>
+`--sentry-org={{sentry-org}}`<br/>
 `--sentry-auth-token={{sentry-auth-token}}`
 
 If the project have backend service is needed:
@@ -251,19 +273,6 @@ If the project have backend service is needed:
 If the project have frontend service is needed:
 `--frontend-sentry-dsn={{frontend-sentry-dsn}}`
 
-#### GitLab
-For enable gitlab integration the following arguments are needed:
-`--use-gitlab`
-`--gitlab-private-token={{gitlab-private-token}}`
-`--gitlab-group-slug={{gitlab-group-slug}}`
-
-Disabled args
-`--no-gitlab`
-
-Add user to repository using comma separeted arguments
-`--gitlab-group-owners=user1, user@example.org`
-`--gitlab-group-maintainers=user1, user@example.org`
-`--gitlab-group-developers=user1, user@example.org`
-
-#### Silent
+#### 🔇 Silent
+Is command for use default if no args are provided
 `--silent`
