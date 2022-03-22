@@ -28,6 +28,18 @@ variable "grafana_version" {
   default     = "8.4.2"
 }
 
+variable "monitoring_domain_prefix" {
+  description = "The monitoring domain url."
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_url" {
+  description = "The full monitoring url."
+  type        = string
+  default     = ""
+}
+
 variable "project_domain" {
   description = "The project domain."
   type        = string

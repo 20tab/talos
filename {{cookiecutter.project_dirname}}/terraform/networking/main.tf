@@ -8,6 +8,9 @@ locals {
 EOF
   )
   envs = local.stacks[var.stack_slug]
+
+  monitoring_enabled = var.use_monitoring == "true" && var.stack_slug == "main"
+  monitoring_host    = var.monitoring_url != "" ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
 }
 
 terraform {
@@ -71,9 +74,12 @@ data "digitalocean_domain" "main" {
 resource "digitalocean_certificate" "ssl_cert" {
   count = var.project_domain != "" ? 1 : 0
 
-  name    = "${local.project_slug}-${var.stack_slug}-lets-encrypt-certificate"
-  type    = "lets_encrypt"
-  domains = [for k, v in local.envs : "${v.prefix}.${var.project_domain}"]
+  name = "${local.project_slug}-${var.stack_slug}-lets-encrypt-certificate"
+  type = "lets_encrypt"
+  domains = concat(
+    [for k, v in local.envs : "${v.prefix}.${var.project_domain}"],
+    local.monitoring_enabled && var.monitoring_domain_prefix != "" ? [var.monitoring_domain_prefix] : []
+  )
 }
 
 /* Traefik */
@@ -100,7 +106,7 @@ resource "helm_release" "traefik" {
               "service.beta.kubernetes.io/do-loadbalancer-protocol"                         = "http"
               "service.beta.kubernetes.io/do-loadbalancer-tls-ports"                        = "443"
               "service.beta.kubernetes.io/do-loadbalancer-certificate-id"                   = digitalocean_certificate.ssl_cert[0].uuid
-              "service.beta.kubernetes.io/do-loadbalancer-disable-lets-encrypt-dns-records" = "true"
+              "service.beta.kubernetes.io/do-loadbalancer-disable-lets-encrypt-dns-records" = "false"
               "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https"           = "true"
             } : {}
           )
@@ -138,19 +144,18 @@ resource "helm_release" "reloader" {
   repository = "https://stakater.github.io/stakater-charts"
 }
 
-/* Monitoring stack */
+/* Monitoring */
 
 module "monitoring" {
-  count = var.use_monitoring == "true" && var.stack_slug == "main" ? 1 : 0
+  count = local.monitoring_enabled ? 1 : 0
 
   source = "./monitoring"
 
-  grafana_domain = var.grafana_domain
   grafana_user     = var.grafana_user
   grafana_password = var.grafana_password
   grafana_version  = var.grafana_version
-  project_domain  = var.project_domain
-  stack_slug  = var.stack_slug
+
+  host = local.monitoring_host
 
   depends_on = [
     helm_release.traefik

@@ -110,7 +110,7 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "expr": "count_over_time({namespace=~\"$namespace\", job=~\"$job\", pod=~\"$pod\", container=~\"$container\"} [1m])",
-          "legendFormat": "{{ job }}",
+          "legendFormat": "{{ '{{ job }}' }}",
           "refId": "A"
         }
       ],

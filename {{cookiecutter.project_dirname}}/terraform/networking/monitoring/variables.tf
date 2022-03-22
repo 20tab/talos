@@ -1,9 +1,3 @@
-variable "grafana_domain" {
-  description = "The Grafana domain url."
-  type        = string
-  default     = ""
-}
-
 variable "grafana_password" {
   description = "The Grafana admin password."
   type        = string
@@ -20,13 +14,8 @@ variable "grafana_version" {
   type        = string
 }
 
-variable "project_domain" {
-  description = "The project domain."
+variable "host" {
+  description = "The monitoring host."
   type        = string
   default     = ""
-}
-
-variable "stack_slug" {
-  description = "The stack slug (e.g. 'main')."
-  type        = string
 }
