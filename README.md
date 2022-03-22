@@ -195,13 +195,19 @@ If you don't want DigitalOcean DNS configuration the following args are required
 Value  | Description | Argument
 - | - | -------------
 local  | Docker Volume are used for store media | `--media-storage=local`
-s3-digitalocean  | DigitalOcean Spaces are used for store media | `--media-storage=s3-digitalocean`<br/>`--digitalocean-spaces-bucket-region=fra1`<br/>`--digitalocean-spaces-access-id`<br/>`--digitalocean-spaces-secret-key`
+s3-digitalocean  | DigitalOcean Spaces are used for store media | [DigitalOcean Media storage](#media-storage)
 none  | Project have no media | `--media-storage=none`
 
 ### 🌊 DigitalOcean
 
 #### DigitalOcean Token
 `--digitalocean-token={{digitalocean-token}}`
+
+#### Media storage
+`--media-storage=s3-digitalocean`<br/>
+`--digitalocean-spaces-bucket-region=fra1`<br/>
+`--digitalocean-spaces-access-id`<br/>
+`--digitalocean-spaces-secret-key`
 
 #### Project Domain
 If you want DigitalOcean DNS configuration the following args are required
@@ -222,6 +228,7 @@ If you want DigitalOcean DNS configuration the following args are required
 
 #### Monitoring
 For enable monitoring the following arguments are needed:
+
 `--use-monitoring`
 
 Disabled args
@@ -240,8 +247,9 @@ Disabled args
 ### 🦊 GitLab
 > **⚠️ Important:  Make sure the GitLab group exists before create.**
 > https://gitlab.com/gitlab-org/gitlab/-/issues/244345
->
+
 For enable gitlab integration the following arguments are needed:
+
 `--use-gitlab`<br/>
 `--gitlab-private-token={{gitlab-private-token}}`<br/>
 `--gitlab-group-slug={{gitlab-group-slug}}`
@@ -250,6 +258,7 @@ Disabled args
 `--no-gitlab`
 
 Add user to repository using comma separeted arguments
+
 `--gitlab-group-owners=user1, user@example.org`<br/>
 `--gitlab-group-maintainers=user1, user@example.org`<br/>
 `--gitlab-group-developers=user1, user@example.org`
@@ -263,16 +272,20 @@ For enable pact the following arguments are needed:
 
 #### 🪖 Sentry
 For enable sentry integration the following arguments are needed:
+
 `--sentry-url=https://sentry.io/`<br/>
 `--sentry-org={{sentry-org}}`<br/>
 `--sentry-auth-token={{sentry-auth-token}}`
 
 If the project have backend service is needed:
+
 `--backend-sentry-dsn={{backend-sentry-dsn}}`
 
 If the project have frontend service is needed:
+
 `--frontend-sentry-dsn={{frontend-sentry-dsn}}`
 
 #### 🔇 Silent
 Is command for use default if no args are provided
+
 `--silent`
