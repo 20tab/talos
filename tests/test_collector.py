@@ -278,12 +278,12 @@ class TestBootstrapCollector(TestCase):
             self.assertEqual(clean_media_storage(""), "local")
 
     def test_clean_use_gitlab(self):
-        """Test telling whether Gitlab should be used."""
+        """Test telling whether GitLab should be used."""
         with input("n"):
             self.assertFalse(clean_use_gitlab(None))
 
     def test_clean_gitlab_group_data(self):
-        """Test cleaning the Gitlab group data."""
+        """Test cleaning the GitLab group data."""
         with input("", "Y"):
             self.assertEqual(
                 clean_gitlab_group_data(

@@ -92,7 +92,7 @@ To connect GitLab with the DigitalOcean hosted Kubernetes cluster run the comman
 ./scripts/add_cluster.sh
 ```
 
-# TODO Write section on K8s managed using Gitlab env variables
+# TODO Write section on K8s managed using GitLab env variables
 
 ### ☸️ Kubernetes
 

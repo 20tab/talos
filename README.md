@@ -87,20 +87,20 @@ Sentry organization (e.g. "20tab", leave blank if unused) []:
 Do you want to enable the monitoring stack? [y/N]:
 Do you want to configure Pact? [Y/n]: n
 Media storage (local, s3-digitalocean, none) [s3-digitalocean]:
-Do you want to configure Gitlab? [Y/n]:
-Gitlab group slug [my-project-name]:
-Make sure the Gitlab "my-project-name" group exists before proceeding. Continue? [y/N]: y
-Gitlab private token (with API scope enabled):
-Comma-separated Gitlab group owners []:
-Comma-separated Gitlab group maintainers []:
-Comma-separated Gitlab group developers []:
+Do you want to configure GitLab? [Y/n]:
+GitLab group slug [my-project-name]:
+Make sure the GitLab "my-project-name" group exists before proceeding. Continue? [y/N]: y
+GitLab private token (with API scope enabled):
+Comma-separated GitLab group owners []:
+Comma-separated GitLab group maintainers []:
+Comma-separated GitLab group developers []:
 DigitalOcean Spaces region [fra1]:
 DigitalOcean Spaces Access Key ID:
 DigitalOcean Spaces Secret Access Key:
 Initializing the orchestrator service:
 ...cookiecutting the service
 ...generating the .env file
-...creating the Gitlab repository and associated resources
+...creating the GitLab repository and associated resources
 Initializing the backend service:
 ...cookiecutting the service
 ...generating the .env file
@@ -112,11 +112,11 @@ Initializing the backend service:
 	- remote.txt
 	- base.txt
 ...creating the '/static' directory
-...creating the Gitlab repository and associated resources
+...creating the GitLab repository and associated resources
 Initializing the frontend service:
 ...cookiecutting the service
 ...generating the .env file
-...creating the Gitlab repository and associated resources
+...creating the GitLab repository and associated resources
 ```
 ## 🗒️ Arguments
 

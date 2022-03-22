@@ -47,7 +47,7 @@ provider "gitlab" {
 
 data "gitlab_group" "group" {
   full_path = var.gitlab_group_slug
-  # Gitlab group resource atm cannot be create: https://gitlab.com/gitlab-org/gitlab/-/issues/244345
+  # Restore resourse once fixed https://gitlab.com/gitlab-org/gitlab/-/issues/244345
   # name             = var.project_name
   # path             = var.project_slug
   # description      = var.project_description
