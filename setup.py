@@ -72,7 +72,6 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--digitalocean-spaces-bucket-region")
 @click.option("--digitalocean-spaces-access-id")
 @click.option("--digitalocean-spaces-secret-key")
-@click.option("--digitalocean-spaces-secret-key")
 @click.option("--use-gitlab/--no-gitlab", is_flag=True, default=None)
 @click.option("--gitlab-private-token", envvar=GITLAB_TOKEN_ENV_VAR)
 @click.option("--gitlab-group-slug")
