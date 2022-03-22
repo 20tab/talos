@@ -39,37 +39,33 @@ resource "helm_release" "loki" {
 
 }
 
+/* Grafana */
+
+resource "kubernetes_config_map_v1" "default_dashboard" {
+
+  metadata {
+    name      = "grafana-dashboards"
+    namespace = kubernetes_namespace.log_storage.metadata[0].name
+  }
+
+  data = {
+    "default.json" = file("${path.module}/grafana/dashboards/default.json")
+  }
+}
+
 resource "helm_release" "grafana" {
   name       = "grafana"
   namespace  = kubernetes_namespace.log_storage.metadata[0].name
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana"
 
+  values = [file("${path.module}/grafana/values.yaml")]
+
   dynamic "set" {
     for_each = {
-      "image.tag"                                                                                   = var.grafana_version
-      "persistence.enabled"                                                                         = "true"
-      "persistence.type"                                                                            = "pvc"
-      "persistence.size"                                                                            = "10Gi"
-      "adminUser"                                                                                   = var.grafana_user
-      "adminPassword"                                                                               = var.grafana_password
-      "datasources.datasources\\.yaml.apiVersion"                                                   = "1"
-      "datasources.datasources\\.yaml.datasources[0].name"                                          = "Loki"
-      "datasources.datasources\\.yaml.datasources[0].type"                                          = "loki"
-      "datasources.datasources\\.yaml.datasources[0].url"                                           = "http://loki:3100"
-      "datasources.datasources\\.yaml.datasources[0].access"                                        = "proxy"
-      "datasources.datasources\\.yaml.datasources[0].isDefault"                                     = "true"
-      "dashboardProviders.dashboardproviders\\.yaml.apiVersion"                                     = "1"
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].name"                              = "default"
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].orgId"                             = "1"
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].folder"                            = ""
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].folderUid"                         = ""
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].type"                              = "file"
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].editable"                          = "true"
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].disableDeletion"                   = "false"
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].options.path"                      = "/var/lib/grafana/dashboards/default"
-      "dashboardProviders.dashboardproviders\\.yaml.providers[0].options.foldersFromFilesStructure" = "true"
-      "dashboards.default.log-storage.url"                                                          = "./grafana-dashboards.json"
+      "image.tag"     = var.grafana_version
+      "adminUser"     = var.grafana_user
+      "adminPassword" = var.grafana_password
     }
     content {
       name  = set.key
@@ -77,6 +73,7 @@ resource "helm_release" "grafana" {
     }
   }
 
+  depends_on = [kubernetes_config_map_v1.default_dashboard]
 }
 
 /* Grafana Ingress */
