@@ -229,7 +229,15 @@ If you want DigitalOcean DNS configuration the following args are required
 #### Monitoring
 For enable monitoring the following arguments are needed:
 
-`--use-monitoring`
+`--use-monitoring`<br/>
+
+if project domain is managed use
+
+`--domain-prefix-monitoring=logs`
+
+else use
+
+`--project-url-monitoring=https://logs.example.org/`
 
 Disabled args
 `--no-monitoring`
