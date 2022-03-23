@@ -118,6 +118,7 @@ def run(
         project_domain,
         stacks_environments,
         deployment_type,
+        environment_distribution,
     )
     create_env_file(service_dir)
     if use_gitlab:
@@ -295,6 +296,7 @@ def init_service(
     project_domain,
     stacks_environments,
     deployment_type,
+    environment_distribution,
 ):
     """Initialize the service."""
     click.echo(info("...cookiecutting the service"))
@@ -315,6 +317,7 @@ def init_service(
             "project_slug": project_slug,
             "stacks": stacks_environments,
             "terraform_backend": terraform_backend,
+            "environment_distribution": environment_distribution,
         },
         output_dir=output_dir,
         no_input=True,

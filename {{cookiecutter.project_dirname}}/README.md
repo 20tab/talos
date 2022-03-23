@@ -4,6 +4,10 @@ This is the "{{ cookiecutter.project_name }}" orchestrator.
 
 ## Index <!-- omit in toc -->
 
+-   [Provisioning](#provisioning)
+    -   [Stages](#stages)
+    -   [Stacks](#stacks)
+    -   [Environments](#stage)
 -   [Quickstart](#quickstart)
     -   [Git](#git)
         -   [Clone](#clone)
@@ -20,7 +24,50 @@ This is the "{{ cookiecutter.project_name }}" orchestrator.
         -   [Install the cert utils](#install-the-cert-utils)
         -   [Import certificates](#import-certificates)
         -   [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
--   [Useful commands](#useful-commands)
+
+## Provisioning
+
+The first run is manual made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/orchestrator/-/pipelines/new).
+
+To create all the terraform resources, run the pipeline with the following variable:
+
+`ENABLED_ALL`= `true`
+
+If you want to choose what to activate to limit any costs, read below.
+
+### Stages
+
+Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster.
+Networking stage will create Ingress, Certificate and Monitoring if enabled.
+Environment stage will create the other resourse for each of it.
+
+Value  | Description
+------------- | -------------
+`core` | Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster
+`networking` | Networking stage will create Ingress, Certificate and Monitoring if enabled.
+`environment`  | Environment stage will create the other resourse for each of it.
+
+`ENABLED_STAGE` = `core, networking, environment`
+
+### Stacks
+
+{% if cookiecutter.environment_distribution == "1" %}You have opted to have all environments share the same stack.
+
+`ENABLED_STACKS` = `main`{% endif %}{% if cookiecutter.environment_distribution == "2" %}You have opted to have Dev and Stage environments share the same stack, Prod has its own.
+
+`ENABLED_STACKS` = `dev, main`{% endif %}{% if cookiecutter.environment_distribution == "3" %}Each environment has its own stack
+
+`ENABLED_STACKS` = `main, dev, prod`{% endif %}
+
+### Environments
+
+Value  | Description
+------------- | -------------
+`dev` | Development is the first delivery environment for developers.
+`stage` | Staging is the test environment for customers.
+`prod`  | Production is the public production environment accessible to all users.
+
+`ENABLED_ENVS` = `dev, stage, prod`
 
 ## Quickstart
 
@@ -40,10 +87,10 @@ This section explains the steps you need to clone and work wityh this project.
 Clone the orchestrator and services repositories:
 
 ```console
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/orchestrator.git {{ cookiecutter.project_dirname }}
+$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/orchestrator.git {{ cookiecutter.project_dirname }}
 $ cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:__GITLAB_GROUP__/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
+$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
 $ cd ..
 ```
 
@@ -189,21 +236,3 @@ Trust the self-signed server certificate:
     ```
 
 <a id="f-setup-https-locally" href="#a-setup-https-locally">1</a>. For further reference look [here](https://medium.com/@workockmoses/how-to-setup-https-for-local-development-on-ubuntu-with-self-signed-certificate-f97834064fd).
-
-## Useful commands
-
-Useful commands to use after startup:
-
-```
-$ kubectl get deployments
-$ kubectl delete deployment <deployment-name>
-$ kubectl scale deployment <deployment-name> --replicas=0
-$ kubectl scale deployment <deployment-name> --replicas=1
-$ kubectl get pods
-# check for k8s errors
-$ kubectl describe pod <pod-name>
-# check for service errors
-$ kubectl logs -f <pod-name>
-# run commands on the pod
-$ kubectl exec -it <pod-name> bash
-```
