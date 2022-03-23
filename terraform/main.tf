@@ -167,6 +167,14 @@ resource "gitlab_deploy_token" "regcred" {
   scopes   = ["read_registry"]
 }
 
+/* Badges */
+
+resource "gitlab_group_badge" "pipeline" {
+  group    = data.gitlab_group.group.id
+  link_url  = "https://gitlab.com/%%{project_path}/pipelines"
+  image_url = "https://gitlab.com/%%{project_path}/badges/%%{default_branch}/pipeline.svg"
+}
+
 /* Group Variables */
 
 resource "gitlab_group_variable" "vars" {
