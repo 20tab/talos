@@ -52,13 +52,16 @@ def collect(
     terraform_cloud_token,
     digitalocean_token,
     environment_distribution,
+    use_monitoring,
     project_domain,
     domain_prefix_dev,
     domain_prefix_stage,
     domain_prefix_prod,
+    domain_prefix_monitoring,
     project_url_dev,
     project_url_stage,
     project_url_prod,
+    project_url_monitoring,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -70,7 +73,6 @@ def collect(
     backend_sentry_dsn,
     frontend_sentry_dsn,
     sentry_auth_token,
-    use_monitoring,
     use_pact,
     pact_broker_url,
     pact_broker_username,
@@ -98,6 +100,7 @@ def collect(
     if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
     environment_distribution = clean_environment_distribution(environment_distribution)
+    use_monitoring = clean_use_monitoring(use_monitoring)
     deployment_type = clean_deployment_type(deployment_type)
     terraform_backend, terraform_cloud_token = clean_terraform_backend(
         terraform_backend, terraform_cloud_token
@@ -113,18 +116,23 @@ def collect(
         domain_prefix_dev,
         domain_prefix_stage,
         domain_prefix_prod,
+        domain_prefix_monitoring,
         project_url_dev,
         project_url_stage,
         project_url_prod,
+        project_url_monitoring,
     ) = clean_project_urls(
         project_slug,
         project_domain,
+        use_monitoring,
         domain_prefix_dev,
         domain_prefix_stage,
         domain_prefix_prod,
+        domain_prefix_monitoring,
         project_url_dev,
         project_url_stage,
         project_url_prod,
+        project_url_monitoring,
     )
     if digitalocean_enabled:
         (
@@ -153,7 +161,6 @@ def collect(
         frontend_sentry_dsn = clean_frontend_sentry_dsn(
             frontend_type, frontend_sentry_dsn
         )
-    use_monitoring = clean_use_monitoring(use_monitoring)
     if use_pact := clean_use_pact(use_pact):
         (
             pact_broker_url,
@@ -210,13 +217,16 @@ def collect(
         "terraform_cloud_token": terraform_cloud_token,
         "digitalocean_token": digitalocean_token,
         "environment_distribution": environment_distribution,
+        "use_monitoring": use_monitoring,
         "project_domain": project_domain,
         "domain_prefix_dev": domain_prefix_dev,
         "domain_prefix_stage": domain_prefix_stage,
         "domain_prefix_prod": domain_prefix_prod,
+        "domain_prefix_monitoring": domain_prefix_monitoring,
         "project_url_dev": project_url_dev,
         "project_url_stage": project_url_stage,
         "project_url_prod": project_url_prod,
+        "project_url_monitoring": project_url_monitoring,
         "digitalocean_k8s_cluster_region": digitalocean_k8s_cluster_region,
         "digitalocean_database_cluster_region": digitalocean_database_cluster_region,
         "digitalocean_database_cluster_node_size": (
@@ -230,7 +240,6 @@ def collect(
         "backend_sentry_dsn": backend_sentry_dsn,
         "frontend_sentry_dsn": frontend_sentry_dsn,
         "sentry_auth_token": sentry_auth_token,
-        "use_monitoring": use_monitoring,
         "use_pact": use_pact,
         "pact_broker_url": pact_broker_url,
         "pact_broker_username": pact_broker_username,
@@ -401,27 +410,39 @@ def clean_project_domain(project_domain):
 def clean_project_urls(
     project_slug,
     project_domain,
+    use_monitoring,
     domain_prefix_dev,
     domain_prefix_stage,
     domain_prefix_prod,
+    domain_prefix_monitoring,
     project_url_dev,
     project_url_stage,
     project_url_prod,
+    project_url_monitoring,
 ):
     """Return project URLs."""
+    domain_prefix_monitoring = ""
+    project_url_monitoring = ""
     if project_domain:
         domain_prefix_dev = domain_prefix_dev or click.prompt(
             "Development domain prefix", default="dev"
         )
+        project_url_dev = f"https://{domain_prefix_dev}.{project_domain}"
         domain_prefix_stage = domain_prefix_stage or click.prompt(
             "Staging domain prefix", default="stage"
         )
+        project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
         domain_prefix_prod = domain_prefix_prod or click.prompt(
             "Production domain prefix", default="www"
         )
-        project_url_dev = f"https://{domain_prefix_dev}.{project_domain}"
-        project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
         project_url_prod = f"https://{domain_prefix_prod}.{project_domain}"
+        if use_monitoring:
+            domain_prefix_monitoring = domain_prefix_monitoring or click.prompt(
+                "Monitorng domain prefix", default="logs"
+            )
+            project_url_monitoring = (
+                f"https://{domain_prefix_monitoring}.{project_domain}"
+            )
     else:
         domain_prefix_dev = domain_prefix_stage = domain_prefix_prod = ""
         project_url_dev = validate_or_prompt_url(
@@ -439,13 +460,21 @@ def clean_project_urls(
             "Production environment complete URL",
             default=f"https://www.{project_slug}.com",
         )
+        if use_monitoring:
+            project_url_monitoring = validate_or_prompt_url(
+                project_url_monitoring or None,
+                "Monitoring complete URL",
+                default=f"https://logs.{project_slug}.com",
+            )
     return (
         domain_prefix_dev,
         domain_prefix_stage,
         domain_prefix_prod,
+        domain_prefix_monitoring,
         project_url_dev,
         project_url_stage,
         project_url_prod,
+        project_url_monitoring,
     )
 
 

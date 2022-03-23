@@ -141,28 +141,42 @@ class TestBootstrapCollector(TestCase):
         with input("alpha", "beta", "www2"):
             self.assertEqual(
                 clean_project_urls(
-                    "my-project", "myproject.com", "", "", "", "", "", ""
+                    "my-project", "myproject.com", False, "", "", "", "", "", "", "", ""
                 ),
                 (
                     "alpha",
                     "beta",
                     "www2",
+                    "",
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
+                    "",
                 ),
             )
         self.assertEqual(
             clean_project_urls(
-                "my-project", "myproject.com", "alpha", "beta", "www2", "", "", ""
+                "my-project",
+                "myproject.com",
+                False,
+                "alpha",
+                "beta",
+                "www2",
+                "",
+                "",
+                "",
+                "",
+                "",
             ),
             (
                 "alpha",
                 "beta",
                 "www2",
+                "",
                 "https://alpha.myproject.com",
                 "https://beta.myproject.com",
                 "https://www2.myproject.com",
+                "",
             ),
         )
         # project domain not set
@@ -172,19 +186,25 @@ class TestBootstrapCollector(TestCase):
             "https://www2.myproject.com/",
         ):
             self.assertEqual(
-                clean_project_urls("my-project", "", "", "", "", "", "", ""),
+                clean_project_urls(
+                    "my-project", "", False, "", "", "", "", "", "", "", ""
+                ),
                 (
+                    "",
                     "",
                     "",
                     "",
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
+                    "",
                 ),
             )
         self.assertEqual(
             clean_project_urls(
                 "my-project",
+                "",
+                False,
                 "",
                 "",
                 "",
@@ -192,16 +212,57 @@ class TestBootstrapCollector(TestCase):
                 "https://alpha.myproject.com/",
                 "https://beta.myproject.com/",
                 "https://www2.myproject.com/",
+                "",
             ),
             (
+                "",
                 "",
                 "",
                 "",
                 "https://alpha.myproject.com",
                 "https://beta.myproject.com",
                 "https://www2.myproject.com",
+                "",
             ),
         )
+        # monitoring enabled
+        with input("alpha", "beta", "www2", "mylogs"):
+            self.assertEqual(
+                clean_project_urls(
+                    "my-project", "myproject.com", True, "", "", "", "", "", "", "", ""
+                ),
+                (
+                    "alpha",
+                    "beta",
+                    "www2",
+                    "mylogs",
+                    "https://alpha.myproject.com",
+                    "https://beta.myproject.com",
+                    "https://www2.myproject.com",
+                    "https://mylogs.myproject.com",
+                ),
+            )
+        with input(
+            "https://alpha.myproject.com/",
+            "https://beta.myproject.com/",
+            "https://www2.myproject.com/",
+            "https://mylogs.myproject.com/",
+        ):
+            self.assertEqual(
+                clean_project_urls(
+                    "my-project", "", True, "", "", "", "", "", "", "", ""
+                ),
+                (
+                    "",
+                    "",
+                    "",
+                    "",
+                    "https://alpha.myproject.com",
+                    "https://beta.myproject.com",
+                    "https://www2.myproject.com",
+                    "https://mylogs.myproject.com",
+                ),
+            )
 
     def test_clean_sentry_org(self):
         """Test cleaning the Sentry organization."""

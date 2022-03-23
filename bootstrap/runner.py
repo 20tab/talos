@@ -49,13 +49,16 @@ def run(
     terraform_cloud_token,
     digitalocean_token,
     environment_distribution,
+    use_monitoring,
     project_domain,
     domain_prefix_dev,
     domain_prefix_stage,
     domain_prefix_prod,
+    domain_prefix_monitoring,
     project_url_dev,
     project_url_stage,
     project_url_prod,
+    project_url_monitoring,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -67,7 +70,6 @@ def run(
     backend_sentry_dsn,
     frontend_sentry_dsn,
     sentry_auth_token,
-    use_monitoring,
     use_pact,
     pact_broker_url,
     pact_broker_username,
@@ -160,6 +162,12 @@ def run(
                 USE_MONITORING='{value = "true"}',
                 GRAFANA_PASSWORD='{value = "%s", masked = true}'
                 % secrets.token_urlsafe(12),
+            )
+            domain_prefix_monitoring and gitlab_project_variables.update(
+                MONITORING_DOMAIN_PREFIX='{value = "%s"}' % domain_prefix_monitoring
+            )
+            project_url_monitoring and gitlab_project_variables.update(
+                MONITORING_URL='{value = "%s"}' % project_url_monitoring
             )
         if use_pact:
             pact_broker_auth_url = re.sub(
@@ -486,7 +494,17 @@ def init_subrepo(service_slug, template_url, **options):
     """Initialize a subrepo using the given template and options."""
     subrepo_dir = str((Path(SUBREPOS_DIR) / service_slug).resolve())
     shutil.rmtree(subrepo_dir, ignore_errors=True)
-    subprocess.run(["git", "clone", template_url, subrepo_dir, "-q"])
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            template_url,
+            subrepo_dir,
+            "--branch",
+            "feature/terraform-cloud",
+            "-q",
+        ]
+    )
     options.update(
         project_dirname=service_slug,
         service_dir=str((Path(options["output_dir"]) / service_slug).resolve()),

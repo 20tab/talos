@@ -116,17 +116,6 @@ resource "kubernetes_namespace" "main" {
   }
 }
 
-/* DNS Records */
-
-resource "digitalocean_record" "main" {
-  count = var.project_domain != "" ? 1 : 0
-
-  domain = data.digitalocean_domain.main[0].name
-  type   = "A"
-  name   = var.domain_prefix
-  value  = data.digitalocean_loadbalancer.main.ip
-}
-
 /* Ingress */
 
 resource "kubernetes_secret_v1" "traefik_basic_auth" {

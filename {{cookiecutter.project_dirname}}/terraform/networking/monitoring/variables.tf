@@ -1,17 +1,11 @@
-variable "domain_prefix" {
-  description = "The monitoring stack domain prefix."
-  type        = string
-  default     = "logs"
-}
-
 variable "grafana_password" {
-  description = "The grafana admin password."
+  description = "The Grafana admin password."
   type        = string
   sensitive   = true
 }
 
 variable "grafana_user" {
-  description = "The grafana admin username."
+  description = "The Grafana admin username."
   type        = string
 }
 
@@ -20,8 +14,8 @@ variable "grafana_version" {
   type        = string
 }
 
-variable "project_domain" {
-  description = "The project domain."
+variable "host" {
+  description = "The monitoring host."
   type        = string
   default     = ""
 }
