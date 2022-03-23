@@ -27,7 +27,5 @@ dashboardProviders:
         path: /var/lib/grafana/dashboards/default
         foldersFromFilesStructure: true
 
-dashboards:
-  default:
-    log-storage:
-      datasource: grafana-dashboards
+dashboardsConfigMaps:
+  default: grafana-k8s-logs-dashboard

@@ -41,15 +41,15 @@ resource "helm_release" "loki" {
 
 /* Grafana */
 
-resource "kubernetes_config_map_v1" "default_dashboard" {
+resource "kubernetes_config_map_v1" "k8s_logs_dashboard" {
 
   metadata {
-    name      = "grafana-dashboards"
+    name      = "grafana-k8s-logs-dashboard"
     namespace = kubernetes_namespace.log_storage.metadata[0].name
   }
 
   data = {
-    "default.json" = file("${path.module}/grafana/dashboards/default.json")
+    "k8s-logs.json" = file("${path.module}/grafana/dashboards/k8s-logs.json")
   }
 }
 
