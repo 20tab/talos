@@ -1,0 +1,49 @@
+arrow==1.2.2
+    # via jinja2-time
+binaryornot==0.4.4
+    # via cookiecutter
+certifi==2021.10.8
+    # via requests
+chardet==4.0.0
+    # via binaryornot
+charset-normalizer==2.0.12
+    # via requests
+click==8.0.4
+    # via
+    #   -r requirements/common.in
+    #   cookiecutter
+cookiecutter==1.7.3
+    # via -r requirements/common.in
+decorator==5.1.1
+    # via validators
+idna==3.3
+    # via requests
+jinja2==3.0.3
+    # via
+    #   cookiecutter
+    #   jinja2-time
+jinja2-time==0.2.0
+    # via cookiecutter
+markupsafe==2.1.1
+    # via jinja2
+poyo==0.5.0
+    # via cookiecutter
+python-dateutil==2.8.2
+    # via arrow
+python-slugify==6.1.1
+    # via
+    #   -r requirements/common.in
+    #   cookiecutter
+requests==2.27.1
+    # via cookiecutter
+six==1.16.0
+    # via
+    #   cookiecutter
+    #   python-dateutil
+    #   validators
+text-unidecode==1.3
+    # via python-slugify
+urllib3==1.26.9
+    # via requests
+validators==0.18.2
+    # via -r requirements/common.in

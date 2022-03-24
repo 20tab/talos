@@ -1,9 +1,29 @@
 {
   "project_name": null,
-  "project_slug": "{{cookiecutter.project_name | slugify(separator='')}}",
-  "domain_url": "{{cookiecutter.project_name | slugify(separator='')}}.com",
-  "which_frontend": ["None", "React"],
-  "use_gitlab": ["Yes", "No"],
-  "use_media": ["Yes", "No"],
+  "project_slug": "{{ cookiecutter.project_name | slugify() }}",
+  "project_dirname": "{{ cookiecutter.project_slug | slugify(separator='') }}",
+  "backend_type": ["django", "none"],
+  "backend_service_slug": "backend",
+  "backend_service_port": "8000",
+  "frontend_type": ["nextjs", "none"],
+  "frontend_service_slug": "frontend",
+  "frontend_service_port": "3000",
+  "media_storage": ["local", "s3-digitalocean", "none"],
+  "project_domain": "",
+  "stacks": {
+    "main": {
+      "dev": {
+        "name": "Development"
+      },
+      "stage": {
+        "name": "Staging"
+      },
+      "prod": {
+        "name": "Production"
+      }
+    }
+  },
+  "deployment_type": ["k8s-digitalocean", "k8s-other"],
+  "environment_distribution": 1,
   "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }

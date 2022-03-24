@@ -1,0 +1,7 @@
+**/__pycache__
+**/lost+found
+*.md
+.*
+Dockerfile
+Makefile
+requirements/*.in
