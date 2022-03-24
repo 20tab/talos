@@ -23,7 +23,6 @@ from bootstrap.collector import (
     clean_project_urls,
     clean_sentry_org,
     clean_service_dir,
-    clean_terraform_backend,
     clean_use_gitlab,
     clean_use_pact,
 )
@@ -100,28 +99,6 @@ class TestBootstrapCollector(TestCase):
             self.assertEqual(clean_deployment_type(None), "k8s-digitalocean")
         with input("non-existing", ""):
             self.assertEqual(clean_deployment_type(None), "k8s-digitalocean")
-
-    def test_clean_terraform_backend(self):
-        """Test cleaning the Terraform ."""
-        self.assertEqual(clean_terraform_backend("gitlab", None), ("gitlab", None))
-        with input("gitlab"):
-            self.assertEqual(
-                clean_terraform_backend("wrong-backend", None),
-                ("gitlab", None),
-            )
-        with input("terraform-cloud"):
-            self.assertEqual(
-                clean_terraform_backend("wrong-backend", "tfc-token"),
-                ("terraform-cloud", "tfc-token"),
-            )
-        with input(
-            "terraform-cloud",
-            {"hidden": "tfc-token"},
-        ):
-            self.assertEqual(
-                clean_terraform_backend("wrong-backend", None),
-                ("terraform-cloud", "tfc-token"),
-            )
 
     def test_clean_environment_distribution(self):
         """Test cleaning the environment distribution."""

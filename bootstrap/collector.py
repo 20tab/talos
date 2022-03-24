@@ -24,9 +24,6 @@ from bootstrap.constants import (
     FRONTEND_TYPE_DEFAULT,
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DEFAULT,
-    TERRAFORM_BACKEND_CHOICES,
-    TERRAFORM_BACKEND_DEFAULT,
-    TERRAFORM_BACKEND_TFC,
 )
 
 error = partial(click.style, fg="red")
@@ -48,8 +45,6 @@ def collect(
     frontend_service_slug,
     frontend_service_port,
     deployment_type,
-    terraform_backend,
-    terraform_cloud_token,
     digitalocean_token,
     environment_distribution,
     use_monitoring,
@@ -102,9 +97,6 @@ def collect(
     environment_distribution = clean_environment_distribution(environment_distribution)
     use_monitoring = clean_use_monitoring(use_monitoring)
     deployment_type = clean_deployment_type(deployment_type)
-    terraform_backend, terraform_cloud_token = clean_terraform_backend(
-        terraform_backend, terraform_cloud_token
-    )
     if digitalocean_enabled := ("digitalocean" in deployment_type):
         digitalocean_token = validate_or_prompt_password(
             digitalocean_token, "DigitalOcean token", required=True
@@ -213,8 +205,6 @@ def collect(
         "frontend_service_slug": frontend_service_slug,
         "frontend_service_port": frontend_service_port,
         "deployment_type": deployment_type,
-        "terraform_backend": terraform_backend,
-        "terraform_cloud_token": terraform_cloud_token,
         "digitalocean_token": digitalocean_token,
         "environment_distribution": environment_distribution,
         "use_monitoring": use_monitoring,
@@ -356,29 +346,6 @@ def clean_deployment_type(deployment_type):
             type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
-
-
-def clean_terraform_backend(terraform_backend, terraform_cloud_token):
-    """Return the terraform backend and Terraform Cloud token, if applicable."""
-    terraform_backend = (
-        terraform_backend
-        if terraform_backend in TERRAFORM_BACKEND_CHOICES
-        else click.prompt(
-            "Terraform backend",
-            default=TERRAFORM_BACKEND_DEFAULT,
-            type=click.Choice(TERRAFORM_BACKEND_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-    terraform_cloud_token = (
-        validate_or_prompt_password(
-            terraform_cloud_token,
-            "Terraform Cloud token",
-            required=True,
-        )
-        if terraform_backend == TERRAFORM_BACKEND_TFC
-        else None
-    )
-    return terraform_backend, terraform_cloud_token
 
 
 def clean_environment_distribution(environment_distribution):
