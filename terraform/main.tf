@@ -34,7 +34,7 @@ terraform {
   required_providers {
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "3.7.0"
+      version = "3.12.0"
     }
   }
 }
@@ -170,7 +170,7 @@ resource "gitlab_deploy_token" "regcred" {
 /* Badges */
 
 resource "gitlab_group_badge" "pipeline" {
-  group    = data.gitlab_group.group.id
+  group     = data.gitlab_group.group.id
   link_url  = "https://gitlab.com/%%{project_path}/pipelines"
   image_url = "https://gitlab.com/%%{project_path}/badges/%%{default_branch}/pipeline.svg"
 }
