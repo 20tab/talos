@@ -36,6 +36,8 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
     "--deployment-type",
     type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
 )
+@click.option("--terraform-backend")
+@click.option("--terraform-cloud-token")
 @click.option("--digitalocean-token")
 @click.option(
     "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)

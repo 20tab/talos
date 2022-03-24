@@ -14,16 +14,26 @@ stages:
   - Networking
   - Environment
 
-image: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
+image: {{ {"terraform-cloud": "hashicorp/terraform"}.get(cookiecutter.terraform_backend, "registry.gitlab.com/gitlab-org/terraform-images/stable") }}:latest
 
 variables:
-  TERRAFORM_CMD: "gitlab-terraform"
+  TERRAFORM_CMD: {{ {"terraform-cloud": "terraform"}.get(cookiecutter.terraform_backend, "gitlab-terraform") }}
   TF_IN_AUTOMATION: 1
   TF_VAR_digitalocean_token: "${DIGITALOCEAN_TOKEN}"
   TF_VAR_project_domain: "${DOMAIN}"
 
 before_script:
-  - cd ${TF_ROOT}
+  - cd ${TF_ROOT}{% if cookiecutter.terraform_backend == "terraform-cloud" %}
+  - export TF_WORKSPACE={{ cookiecutter.project_slug }}-${ENVIRONMENT_SLUG}
+  - |
+    cat > ${TF_CLI_CONFIG_FILE} <<EOF
+    {
+      "credentials": {"app.terraform.io": {
+          "token": "${TFC_TOKEN}"
+        }
+      }
+    }
+    EOF{% endif %}
 
 .init:
   script:

@@ -17,6 +17,7 @@ from bootstrap.constants import (
     FRONTEND_TEMPLATE_URLS,
     SERVICE_SLUG_DEFAULT,
     SUBREPOS_DIR,
+    TERRAFORM_BACKEND_TFC,
 )
 from bootstrap.exceptions import BootstrapError
 
@@ -44,6 +45,8 @@ def run(
     frontend_service_slug,
     frontend_service_port,
     deployment_type,
+    terraform_backend,
+    terraform_cloud_token,
     digitalocean_token,
     environment_distribution,
     use_monitoring,
@@ -110,6 +113,7 @@ def run(
         frontend_type,
         frontend_service_slug,
         frontend_service_port,
+        terraform_backend,
         media_storage,
         project_domain,
         stacks_environments,
@@ -144,6 +148,9 @@ def run(
                 INTERNAL_BACKEND_URL='{value = "http://%s:%s"}'
                 % (backend_service_slug, backend_service_port)
             )
+        )
+        terraform_backend == TERRAFORM_BACKEND_TFC and gitlab_group_variables.update(
+            TFC_TOKEN='{value = "%s", masked = true}' % terraform_cloud_token,
         )
         sentry_org and gitlab_group_variables.update(
             SENTRY_ORG='{value = "%s"}' % sentry_org,
@@ -245,6 +252,7 @@ def run(
         "use_gitlab": use_gitlab,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
+        "terraform_backend": terraform_backend,
     }
     backend_template_url = BACKEND_TEMPLATE_URLS.get(backend_type)
     if backend_template_url:
@@ -283,6 +291,7 @@ def init_service(
     frontend_type,
     frontend_service_slug,
     frontend_service_port,
+    terraform_backend,
     media_storage,
     project_domain,
     stacks_environments,
@@ -307,6 +316,7 @@ def init_service(
             "project_name": project_name,
             "project_slug": project_slug,
             "stacks": stacks_environments,
+            "terraform_backend": terraform_backend,
             "environment_distribution": environment_distribution,
         },
         output_dir=output_dir,
@@ -493,6 +503,8 @@ def init_subrepo(service_slug, template_url, **options):
             "clone",
             template_url,
             subrepo_dir,
+            "--branch",
+            "feature/terraform-cloud",
             "-q",
         ]
     )
