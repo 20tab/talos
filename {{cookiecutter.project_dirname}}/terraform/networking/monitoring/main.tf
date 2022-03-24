@@ -73,7 +73,7 @@ resource "helm_release" "grafana" {
     }
   }
 
-  depends_on = [kubernetes_config_map_v1.default_dashboard]
+  depends_on = [kubernetes_config_map_v1.k8s_logs_dashboard]
 }
 
 /* Grafana Ingress */
