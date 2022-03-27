@@ -9,8 +9,10 @@ EOF
   )
   envs = local.stacks[var.stack_slug]
 
-  monitoring_enabled = var.use_monitoring == "true" && var.stack_slug == "main"
-  monitoring_host    = var.monitoring_url != "" ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
+  traefik_ssl_enabled = var.project_domain == "" && var.letsencrypt_certificate_email != ""
+
+  monitoring_enabled = var.monitoring_url != "" && var.stack_slug == "main"
+  monitoring_host    = local.monitoring_enabled ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
 }
 
 terraform {
@@ -93,45 +95,38 @@ resource "helm_release" "traefik" {
   timeout          = 900
 
   values = [
+    file("${path.module}/helm-traefik/values.yaml"),
     yamlencode(
-      {
-        service = {
-          enabled = "true"
-          type    = "LoadBalancer"
-          annotations = merge(
-            {
-              "service.beta.kubernetes.io/do-loadbalancer-name" = "${local.resource_name}-load-balancer"
-            },
-            var.project_domain != "" ? {
-              "service.beta.kubernetes.io/do-loadbalancer-protocol"                         = "http"
-              "service.beta.kubernetes.io/do-loadbalancer-tls-ports"                        = "443"
-              "service.beta.kubernetes.io/do-loadbalancer-certificate-id"                   = digitalocean_certificate.ssl_cert[0].uuid
-              "service.beta.kubernetes.io/do-loadbalancer-disable-lets-encrypt-dns-records" = "false"
-              "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https"           = "true"
-            } : {}
-          )
-        }
-        api = {}
-        entryPoints = {
-          web = {
-            address = ":80"
-          }
-          websecure = {
-            address = ":443"
-          }
-        }
-        log = {
-          level = "DEBUG"
-        }
-        providers = {
-          kubernetesIngress = {
+      merge(
+        {
+          service = {
             enabled = "true"
+            type    = "LoadBalancer"
+            annotations = merge(
+              {
+                "service.beta.kubernetes.io/do-loadbalancer-name" = "${local.resource_name}-load-balancer"
+              },
+              var.project_domain != "" ? {
+                "service.beta.kubernetes.io/do-loadbalancer-protocol"                         = "http"
+                "service.beta.kubernetes.io/do-loadbalancer-tls-ports"                        = "443"
+                "service.beta.kubernetes.io/do-loadbalancer-certificate-id"                   = digitalocean_certificate.ssl_cert[0].uuid
+                "service.beta.kubernetes.io/do-loadbalancer-disable-lets-encrypt-dns-records" = "false"
+                "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https"           = "true"
+              } : {}
+            )
           }
-          kubernetesIngressRoute = {
-            enabled = "true"
-          }
-        }
-      }
+        },
+        local.traefik_ssl_enabled ? {
+          additionalArguments = [
+            "--certificatesresolvers.default.acme.tlschallenge",
+            "--certificatesresolvers.default.acme.email=${var.letsencrypt_certificate_email}",
+            "--certificatesresolvers.default.acme.storage=/data/acme.json",
+            "--entrypoints.web.http.redirections.entryPoint.to=websecure",
+            "--entrypoints.websecure.http.tls=true",
+            "--entrypoints.websecure.http.tls.certResolver=default",
+          ]
+        } : {}
+      )
     )
   ]
 }

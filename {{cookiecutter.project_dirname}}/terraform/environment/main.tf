@@ -1,22 +1,29 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
-  backend_paths = var.backend_service_slug != "" ? (
-    var.frontend_service_slug != "" ? concat(
-      ["/admin", "/api", "/static"],
-      var.media_storage == "local" ? ["/media"] : []
-    ) : ["/"]
-  ) : []
-  frontend_paths = var.frontend_service_slug != "" ? ["/"] : []
-
-  registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
-
   stack_resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
   env_resource_name   = "${local.project_slug}-${var.env_slug}"
 
   namespace = kubernetes_namespace.main.metadata[0].name
 
+  project_host = regexall("https?://([^/]+)", var.project_url)[0][0]
+
+  backend_paths = toset(
+    var.backend_service_slug != "" ? (
+      var.frontend_service_slug != "" ? concat(
+        ["/admin", "/api", "/static"],
+        var.media_storage == "local" ? ["/media"] : []
+      ) : ["/"]
+    ) : []
+  )
+  frontend_paths = toset(var.frontend_service_slug != "" ? ["/"] : [])
+
   basic_auth_enabled = var.basic_auth_enabled == "true" && var.basic_auth_username != "" && var.basic_auth_password != ""
+
+  traefik_ssl_enabled = var.project_domain == "" && var.letsencrypt_certificate_email != ""
+  traefik_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
+
+  registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
 
   postgres_dump_enabled = var.env_slug == "prod" && var.media_storage == "s3-digitalocean" && var.s3_bucket_access_id != "" && var.s3_bucket_secret_key != ""
 }
@@ -116,7 +123,7 @@ resource "kubernetes_namespace" "main" {
   }
 }
 
-/* Ingress */
+/* Basic Auth */
 
 resource "kubernetes_secret_v1" "traefik_basic_auth" {
   count = local.basic_auth_enabled ? 1 : 0
@@ -153,60 +160,51 @@ resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
   }
 }
 
-resource "kubernetes_ingress_v1" "main" {
-  metadata {
-    name      = "${local.env_resource_name}-ingress"
-    namespace = local.namespace
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class"                      = "traefik"
-        "traefik.ingress.kubernetes.io/router.entrypoints" = "web,websecure"
-      },
-      local.basic_auth_enabled ? {
-        "traefik.ingress.kubernetes.io/router.middlewares" = "${local.namespace}-${kubernetes_manifest.traefik_basic_auth_middleware[0].manifest.metadata.name}@kubernetescrd"
-      } : {}
-    )
-  }
+/* Traefik Ingress Route */
 
-  spec {
-    rule {
-      host = regexall("https?://([^/]+)", var.project_url)[0][0]
-
-      http {
-
-        dynamic "path" {
-          for_each = toset(local.backend_paths)
-          content {
-            path = path.key
-
-            backend {
-              service {
-                name = var.backend_service_slug
-                port {
-                  number = var.backend_service_port
-                }
-              }
-            }
-          }
-        }
-
-        dynamic "path" {
-          for_each = toset(local.frontend_paths)
-          content {
-            path = path.key
-
-            backend {
-              service {
-                name = var.frontend_service_slug
-                port {
-                  number = var.frontend_service_port
-                }
-              }
-            }
-          }
-        }
-      }
+resource "kubernetes_manifest" "traefik_ingress_route" {
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "${local.env_resource_name}-ingress-route"
+      namespace = local.namespace
     }
+    spec = merge(
+      {
+        entryPoints = ["websecure"]
+        routes = concat(
+          # backend routes
+          [
+            for path in local.backend_paths : {
+              kind        = "Rule"
+              match       = "Host(`${local.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = local.traefik_middlewares
+              services = [
+                {
+                  name = var.backend_service_slug
+                  port = var.backend_service_port
+                }
+              ]
+            }
+          ],
+          # frontend routes
+          [
+            for path in local.frontend_paths : {
+              kind        = "Rule"
+              match       = "Host(`${local.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = local.traefik_middlewares
+              services = [
+                {
+                  name = var.frontend_service_slug
+                  port = var.frontend_service_port
+                }
+              ]
+            }
+          ]
+        )
+      }
+    )
   }
 }
 

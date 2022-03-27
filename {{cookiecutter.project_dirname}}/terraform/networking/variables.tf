@@ -4,12 +4,6 @@ variable "digitalocean_token" {
   sensitive   = true
 }
 
-variable "grafana_domain" {
-  description = "The Grafana domain url."
-  type        = string
-  default     = ""
-}
-
 variable "grafana_password" {
   description = "The Grafana admin password."
   type        = string
@@ -26,6 +20,12 @@ variable "grafana_version" {
   description = "The Grafana version."
   type        = string
   default     = "8.4.2"
+}
+
+variable "letsencrypt_certificate_email" {
+  description = "The email used to issue the Let's Encrypt certificate."
+  type        = string
+  default     = ""
 }
 
 variable "monitoring_domain_prefix" {
@@ -49,10 +49,4 @@ variable "project_domain" {
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
-}
-
-variable "use_monitoring" {
-  description = "If 'true', enable the monitoring stack."
-  type        = string
-  default     = "true"
 }

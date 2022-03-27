@@ -47,7 +47,6 @@ def collect(
     deployment_type,
     digitalocean_token,
     environment_distribution,
-    use_monitoring,
     project_domain,
     domain_prefix_dev,
     domain_prefix_stage,
@@ -57,6 +56,7 @@ def collect(
     project_url_stage,
     project_url_prod,
     project_url_monitoring,
+    letsencrypt_certificate_email,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -68,7 +68,6 @@ def collect(
     backend_sentry_dsn,
     frontend_sentry_dsn,
     sentry_auth_token,
-    use_pact,
     pact_broker_url,
     pact_broker_username,
     pact_broker_password,
@@ -76,7 +75,6 @@ def collect(
     digitalocean_spaces_bucket_region,
     digitalocean_spaces_access_id,
     digitalocean_spaces_secret_key,
-    use_gitlab,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -84,7 +82,7 @@ def collect(
     gitlab_group_developers,
     terraform_dir,
     logs_dir,
-    silent,
+    quiet,
 ):
     """Collect options and run the bootstrap."""
     project_slug = clean_project_slug(project_name, project_slug)
@@ -95,15 +93,16 @@ def collect(
     if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
     environment_distribution = clean_environment_distribution(environment_distribution)
-    use_monitoring = clean_use_monitoring(use_monitoring)
+    use_monitoring = click.confirm(
+        warning("Do you want to enable the monitoring stack?"), default=False
+    )
     deployment_type = clean_deployment_type(deployment_type)
+    # The "k8s-digitalocean" deployment type includes Postgres by default
     if digitalocean_enabled := ("digitalocean" in deployment_type):
         digitalocean_token = validate_or_prompt_password(
-            digitalocean_token, "DigitalOcean token", required=True
+            "DigitalOcean token", digitalocean_token, required=True
         )
-        project_domain = clean_project_domain(project_domain)
-    else:
-        project_domain = None
+    project_domain = clean_project_domain(project_domain)
     (
         domain_prefix_dev,
         domain_prefix_stage,
@@ -113,6 +112,7 @@ def collect(
         project_url_stage,
         project_url_prod,
         project_url_monitoring,
+        letsencrypt_certificate_email,
     ) = clean_project_urls(
         project_slug,
         project_domain,
@@ -125,7 +125,9 @@ def collect(
         project_url_stage,
         project_url_prod,
         project_url_monitoring,
+        letsencrypt_certificate_email,
     )
+    use_redis = click.confirm(warning("Do you want to use Redis?"), default=False)
     if digitalocean_enabled:
         (
             digitalocean_k8s_cluster_region,
@@ -133,7 +135,6 @@ def collect(
             digitalocean_database_cluster_node_size,
             digitalocean_redis_cluster_region,
             digitalocean_redis_cluster_node_size,
-            use_redis,
         ) = clean_digitalocean_clusters_data(
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
@@ -142,54 +143,56 @@ def collect(
             digitalocean_redis_cluster_node_size,
             use_redis,
         )
-    if sentry_org := clean_sentry_org(sentry_org):
-        sentry_url = validate_or_prompt_url(
-            sentry_url, "Sentry URL", default="https://sentry.io/", required=True
-        )
-        sentry_auth_token = validate_or_prompt_password(
-            sentry_auth_token, "Sentry auth token", required=True
-        )
-        backend_sentry_dsn = clean_backend_sentry_dsn(backend_type, backend_sentry_dsn)
-        frontend_sentry_dsn = clean_frontend_sentry_dsn(
-            frontend_type, frontend_sentry_dsn
-        )
-    if use_pact := clean_use_pact(use_pact):
-        (
-            pact_broker_url,
-            pact_broker_username,
-            pact_broker_password,
-        ) = clean_pact_broker_data(
-            pact_broker_url, pact_broker_username, pact_broker_password
-        )
     media_storage = clean_media_storage(media_storage)
-    if use_gitlab := clean_use_gitlab(use_gitlab):
+    (
+        sentry_org,
+        sentry_url,
+        sentry_auth_token,
+        backend_sentry_dsn,
+        frontend_sentry_dsn,
+    ) = clean_sentry_data(
+        sentry_org,
+        sentry_url,
+        sentry_auth_token,
+        backend_type,
+        backend_sentry_dsn,
+        frontend_type,
+        frontend_sentry_dsn,
+    )
+    (
+        pact_broker_url,
+        pact_broker_username,
+        pact_broker_password,
+    ) = clean_pact_broker_data(
+        pact_broker_url, pact_broker_username, pact_broker_password
+    )
+    (
+        gitlab_group_slug,
+        gitlab_private_token,
+        gitlab_group_owners,
+        gitlab_group_maintainers,
+        gitlab_group_developers,
+    ) = clean_gitlab_group_data(
+        project_slug,
+        gitlab_group_slug,
+        gitlab_private_token,
+        gitlab_group_owners,
+        gitlab_group_maintainers,
+        gitlab_group_developers,
+        quiet,
+    )
+    if gitlab_group_slug and media_storage == "s3-digitalocean":
         (
-            gitlab_group_slug,
-            gitlab_private_token,
-            gitlab_group_owners,
-            gitlab_group_maintainers,
-            gitlab_group_developers,
-        ) = clean_gitlab_group_data(
-            project_slug,
-            gitlab_group_slug,
-            gitlab_private_token,
-            gitlab_group_owners,
-            gitlab_group_maintainers,
-            gitlab_group_developers,
-            silent,
+            digitalocean_token,
+            digitalocean_spaces_bucket_region,
+            digitalocean_spaces_access_id,
+            digitalocean_spaces_secret_key,
+        ) = clean_digitalocean_media_storage_data(
+            digitalocean_token,
+            digitalocean_spaces_bucket_region,
+            digitalocean_spaces_access_id,
+            digitalocean_spaces_secret_key,
         )
-        if media_storage == "s3-digitalocean":
-            (
-                digitalocean_token,
-                digitalocean_spaces_bucket_region,
-                digitalocean_spaces_access_id,
-                digitalocean_spaces_secret_key,
-            ) = clean_digitalocean_media_storage_data(
-                digitalocean_token,
-                digitalocean_spaces_bucket_region,
-                digitalocean_spaces_access_id,
-                digitalocean_spaces_secret_key,
-            )
     return {
         "uid": uid,
         "gid": gid,
@@ -207,7 +210,6 @@ def collect(
         "deployment_type": deployment_type,
         "digitalocean_token": digitalocean_token,
         "environment_distribution": environment_distribution,
-        "use_monitoring": use_monitoring,
         "project_domain": project_domain,
         "domain_prefix_dev": domain_prefix_dev,
         "domain_prefix_stage": domain_prefix_stage,
@@ -217,6 +219,7 @@ def collect(
         "project_url_stage": project_url_stage,
         "project_url_prod": project_url_prod,
         "project_url_monitoring": project_url_monitoring,
+        "letsencrypt_certificate_email": letsencrypt_certificate_email,
         "digitalocean_k8s_cluster_region": digitalocean_k8s_cluster_region,
         "digitalocean_database_cluster_region": digitalocean_database_cluster_region,
         "digitalocean_database_cluster_node_size": (
@@ -230,7 +233,6 @@ def collect(
         "backend_sentry_dsn": backend_sentry_dsn,
         "frontend_sentry_dsn": frontend_sentry_dsn,
         "sentry_auth_token": sentry_auth_token,
-        "use_pact": use_pact,
         "pact_broker_url": pact_broker_url,
         "pact_broker_username": pact_broker_username,
         "pact_broker_password": pact_broker_password,
@@ -238,7 +240,6 @@ def collect(
         "digitalocean_spaces_bucket_region": digitalocean_spaces_bucket_region,
         "digitalocean_spaces_access_id": digitalocean_spaces_access_id,
         "digitalocean_spaces_secret_key": digitalocean_spaces_secret_key,
-        "use_gitlab": use_gitlab,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
@@ -249,26 +250,56 @@ def collect(
     }
 
 
-def validate_or_prompt_url(value, message, default=None, required=False):
+def validate_or_prompt_domain(message, value=None, default=None, required=False):
+    """Validate the given domain or prompt until a valid value is provided."""
+    if value is None:
+        value = click.prompt(message, default=default)
+    try:
+        if not required and value == "" or validators.domain(value):
+            return value
+    except validators.ValidationFailure:
+        pass
+    click.echo(error("Please type a valid domain!"))
+    return validate_or_prompt_domain(message, None, default, required)
+
+
+def validate_or_prompt_email(message, value=None, default=None, required=False):
+    """Validate the given email address or prompt until a valid value is provided."""
+    if value is None:
+        value = click.prompt(message, default=default)
+    try:
+        if not required and value == "" or validators.email(value):
+            return value
+    except validators.ValidationFailure:
+        pass
+    click.echo(error("Please type a valid email!"))
+    return validate_or_prompt_email(message, None, default, required)
+
+
+def validate_or_prompt_url(message, value=None, default=None, required=False):
     """Validate the given URL or prompt until a valid value is provided."""
-    if value is not None:
+    if value is None:
+        value = click.prompt(message, default=default)
+    try:
         if not required and value == "" or validators.url(value):
             return value.strip("/")
-        else:
-            click.echo(error("Please type a valid URL!"))
-    new_value = click.prompt(message, default=default)
-    return validate_or_prompt_url(new_value, message, default, required)
+    except validators.ValidationFailure:
+        pass
+    click.echo(error("Please type a valid URL!"))
+    return validate_or_prompt_url(message, None, default, required)
 
 
-def validate_or_prompt_password(value, message, default=None, required=False):
+def validate_or_prompt_password(message, value=None, default=None, required=False):
     """Validate the given password or prompt until a valid value is provided."""
-    if value is not None:
+    if value is None:
+        value = click.prompt(message, default=default, hide_input=True)
+    try:
         if not required and value == "" or validators.length(value, min=8):
             return value
-        else:
-            click.echo(error("Please type at least 8 chars!"))
-    new_value = click.prompt(message, default=default, hide_input=True)
-    return validate_or_prompt_password(new_value, message, default, required)
+    except validators.ValidationFailure:
+        pass
+    click.echo(error("Please type at least 8 chars!"))
+    return validate_or_prompt_password(message, None, default, required)
 
 
 def clean_project_slug(project_name, project_slug):
@@ -365,12 +396,19 @@ def clean_project_domain(project_domain):
     """Return the project domain."""
     return (
         project_domain
-        if project_domain is not None
-        else click.prompt(
-            "Project domain (e.g. 20tab.com, "
-            "if you prefer to skip DigitalOcean DNS configuration, leave blank)",
-            default="",
+        or (
+            project_domain is None
+            and click.confirm(
+                warning(
+                    "Do you want to configure DNS records? "
+                    "(BEWARE: NS must be set accordingly)"
+                )
+            )
+            and validate_or_prompt_domain(
+                "Project domain", project_domain, required=True
+            )
         )
+        or ""
     )
 
 
@@ -386,10 +424,9 @@ def clean_project_urls(
     project_url_stage,
     project_url_prod,
     project_url_monitoring,
+    letsencrypt_certificate_email,
 ):
     """Return project URLs."""
-    domain_prefix_monitoring = ""
-    project_url_monitoring = ""
     if project_domain:
         domain_prefix_dev = domain_prefix_dev or click.prompt(
             "Development domain prefix", default="dev"
@@ -410,29 +447,41 @@ def clean_project_urls(
             project_url_monitoring = (
                 f"https://{domain_prefix_monitoring}.{project_domain}"
             )
+        else:
+            domain_prefix_monitoring = ""
+            project_url_monitoring = ""
+        letsencrypt_certificate_email = ""
     else:
-        domain_prefix_dev = domain_prefix_stage = domain_prefix_prod = ""
+        domain_prefix_dev = ""
+        domain_prefix_stage = ""
+        domain_prefix_prod = ""
+        domain_prefix_monitoring = ""
         project_url_dev = validate_or_prompt_url(
-            project_url_dev or None,
             "Development environment complete URL",
+            project_url_dev or None,
             default=f"https://dev.{project_slug}.com",
         )
         project_url_stage = validate_or_prompt_url(
-            project_url_stage or None,
             "Staging environment complete URL",
+            project_url_stage or None,
             default=f"https://stage.{project_slug}.com",
         )
         project_url_prod = validate_or_prompt_url(
-            project_url_prod or None,
             "Production environment complete URL",
+            project_url_prod or None,
             default=f"https://www.{project_slug}.com",
         )
         if use_monitoring:
             project_url_monitoring = validate_or_prompt_url(
-                project_url_monitoring or None,
                 "Monitoring complete URL",
+                project_url_monitoring or None,
                 default=f"https://logs.{project_slug}.com",
             )
+        else:
+            project_url_monitoring = ""
+        letsencrypt_certificate_email = clean_letsencrypt_certificate_email(
+            letsencrypt_certificate_email
+        )
     return (
         domain_prefix_dev,
         domain_prefix_stage,
@@ -442,6 +491,67 @@ def clean_project_urls(
         project_url_stage,
         project_url_prod,
         project_url_monitoring,
+        letsencrypt_certificate_email,
+    )
+
+
+def clean_letsencrypt_certificate_email(letsencrypt_certificate_email):
+    """Return the email to issue Let's Encrypt certificates for."""
+    return (
+        letsencrypt_certificate_email
+        or (
+            letsencrypt_certificate_email is None
+            and click.confirm(
+                warning("Do you want Traefik to generate SSL certificates?"),
+                default=True,
+            )
+            and validate_or_prompt_email(
+                "Let's Encrypt certificates email",
+                letsencrypt_certificate_email,
+                required=True,
+            )
+        )
+        or ""
+    )
+
+
+def clean_sentry_data(
+    sentry_org,
+    sentry_url,
+    sentry_auth_token,
+    backend_type,
+    backend_sentry_dsn,
+    frontend_type,
+    frontend_sentry_dsn,
+):
+    """Return the Sentry configuration data."""
+    if sentry_org or (
+        sentry_org is None
+        and click.confirm(warning("Do you want to use Sentry?"), default=False)
+    ):
+        sentry_org = clean_sentry_org(sentry_org)
+        sentry_url = validate_or_prompt_url(
+            "Sentry URL", sentry_url, default="https://sentry.io/", required=True
+        )
+        sentry_auth_token = validate_or_prompt_password(
+            "Sentry auth token", sentry_auth_token, required=True
+        )
+        backend_sentry_dsn = clean_backend_sentry_dsn(backend_type, backend_sentry_dsn)
+        frontend_sentry_dsn = clean_frontend_sentry_dsn(
+            frontend_type, frontend_sentry_dsn
+        )
+    else:
+        sentry_org = ""
+        sentry_url = ""
+        sentry_auth_token = ""
+        backend_sentry_dsn = ""
+        frontend_sentry_dsn = ""
+    return (
+        sentry_org,
+        sentry_url,
+        sentry_auth_token,
+        backend_sentry_dsn,
+        frontend_sentry_dsn,
     )
 
 
@@ -450,10 +560,7 @@ def clean_sentry_org(sentry_org):
     return (
         sentry_org
         if sentry_org is not None
-        else click.prompt(
-            'Sentry organization (e.g. "20tab", leave blank if unused)',
-            default="",
-        )
+        else click.prompt("Sentry organization", default="")
     )
 
 
@@ -483,13 +590,6 @@ def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
         )
 
 
-def clean_use_redis(use_redis):
-    """Tell whether Redis should be configured."""
-    if use_redis is None:
-        return click.confirm(warning("Do you want to configure Redis?"), default=False)
-    return bool(use_redis)
-
-
 def clean_digitalocean_clusters_data(
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
@@ -514,7 +614,7 @@ def clean_digitalocean_clusters_data(
             default=DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
         )
     )
-    if use_redis := clean_use_redis(use_redis):
+    if use_redis:
         digitalocean_redis_cluster_region = (
             digitalocean_redis_cluster_region
             if digitalocean_redis_cluster_region is not None
@@ -534,41 +634,32 @@ def clean_digitalocean_clusters_data(
         digitalocean_database_cluster_node_size,
         digitalocean_redis_cluster_region,
         digitalocean_redis_cluster_node_size,
-        use_redis,
     )
-
-
-def clean_use_monitoring(use_monitoring):
-    """Tell whether the monitoring stack should be enabled."""
-    if use_monitoring is None:
-        return click.confirm(
-            warning("Do you want to enable the monitoring stack?"), default=False
-        )
-    return bool(use_monitoring)
-
-
-def clean_use_pact(use_pact):
-    """Tell whether Pact should be configured."""
-    if use_pact is None:
-        return click.confirm(warning("Do you want to configure Pact?"), default=True)
-    return bool(use_pact)
 
 
 def clean_pact_broker_data(pact_broker_url, pact_broker_username, pact_broker_password):
     """Return Pact broker data."""
-    pact_broker_url = validate_or_prompt_url(
-        pact_broker_url,
-        "Pact broker URL (e.g. https://broker.20tab.com/)",
-        required=True,
-    )
-    pact_broker_username = pact_broker_username or click.prompt(
-        "Pact broker username",
-    )
-    pact_broker_password = validate_or_prompt_password(
-        pact_broker_password,
-        "Pact broker password",
-        required=True,
-    )
+    if pact_broker_url or (
+        pact_broker_url is None
+        and click.confirm(warning("Do you want to use Pact?"), default=False)
+    ):
+        pact_broker_url = validate_or_prompt_url(
+            "Pact broker URL (e.g. https://broker.20tab.com/)",
+            pact_broker_url,
+            required=True,
+        )
+        pact_broker_username = pact_broker_username or click.prompt(
+            "Pact broker username",
+        )
+        pact_broker_password = validate_or_prompt_password(
+            "Pact broker password",
+            pact_broker_password,
+            required=True,
+        )
+    else:
+        pact_broker_url = ""
+        pact_broker_username = ""
+        pact_broker_password = ""
     return pact_broker_url, pact_broker_username, pact_broker_password
 
 
@@ -584,13 +675,6 @@ def clean_media_storage(media_storage):
     )
 
 
-def clean_use_gitlab(use_gitlab):
-    """Tell whether GitLab should be used."""
-    if use_gitlab is None:
-        return click.confirm(warning("Do you want to configure GitLab?"), default=True)
-    return bool(use_gitlab)
-
-
 def clean_gitlab_group_data(
     project_slug,
     gitlab_group_slug,
@@ -598,37 +682,47 @@ def clean_gitlab_group_data(
     gitlab_group_owners,
     gitlab_group_maintainers,
     gitlab_group_developers,
-    silent=False,
+    quiet=False,
 ):
     """Return GitLab group data."""
-    gitlab_group_slug = slugify(
-        gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
-    )
-    silent or click.confirm(
-        warning(
-            f'Make sure the GitLab "{gitlab_group_slug}" group exists '
-            "before proceeding. Continue?"
-        ),
-        abort=True,
-    )
-    gitlab_private_token = gitlab_private_token or click.prompt(
-        "GitLab private token (with API scope enabled)", hide_input=True
-    )
-    gitlab_group_owners = (
-        gitlab_group_owners
-        if gitlab_group_owners is not None
-        else click.prompt("Comma-separated GitLab group owners", default="")
-    )
-    gitlab_group_maintainers = (
-        gitlab_group_maintainers
-        if gitlab_group_maintainers is not None
-        else click.prompt("Comma-separated GitLab group maintainers", default="")
-    )
-    gitlab_group_developers = (
-        gitlab_group_developers
-        if gitlab_group_developers is not None
-        else click.prompt("Comma-separated GitLab group developers", default="")
-    )
+    if gitlab_group_slug or (
+        gitlab_group_slug is None
+        and click.confirm(warning("Do you want to use GitLab?"), default=True)
+    ):
+        gitlab_group_slug = slugify(
+            gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
+        )
+        quiet or click.confirm(
+            warning(
+                f'Make sure the GitLab "{gitlab_group_slug}" group exists '
+                "before proceeding. Continue?"
+            ),
+            abort=True,
+        )
+        gitlab_private_token = gitlab_private_token or click.prompt(
+            "GitLab private token (with API scope enabled)", hide_input=True
+        )
+        gitlab_group_owners = (
+            gitlab_group_owners
+            if gitlab_group_owners is not None
+            else click.prompt("Comma-separated GitLab group owners", default="")
+        )
+        gitlab_group_maintainers = (
+            gitlab_group_maintainers
+            if gitlab_group_maintainers is not None
+            else click.prompt("Comma-separated GitLab group maintainers", default="")
+        )
+        gitlab_group_developers = (
+            gitlab_group_developers
+            if gitlab_group_developers is not None
+            else click.prompt("Comma-separated GitLab group developers", default="")
+        )
+    else:
+        gitlab_group_slug = ""
+        gitlab_private_token = ""
+        gitlab_group_owners = ""
+        gitlab_group_maintainers = ""
+        gitlab_group_developers = ""
     return (
         gitlab_group_slug,
         gitlab_private_token,
@@ -646,8 +740,8 @@ def clean_digitalocean_media_storage_data(
 ):
     """Return DigitalOcean media storage data."""
     digitalocean_token = validate_or_prompt_password(
-        digitalocean_token,
         "DigitalOcean token",
+        digitalocean_token,
         required=True,
     )
     digitalocean_spaces_bucket_region = (
@@ -658,13 +752,13 @@ def clean_digitalocean_media_storage_data(
         )
     )
     digitalocean_spaces_access_id = validate_or_prompt_password(
-        digitalocean_spaces_access_id,
         "DigitalOcean Spaces Access Key ID",
+        digitalocean_spaces_access_id,
         required=True,
     )
     digitalocean_spaces_secret_key = validate_or_prompt_password(
-        digitalocean_spaces_secret_key,
         "DigitalOcean Spaces Secret Access Key",
+        digitalocean_spaces_secret_key,
         required=True,
     )
     return (

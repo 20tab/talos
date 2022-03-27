@@ -293,7 +293,7 @@ If the project have frontend service is needed:
 
 `--frontend-sentry-dsn={{frontend-sentry-dsn}}`
 
-#### 🔇 Silent
-Is command for use default if no args are provided
+#### 🔇 Quiet
+No confirmations shown.
 
-`--silent`
+`--quiet`
