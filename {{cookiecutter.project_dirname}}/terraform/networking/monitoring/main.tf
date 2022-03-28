@@ -83,7 +83,7 @@ resource "kubernetes_manifest" "grafana_ingress_route" {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
-      name      = "${local.env_resource_name}-grafana-ingress-route"
+      name      = "grafana-ingress-route"
       namespace = kubernetes_namespace.log_storage.metadata[0].name
     }
     spec = {
