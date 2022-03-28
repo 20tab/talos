@@ -1,8 +1,8 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
-  stack_resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
-  env_resource_name   = "${local.project_slug}-${var.env_slug}"
+  stack_resources_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+  env_resources_prefix   = "${local.project_slug}-${var.env_slug}"
 
   namespace = kubernetes_namespace_v1.main.metadata[0].name
 
@@ -63,23 +63,23 @@ provider "kubernetes" {
 /* Data Sources */
 
 data "digitalocean_kubernetes_cluster" "main" {
-  name = "${local.stack_resource_name}-k8s-cluster"
+  name = "${local.stack_resources_prefix}-k8s-cluster"
 }
 
 data "digitalocean_database_cluster" "postgres" {
-  name = "${local.stack_resource_name}-database-cluster"
+  name = "${local.stack_resources_prefix}-database-cluster"
 }
 
 data "digitalocean_database_cluster" "redis" {
   count = var.use_redis == "true" ? 1 : 0
 
-  name = "${local.stack_resource_name}-redis-cluster"
+  name = "${local.stack_resources_prefix}-redis-cluster"
 }
 
 data "digitalocean_spaces_bucket" "postgres_dump" {
   count = local.postgres_dump_enabled ? 1 : 0
 
-  name   = "${local.stack_resource_name}-s3-bucket"
+  name   = "${local.stack_resources_prefix}-s3-bucket"
   region = var.s3_bucket_region
 }
 
@@ -108,7 +108,7 @@ resource "digitalocean_database_connection_pool" "postgres" {
 
 resource "kubernetes_namespace_v1" "main" {
   metadata {
-    name = local.env_resource_name
+    name = local.env_resources_prefix
   }
 }
 
@@ -156,7 +156,7 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
-      name      = "${local.env_resource_name}-ingress-route"
+      name      = "${local.env_resources_prefix}-ingress-route"
       namespace = local.namespace
     }
     spec = merge(
@@ -197,9 +197,9 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
   }
 }
 
-/* Regcred */
+/* Secrets */
 
-resource "kubernetes_secret" "regcred" {
+resource "kubernetes_secret_v1" "regcred" {
   metadata {
     name      = "regcred"
     namespace = local.namespace
@@ -218,11 +218,9 @@ resource "kubernetes_secret" "regcred" {
   type = "kubernetes.io/dockerconfigjson"
 }
 
-/* Config Maps */
-
 resource "kubernetes_secret_v1" "database_url" {
   metadata {
-    name      = "${local.env_resource_name}-database-url"
+    name      = "${local.env_resources_prefix}-database-url"
     namespace = local.namespace
   }
 
@@ -235,7 +233,7 @@ resource "kubernetes_secret_v1" "cache_url" {
   count = var.use_redis == "true" ? 1 : 0
 
   metadata {
-    name      = "${local.env_resource_name}-cache-url"
+    name      = "${local.env_resources_prefix}-cache-url"
     namespace = local.namespace
   }
 
