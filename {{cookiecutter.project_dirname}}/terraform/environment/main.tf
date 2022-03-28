@@ -4,7 +4,7 @@ locals {
   stack_resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
   env_resource_name   = "${local.project_slug}-${var.env_slug}"
 
-  namespace = kubernetes_namespace.main.metadata[0].name
+  namespace = kubernetes_namespace_v1.main.metadata[0].name
 
   project_host = regexall("https?://([^/]+)", var.project_url)[0][0]
 
@@ -38,7 +38,7 @@ terraform {
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "2.8.0"
+      version = "2.9.0"
     }
   }
 }
@@ -106,7 +106,7 @@ resource "digitalocean_database_connection_pool" "postgres" {
 
 /* Namespace */
 
-resource "kubernetes_namespace" "main" {
+resource "kubernetes_namespace_v1" "main" {
   metadata {
     name = local.env_resource_name
   }
