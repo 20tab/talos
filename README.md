@@ -29,7 +29,7 @@ Then, install the following requirements
 
 ### 🌊 DigitalOcean
 If DigitalOcean is chosen for deployment, a Personal Access Token with _write_ permission is required.<br/>
-Additionally if DigitalOcean Spaces is the chosen media storage backend, a pair of S3 access keys is required.
+Additionally, if DigitalOcean Spaces is the chosen media storage backend, a pair of S3 access keys is required.
 [DigitalOcean API Slugs](https://slugs.do-api.dev/)
 
 **Note:** all credentials can be generated in the DigitalOcean API configuration section.<br/>
@@ -194,8 +194,8 @@ If you don't want DigitalOcean DNS configuration the following args are required
 
 Value  | Description | Argument
 ------------- | ------------- | -------------
-local  | Docker Volume are used for store media | `--media-storage=local`
-s3-digitalocean  | DigitalOcean Spaces are used for store media | [DigitalOcean Media storage](#media-storage)
+local  | Docker Volume are used to store media | `--media-storage=local`
+s3-digitalocean  | DigitalOcean Spaces are used to store media | [DigitalOcean Media storage](#media-storage)
 none  | Project have no media | `--media-storage=none`
 
 ### 🌊 DigitalOcean
@@ -227,7 +227,7 @@ If you want DigitalOcean DNS configuration the following args are required
 `"--digitalocean-database-cluster-node-size=db-s-1vcpu-2gb`
 
 #### Monitoring
-For enable monitoring the following arguments are needed:
+For enabling monitoring the following arguments are needed:
 
 `--use-monitoring`<br/>
 
@@ -243,7 +243,7 @@ Disabled args
 `--no-monitoring`
 
 #### Redis
-For enable redis integration the following arguments are needed:
+For enabling redis integration the following arguments are needed:
 
 `--use-redis`<br/>
 `--digitalocean-redis-cluster-region=fra1`<br/>
@@ -253,10 +253,10 @@ Disabled args
 `--no-redis`
 
 ### 🦊 GitLab
-> **⚠️ Important:  Make sure the GitLab group exists before create.**
+> **⚠️ Important:  Make sure the GitLab group exists before creating.**
 > https://gitlab.com/gitlab-org/gitlab/-/issues/244345
 
-For enable gitlab integration the following arguments are needed:
+For enabling gitlab integration the following arguments are needed:
 
 `--use-gitlab`<br/>
 `--gitlab-private-token={{gitlab-private-token}}`<br/>
@@ -272,24 +272,24 @@ Add user to repository using comma separeted arguments
 `--gitlab-group-developers=user1, user@example.org`
 
 #### 👨‍⚖️ Pact
-For enable pact the following arguments are needed:
+For enabling pact the following arguments are needed:
 
 `--pact-broker-url={{pact-broker-url}}`<br/>
 `--pact-broker-username={{pact-broker-username}}`<br/>
 `--pact-broker-password={{pact-broker-password}}`
 
 #### 🪖 Sentry
-For enable sentry integration the following arguments are needed:
+For enabling sentry integration the following arguments are needed:
 
 `--sentry-url=https://sentry.io/`<br/>
 `--sentry-org={{sentry-org}}`<br/>
 `--sentry-auth-token={{sentry-auth-token}}`
 
-If the project have backend service is needed:
+If the project has a backend service, the following argument is needed:
 
 `--backend-sentry-dsn={{backend-sentry-dsn}}`
 
-If the project have frontend service is needed:
+If the project has a frontend service, the following argument is needed:
 
 `--frontend-sentry-dsn={{frontend-sentry-dsn}}`
 

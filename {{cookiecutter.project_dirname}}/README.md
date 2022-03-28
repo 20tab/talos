@@ -27,7 +27,7 @@ This is the "{{ cookiecutter.project_name }}" orchestrator.
 
 ## Provisioning
 
-The first run is manual made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/orchestrator/-/pipelines/new).
+The first run is manual, made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/orchestrator/-/pipelines/new).
 
 To create all the terraform resources, run the pipeline with the following variable:
 
@@ -39,13 +39,13 @@ If you want to choose what to activate to limit any costs, read below.
 
 Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster.
 Networking stage will create Ingress, Certificate and Monitoring if enabled.
-Environment stage will create the other resourse for each of it.
+Environment stage will create the other resource for each of it.
 
 Value  | Description
 ------------- | -------------
 `core` | Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster
 `networking` | Networking stage will create Ingress, Certificate and Monitoring if enabled.
-`environment`  | Environment stage will create the other resourse for each of it.
+`environment`  | Environment stage will create the other resource for each of it.
 
 `ENABLED_STAGE` = `core, networking, environment`
 
@@ -71,7 +71,7 @@ Value  | Description
 
 ## Quickstart
 
-This section explains the steps you need to clone and work wityh this project.
+This section explains the steps you need to clone and work with this project.
 
 1. [clone](#clone) the project code
 2. set all the required [environment variables](#environment-variables)
