@@ -8,6 +8,7 @@ variable "grafana_password" {
   description = "The Grafana admin password."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "grafana_user" {
