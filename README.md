@@ -229,8 +229,6 @@ If you want DigitalOcean DNS configuration the following args are required
 #### Monitoring
 For enabling monitoring the following arguments are needed:
 
-`--use-monitoring`<br/>
-
 if project domain is managed use
 
 `--domain-prefix-monitoring=logs`
@@ -238,9 +236,6 @@ if project domain is managed use
 else use
 
 `--project-url-monitoring=https://logs.example.org/`
-
-Disabled args
-`--no-monitoring`
 
 #### Redis
 For enabling redis integration the following arguments are needed:
@@ -258,12 +253,8 @@ Disabled args
 
 For enabling gitlab integration the following arguments are needed:
 
-`--use-gitlab`<br/>
 `--gitlab-private-token={{gitlab-private-token}}`<br/>
 `--gitlab-group-slug={{gitlab-group-slug}}`
-
-Disabled args
-`--no-gitlab`
 
 Add user to repository using comma separeted arguments
 
