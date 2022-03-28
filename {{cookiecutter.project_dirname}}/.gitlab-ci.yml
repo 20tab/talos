@@ -169,7 +169,6 @@ stack_{{ stack_slug }}_networking_apply:
     TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
     TF_VAR_frontend_service_port: "${FRONTEND_SERVICE_PORT}"
     TF_VAR_frontend_service_slug: "${FRONTEND_SERVICE_SLUG}"
-    TF_VAR_letsencrypt_certificate_email: "${LETSENCRYPT_CERTIFICATE_EMAIL}"
     TF_VAR_project_url: "${CI_ENVIRONMENT_URL}"
     TF_VAR_registry_password: "${K8S_REGCRED}"{% if cookiecutter.media_storage == "s3-digitalocean" %}
     TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"

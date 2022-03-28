@@ -64,22 +64,10 @@ variable "env_slug" {
   type        = string
 }
 
-variable "letsencrypt_certificate_email" {
-  description = "The email used to issue the Let's Encrypt certificate."
-  type        = string
-  default     = ""
-}
-
 variable "media_storage" {
   description = "The media storage solution."
   type        = string
   default     = "{{ cookiecutter.media_storage }}"
-}
-
-variable "project_domain" {
-  description = "The project domain."
-  type        = string
-  default     = ""
 }
 
 variable "project_url" {

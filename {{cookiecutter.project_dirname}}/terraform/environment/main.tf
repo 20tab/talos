@@ -20,7 +20,6 @@ locals {
 
   basic_auth_enabled = var.basic_auth_enabled == "true" && var.basic_auth_username != "" && var.basic_auth_password != ""
 
-  traefik_ssl_enabled = var.project_domain == "" && var.letsencrypt_certificate_email != ""
   traefik_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
 
   registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
