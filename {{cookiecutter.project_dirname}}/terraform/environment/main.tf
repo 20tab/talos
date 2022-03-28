@@ -77,16 +77,6 @@ data "digitalocean_database_cluster" "redis" {
   name = "${local.stack_resource_name}-redis-cluster"
 }
 
-data "digitalocean_domain" "main" {
-  count = var.project_domain != "" ? 1 : 0
-
-  name = var.project_domain
-}
-
-data "digitalocean_loadbalancer" "main" {
-  name = "${local.stack_resource_name}-load-balancer"
-}
-
 data "digitalocean_spaces_bucket" "postgres_dump" {
   count = local.postgres_dump_enabled ? 1 : 0
 
