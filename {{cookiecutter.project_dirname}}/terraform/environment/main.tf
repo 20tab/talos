@@ -172,7 +172,7 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
     }
     spec = merge(
       {
-        entryPoints = ["websecure"]
+        entryPoints = ["web", "websecure"]
         routes = concat(
           # backend routes
           [
