@@ -74,7 +74,7 @@ Choose the environments distribution:
   2 - Dev and Stage environments share the same stack, Prod has its own
   3 - Each environment has its own stack
  (1, 2, 3) [1]:
-Deploy type (k8s-digitalocean, k8s-other) [k8s-digitalocean]:
+Deploy type (digitalocean-k8s, other-k8s) [digitalocean-k8s]:
 DigitalOcean token:
 Project domain (e.g. 20tab.com, if you prefer to skip DigitalOcean DNS configuration, leave blank) []:
 Development environment complete URL [https://dev.my-project-name.com]:
@@ -180,8 +180,8 @@ Value  | Description | Argument
 #### Deploy type
 Value  | Description | Argument
 ------------- | ------------- | -------------
-k8s-digitalocean  | It will use the DigitalOcean | `--deployment-type=k8s-digitalocean`
-k8s-other  | The configuration is custom and must be done manually | `--deployment-type=k8s-other`
+digitalocean-k8s  | It will use the DigitalOcean | `--deployment-type=digitalocean-k8s`
+other-k8s  | The configuration is custom and must be done manually | `--deployment-type=other-k8s`
 
 #### Project Domain
 If you don't want DigitalOcean DNS configuration the following args are required
