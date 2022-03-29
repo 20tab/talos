@@ -1,0 +1,38 @@
+variable "namespace" {
+  description = "The namespace for Kubernetes resources."
+  type        = string
+}
+
+variable "resources_prefix" {
+  description = "The prefix for Kubernetes resources names."
+  type        = string
+}
+
+variable "s3_backup_path" {
+  description = "The S3 backup path."
+  type        = string
+  default     = "backup/postgres"
+}
+
+variable "s3_bucket_access_id" {
+  description = "The S3 bucket access key ID."
+  type        = string
+  sensitive   = true
+}
+
+variable "s3_bucket_name" {
+  description = "The S3 bucket name."
+  type        = string
+}
+
+variable "s3_bucket_secret_key" {
+  description = "The S3 bucket secret access key."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "s3_host" {
+  description = "The S3 host."
+  type        = string
+}

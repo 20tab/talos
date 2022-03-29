@@ -1,7 +1,13 @@
+variable "backend_middlewares" {
+  description = "The backend middlewares list."
+  type        = list(string)
+  default     = []
+}
+
 variable "backend_service_port" {
   description = "The backend service port."
   type        = number
-  default     = {{ cookiecutter.backend_service_port }}
+  default     = 8000
 }
 
 variable "backend_service_slug" {
@@ -29,30 +35,6 @@ variable "basic_auth_username" {
   default     = ""
 }
 
-variable "database_connection_pool_size" {
-  description = "The DigitalOcean database connection pool size."
-  type        = number
-  default     = 1
-}
-
-variable "digitalocean_token" {
-  description = "The DigitalOcean access token."
-  type        = string
-  sensitive   = true
-}
-
-variable "frontend_service_port" {
-  description = "The frontend service port."
-  type        = number
-  default     = {{ cookiecutter.frontend_service_port }}
-}
-
-variable "frontend_service_slug" {
-  description = "The frontend service slug."
-  type        = string
-  default     = ""
-}
-
 variable "domain_prefix" {
   description = "The environment domain prefix (e.g. 'www')."
   type        = string
@@ -64,16 +46,86 @@ variable "env_slug" {
   type        = string
 }
 
+variable "frontend_middlewares" {
+  description = "The frontend middlewares list."
+  type        = list(string)
+  default     = []
+}
+
+variable "frontend_service_port" {
+  description = "The frontend service port."
+  type        = number
+  default     = 3000
+}
+
+variable "frontend_service_slug" {
+  description = "The frontend service slug."
+  type        = string
+  default     = ""
+}
+
+variable "kubernetes_cluster_ca_certificate" {
+  description = "The base64 encoded Kubernetes CA certificate."
+  type        = string
+  sensitive   = true
+}
+
+variable "kubernetes_host" {
+  description = "The Kubernetes host."
+  type        = string
+}
+
+variable "kubernetes_token" {
+  description = "A Kubernetes admin token."
+  type        = string
+  sensitive   = true
+}
+
 variable "media_storage" {
   description = "The media storage solution."
   type        = string
-  default     = "{{ cookiecutter.media_storage }}"
+  default     = "local"
+}
+
+variable "postgres_image" {
+  description = "The Postgres Docker image."
+  type        = string
+  default     = "postgres:14"
+}
+
+variable "postgres_persistent_volume_capacity" {
+  description = "The persistent volume capacity (e.g. 1Gi)."
+  type        = string
+  default     = "10Gi"
+}
+
+variable "postgres_persistent_volume_claim_capacity" {
+  description = "The persistent volume claim capacity (e.g. 1Gi)."
+  type        = string
+  default     = ""
+}
+
+variable "postgres_persistent_volume_host_path" {
+  description = "The persistent volume host path."
+  type        = string
+}
+
+variable "project_domain" {
+  description = "The project domain."
+  type        = string
+  default     = ""
 }
 
 variable "project_url" {
   description = "The project url."
   type        = string
   default     = ""
+}
+
+variable "redis_image" {
+  description = "The Redis Docker image."
+  type        = string
+  default     = "redis:6"
 }
 
 variable "registry_password" {
@@ -101,10 +153,9 @@ variable "s3_bucket_access_id" {
   sensitive   = true
 }
 
-variable "s3_bucket_region" {
-  description = "The DigitalOcean S3 Spaces region."
+variable "s3_bucket_name" {
+  description = "The S3 bucket name."
   type        = string
-  default     = ""
 }
 
 variable "s3_bucket_secret_key" {
@@ -114,13 +165,18 @@ variable "s3_bucket_secret_key" {
   sensitive   = true
 }
 
+variable "s3_host" {
+  description = "The S3 host."
+  type        = string
+}
+
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
 }
 
 variable "use_redis" {
-  description = "If 'true', a DigitalOcean Redis database is created."
+  description = "If 'true', a Redis database is created."
   type        = string
   default     = "false"
 }
