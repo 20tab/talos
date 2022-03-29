@@ -87,11 +87,11 @@ This section explains the steps you need to clone and work with this project.
 Clone the orchestrator and services repositories:
 
 ```console
-$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/orchestrator.git {{ cookiecutter.project_dirname }}
-$ cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
-$ cd ..
+git clone git@gitlab.com:{{ cookiecutter.project_slug }}/orchestrator.git {{ cookiecutter.project_dirname }}
+cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
+git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
+cd ..
 ```
 
 **NOTE** : We're cloning the `develop` branch for all repo.
@@ -103,7 +103,7 @@ In order for the project to run correctly, a number of environment variables mus
 Enter the newly created **project** directory and create the `.env` file copying from `.env_template`:
 
 ```console
-$ cd ~/projects/{{ cookiecutter.project_slug }}
+$ cd ~/projects/{{ cookiecutter.project_dirname }}
 $ cp .env_template .env
 ```
 
