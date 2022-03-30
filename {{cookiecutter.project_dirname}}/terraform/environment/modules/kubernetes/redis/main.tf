@@ -14,7 +14,8 @@ terraform {
 /* Configurationn */
 
 resource "random_password" "main" {
-  length = 50
+  length  = 50
+  special = false
 }
 
 resource "kubernetes_config_map_v1" "main" {
@@ -57,8 +58,8 @@ resource "kubernetes_deployment_v1" "main" {
           }
         }
         container {
-          name  = "redis"
-          image = var.redis_image
+          name    = "redis"
+          image   = var.redis_image
           command = ["redis-server", "/etc/redis/redis.conf"]
           port {
             container_port = 6379
@@ -102,6 +103,6 @@ resource "kubernetes_secret_v1" "main" {
     namespace = var.namespace
   }
   data = {
-    CACHE_URL = "redis://:${random_password.main.result}@${var.resources_prefix}-redis:6379"
+    CACHE_URL = "redis://:${random_password.main.result}@$redis:6379"
   }
 }

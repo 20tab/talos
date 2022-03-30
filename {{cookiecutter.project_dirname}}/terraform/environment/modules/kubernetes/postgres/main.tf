@@ -15,7 +15,7 @@ terraform {
 
 resource "kubernetes_persistent_volume_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-postgres"
+    name = "${var.resources_prefix}-postgres"
   }
   spec {
     capacity = {
@@ -52,7 +52,8 @@ resource "kubernetes_persistent_volume_claim_v1" "main" {
 /* Configuration  */
 
 resource "random_password" "main" {
-  length = 50
+  length  = 50
+  special = false
 }
 
 resource "kubernetes_secret_v1" "main" {
@@ -158,6 +159,6 @@ resource "kubernetes_secret_v1" "database_url" {
     namespace = var.namespace
   }
   data = {
-    DATABASE_URL = "postgres://${var.database_user}:${random_password.main.result}@${var.resources_prefix}-postgres:5432/${var.database_name}"
+    DATABASE_URL = "postgres://${var.database_user}:${random_password.main.result}@postgres:5432/${var.database_name}"
   }
 }
