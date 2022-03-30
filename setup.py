@@ -80,8 +80,9 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
     type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
 )
 @click.option("--digitalocean-spaces-bucket-region")
-@click.option("--digitalocean-spaces-access-id")
-@click.option("--digitalocean-spaces-secret-key")
+@click.option("--spaces-host")
+@click.option("--spaces-access-id")
+@click.option("--spaces-secret-key")
 @click.option("--gitlab-private-token", envvar=GITLAB_TOKEN_ENV_VAR)
 @click.option("--gitlab-group-slug")
 @click.option("--gitlab-group-owners")

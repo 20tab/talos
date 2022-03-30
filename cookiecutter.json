@@ -8,7 +8,7 @@
   "frontend_type": ["nextjs", "none"],
   "frontend_service_slug": "frontend",
   "frontend_service_port": "3000",
-  "media_storage": ["local", "s3-digitalocean", "none"],
+  "media_storage": ["digitalocean-s3", "other-s3", "local", "none"],
   "project_domain": "",
   "stacks": {
     "main": {

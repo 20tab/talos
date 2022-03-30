@@ -25,6 +25,7 @@ from bootstrap.constants import (
     FRONTEND_TYPE_DEFAULT,
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DEFAULT,
+    MEDIA_STORAGE_OTHER,
 )
 
 error = partial(click.style, fg="red")
@@ -82,8 +83,9 @@ def collect(
     pact_broker_password,
     media_storage,
     digitalocean_spaces_bucket_region,
-    digitalocean_spaces_access_id,
-    digitalocean_spaces_secret_key,
+    spaces_host,
+    spaces_access_id,
+    spaces_secret_key,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -217,17 +219,20 @@ def collect(
         gitlab_group_developers,
         quiet,
     )
-    if gitlab_group_slug and media_storage == "s3-digitalocean":
+    if gitlab_group_slug and "s3" in media_storage:
         (
             digitalocean_token,
             digitalocean_spaces_bucket_region,
-            digitalocean_spaces_access_id,
-            digitalocean_spaces_secret_key,
-        ) = clean_digitalocean_media_storage_data(
+            spaces_host,
+            spaces_access_id,
+            spaces_secret_key,
+        ) = clean_spaces_media_storage_data(
+            media_storage,
             digitalocean_token,
             digitalocean_spaces_bucket_region,
-            digitalocean_spaces_access_id,
-            digitalocean_spaces_secret_key,
+            spaces_host,
+            spaces_access_id,
+            spaces_secret_key,
         )
     return {
         "uid": uid,
@@ -282,8 +287,9 @@ def collect(
         "pact_broker_password": pact_broker_password,
         "media_storage": media_storage,
         "digitalocean_spaces_bucket_region": digitalocean_spaces_bucket_region,
-        "digitalocean_spaces_access_id": digitalocean_spaces_access_id,
-        "digitalocean_spaces_secret_key": digitalocean_spaces_secret_key,
+        "spaces_host": spaces_host,
+        "spaces_access_id": spaces_access_id,
+        "spaces_secret_key": spaces_secret_key,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
@@ -833,38 +839,49 @@ def clean_gitlab_group_data(
     )
 
 
-def clean_digitalocean_media_storage_data(
+def clean_spaces_media_storage_data(
+    media_storage,
     digitalocean_token,
     digitalocean_spaces_bucket_region,
-    digitalocean_spaces_access_id,
-    digitalocean_spaces_secret_key,
+    spaces_host,
+    spaces_access_id,
+    spaces_secret_key,
 ):
-    """Return DigitalOcean media storage data."""
-    digitalocean_token = validate_or_prompt_password(
-        "DigitalOcean token",
-        digitalocean_token,
-        required=True,
-    )
-    digitalocean_spaces_bucket_region = (
-        digitalocean_spaces_bucket_region
-        or click.prompt(
-            "DigitalOcean Spaces region",
-            default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
+    """Return Spaces media storage data."""
+    if media_storage == MEDIA_STORAGE_DEFAULT:
+        digitalocean_token = validate_or_prompt_password(
+            "DigitalOcean token",
+            digitalocean_token,
+            required=True,
         )
-    )
-    digitalocean_spaces_access_id = validate_or_prompt_password(
-        "DigitalOcean Spaces Access Key ID",
-        digitalocean_spaces_access_id,
+        digitalocean_spaces_bucket_region = (
+            digitalocean_spaces_bucket_region
+            or click.prompt(
+                "DigitalOcean Spaces region",
+                default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
+            )
+        )
+    elif media_storage == MEDIA_STORAGE_OTHER:
+        spaces_host = validate_or_prompt_domain(
+            "Spaces host",
+            spaces_host,
+            required=True,
+        )
+
+    spaces_access_id = validate_or_prompt_password(
+        "Spaces Access Key ID",
+        spaces_access_id,
         required=True,
     )
-    digitalocean_spaces_secret_key = validate_or_prompt_password(
-        "DigitalOcean Spaces Secret Access Key",
-        digitalocean_spaces_secret_key,
+    spaces_secret_key = validate_or_prompt_password(
+        "Spaces Secret Access Key",
+        spaces_secret_key,
         required=True,
     )
     return (
         digitalocean_token,
         digitalocean_spaces_bucket_region,
-        digitalocean_spaces_access_id,
-        digitalocean_spaces_secret_key,
+        spaces_host,
+        spaces_access_id,
+        spaces_secret_key,
     )

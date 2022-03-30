@@ -64,7 +64,7 @@ before_script:
     TF_VAR_database_cluster_region: "${DIGITALOCEAN_DATABASE_CLUSTER_REGION}"
     TF_VAR_redis_cluster_node_size: "${DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE}"
     TF_VAR_redis_cluster_region: "${DIGITALOCEAN_REDIS_CLUSTER_REGION}"
-    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% if cookiecutter.media_storage == "s3-digitalocean" %}
+    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% if "s3" in cookiecutter.media_storage %}
     TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"
     TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"
     TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"{% endif %}

@@ -109,7 +109,7 @@ resource "digitalocean_kubernetes_cluster" "main" {
 /* Spaces Bucket */
 
 resource "digitalocean_spaces_bucket" "main" {
-  count = var.media_storage == "s3-digitalocean" ? 1 : 0
+  count = var.media_storage == "digitalocean-s3" ? 1 : 0
 
   name = "${local.resource_name}-s3-bucket"
   region = contains(

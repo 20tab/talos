@@ -81,8 +81,9 @@ def run(
     pact_broker_password,
     media_storage,
     digitalocean_spaces_bucket_region,
-    digitalocean_spaces_access_id,
-    digitalocean_spaces_secret_key,
+    spaces_host,
+    spaces_access_id,
+    spaces_secret_key,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -195,7 +196,11 @@ def run(
                     % pact_broker_auth_url
                 ),
             )
-        media_storage == "s3-digitalocean" and gitlab_group_variables.update(
+        "s3" in media_storage and gitlab_group_variables.update(
+            S3_BUCKET_ACCESS_ID=('{value = "%s", masked = true}' % spaces_access_id),
+            S3_BUCKET_SECRET_KEY=('{value = "%s", masked = true}' % spaces_secret_key),
+        )
+        media_storage == "digitalocean-s3" and gitlab_group_variables.update(
             DIGITALOCEAN_BUCKET_REGION=(
                 '{value = "%s"}' % digitalocean_spaces_bucket_region
             ),
@@ -203,12 +208,9 @@ def run(
                 '{value = "https://%s.digitaloceanspaces.com"}'
                 % digitalocean_spaces_bucket_region
             ),
-            S3_BUCKET_ACCESS_ID=(
-                '{value = "%s", masked = true}' % digitalocean_spaces_access_id
-            ),
-            S3_BUCKET_SECRET_KEY=(
-                '{value = "%s", masked = true}' % digitalocean_spaces_secret_key
-            ),
+        )
+        media_storage == "other-s3" and gitlab_group_variables.update(
+            S3_HOST=('{value = "%s"}' % spaces_host),
         )
         digitalocean_token and gitlab_group_variables.update(
             DIGITALOCEAN_TOKEN='{value = "%s", masked = true}' % digitalocean_token

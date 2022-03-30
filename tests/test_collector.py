@@ -11,7 +11,6 @@ from bootstrap.collector import (
     clean_backend_type,
     clean_deployment_type,
     clean_digitalocean_clusters_data,
-    clean_digitalocean_media_storage_data,
     clean_environment_distribution,
     clean_frontend_sentry_dsn,
     clean_frontend_service_slug,
@@ -26,6 +25,7 @@ from bootstrap.collector import (
     clean_project_urls,
     clean_sentry_org,
     clean_service_dir,
+    clean_spaces_media_storage_data,
 )
 
 
@@ -521,13 +521,18 @@ class TestBootstrapCollector(TestCase):
             ("", "", "", "", ""),
         )
 
-    def test_clean_digitalocean_media_storage_data(self):
-        """Test cleaning the DigitalOcean media storage data."""
+    def clean_spaces_media_storage_data(self):
+        """Test cleaning the spaces media storage data."""
         self.assertEqual(
-            clean_digitalocean_media_storage_data(
-                "mYV4l1DT0k3N", "nyc1", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"
+            clean_spaces_media_storage_data(
+                "digitalocean-s3",
+                "mYV4l1DT0k3N",
+                "nyc1",
+                "",
+                "mYV4l1D1D",
+                "mYV4l1Ds3cR3tK3y",
             ),
-            ("mYV4l1DT0k3N", "nyc1", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+            ("mYV4l1DT0k3N", "nyc1", "", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
         )
         with input(
             {"hidden": "mYV4l1DT0k3N"},
@@ -536,6 +541,21 @@ class TestBootstrapCollector(TestCase):
             {"hidden": "mYV4l1Ds3cR3tK3y"},
         ):
             self.assertEqual(
-                clean_digitalocean_media_storage_data("", "", "", ""),
-                ("mYV4l1DT0k3N", "nyc1", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+                clean_spaces_media_storage_data("digitalocean-s3", "", "", "", "", ""),
+                ("mYV4l1DT0k3N", "nyc1", "", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+            )
+        self.assertEqual(
+            clean_spaces_media_storage_data(
+                "other-s3", "", "" "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"
+            ),
+            ("", "", "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+        )
+        with input(
+            "s3.example.com",
+            {"hidden": "mYV4l1D1D"},
+            {"hidden": "mYV4l1Ds3cR3tK3y"},
+        ):
+            self.assertEqual(
+                clean_spaces_media_storage_data("other-s3", "", "", "", "", ""),
+                ("", "", "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
             )

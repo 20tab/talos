@@ -87,7 +87,7 @@ Do you want to configure Redis? [y/N]:
 Sentry organization (e.g. "20tab", leave blank if unused) []:
 Do you want to enable the monitoring stack? [y/N]:
 Do you want to configure Pact? [Y/n]: n
-Media storage (local, s3-digitalocean, none) [s3-digitalocean]:
+Media storage (digitalocean-s3, other-s3, local, none) [digitalocean-s3]:
 Do you want to configure GitLab? [Y/n]:
 GitLab group slug [my-project-name]:
 Make sure the GitLab "my-project-name" group exists before proceeding. Continue? [y/N]: y
@@ -194,8 +194,9 @@ If you don't want DigitalOcean DNS configuration the following args are required
 
 Value  | Description | Argument
 ------------- | ------------- | -------------
+digitalocean-s3  | DigitalOcean Spaces are used to store media | [DigitalOcean Media storage](#media-storage)
+other-s3  | Spaces are used to store media | [DigitalOcean Media storage](#media-storage)
 local  | Docker Volume are used to store media | `--media-storage=local`
-s3-digitalocean  | DigitalOcean Spaces are used to store media | [DigitalOcean Media storage](#media-storage)
 none  | Project have no media | `--media-storage=none`
 
 ### 🌊 DigitalOcean
@@ -204,10 +205,10 @@ none  | Project have no media | `--media-storage=none`
 `--digitalocean-token={{digitalocean-token}}`
 
 #### Media storage
-`--media-storage=s3-digitalocean`<br/>
-`--digitalocean-spaces-bucket-region=fra1`<br/>
-`--digitalocean-spaces-access-id`<br/>
-`--digitalocean-spaces-secret-key`
+`--media-storage=digitalocean-s3`<br/>
+`--spaces-bucket-region=fra1`<br/>
+`--spaces-access-id`<br/>
+`--spaces-secret-key`
 
 #### Project Domain
 If you want DigitalOcean DNS configuration the following args are required
