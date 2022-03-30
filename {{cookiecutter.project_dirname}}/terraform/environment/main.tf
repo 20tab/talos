@@ -1,22 +1,28 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
-  backend_paths = var.backend_service_slug != "" ? (
-    var.frontend_service_slug != "" ? concat(
-      ["/admin", "/api", "/static"],
-      var.media_storage == "local" ? ["/media"] : []
-    ) : ["/"]
-  ) : []
-  frontend_paths = var.frontend_service_slug != "" ? ["/"] : []
+  stack_resources_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+  env_resources_prefix   = "${local.project_slug}-${var.env_slug}"
 
-  registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
+  namespace = kubernetes_namespace_v1.main.metadata[0].name
 
-  stack_resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
-  env_resource_name   = "${local.project_slug}-${var.env_slug}"
+  project_host = regexall("https?://([^/]+)", var.project_url)[0][0]
 
-  namespace = kubernetes_namespace.main.metadata[0].name
+  backend_paths = toset(
+    var.backend_service_slug != "" ? (
+      var.frontend_service_slug != "" ? concat(
+        ["/admin", "/api", "/static"],
+        var.media_storage == "local" ? ["/media"] : []
+      ) : ["/"]
+    ) : []
+  )
+  frontend_paths = toset(var.frontend_service_slug != "" ? ["/"] : [])
 
   basic_auth_enabled = var.basic_auth_enabled == "true" && var.basic_auth_username != "" && var.basic_auth_password != ""
+
+  traefik_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
+
+  registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
 
   postgres_dump_enabled = var.env_slug == "prod" && var.media_storage == "s3-digitalocean" && var.s3_bucket_access_id != "" && var.s3_bucket_secret_key != ""
 }
@@ -32,7 +38,7 @@ terraform {
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "2.8.0"
+      version = "2.9.0"
     }
   }
 }
@@ -57,33 +63,23 @@ provider "kubernetes" {
 /* Data Sources */
 
 data "digitalocean_kubernetes_cluster" "main" {
-  name = "${local.stack_resource_name}-k8s-cluster"
+  name = "${local.stack_resources_prefix}-k8s-cluster"
 }
 
 data "digitalocean_database_cluster" "postgres" {
-  name = "${local.stack_resource_name}-database-cluster"
+  name = "${local.stack_resources_prefix}-database-cluster"
 }
 
 data "digitalocean_database_cluster" "redis" {
   count = var.use_redis == "true" ? 1 : 0
 
-  name = "${local.stack_resource_name}-redis-cluster"
-}
-
-data "digitalocean_domain" "main" {
-  count = var.project_domain != "" ? 1 : 0
-
-  name = var.project_domain
-}
-
-data "digitalocean_loadbalancer" "main" {
-  name = "${local.stack_resource_name}-load-balancer"
+  name = "${local.stack_resources_prefix}-redis-cluster"
 }
 
 data "digitalocean_spaces_bucket" "postgres_dump" {
   count = local.postgres_dump_enabled ? 1 : 0
 
-  name   = "${local.stack_resource_name}-s3-bucket"
+  name   = "${local.stack_resources_prefix}-s3-bucket"
   region = var.s3_bucket_region
 }
 
@@ -110,13 +106,13 @@ resource "digitalocean_database_connection_pool" "postgres" {
 
 /* Namespace */
 
-resource "kubernetes_namespace" "main" {
+resource "kubernetes_namespace_v1" "main" {
   metadata {
-    name = local.env_resource_name
+    name = local.env_resources_prefix
   }
 }
 
-/* Ingress */
+/* Basic Auth */
 
 resource "kubernetes_secret_v1" "traefik_basic_auth" {
   count = local.basic_auth_enabled ? 1 : 0
@@ -153,66 +149,57 @@ resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
   }
 }
 
-resource "kubernetes_ingress_v1" "main" {
-  metadata {
-    name      = "${local.env_resource_name}-ingress"
-    namespace = local.namespace
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class"                      = "traefik"
-        "traefik.ingress.kubernetes.io/router.entrypoints" = "web,websecure"
-      },
-      local.basic_auth_enabled ? {
-        "traefik.ingress.kubernetes.io/router.middlewares" = "${local.namespace}-${kubernetes_manifest.traefik_basic_auth_middleware[0].manifest.metadata.name}@kubernetescrd"
-      } : {}
-    )
-  }
+/* Traefik Ingress Route */
 
-  spec {
-    rule {
-      host = regexall("https?://([^/]+)", var.project_url)[0][0]
-
-      http {
-
-        dynamic "path" {
-          for_each = toset(local.backend_paths)
-          content {
-            path = path.key
-
-            backend {
-              service {
-                name = var.backend_service_slug
-                port {
-                  number = var.backend_service_port
-                }
-              }
-            }
-          }
-        }
-
-        dynamic "path" {
-          for_each = toset(local.frontend_paths)
-          content {
-            path = path.key
-
-            backend {
-              service {
-                name = var.frontend_service_slug
-                port {
-                  number = var.frontend_service_port
-                }
-              }
-            }
-          }
-        }
-      }
+resource "kubernetes_manifest" "traefik_ingress_route" {
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "${local.env_resources_prefix}-ingress-route"
+      namespace = local.namespace
     }
+    spec = merge(
+      {
+        entryPoints = ["web", "websecure"]
+        routes = concat(
+          # backend routes
+          [
+            for path in local.backend_paths : {
+              kind        = "Rule"
+              match       = "Host(`${local.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = local.traefik_middlewares
+              services = [
+                {
+                  name = var.backend_service_slug
+                  port = var.backend_service_port
+                }
+              ]
+            }
+          ],
+          # frontend routes
+          [
+            for path in local.frontend_paths : {
+              kind        = "Rule"
+              match       = "Host(`${local.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = local.traefik_middlewares
+              services = [
+                {
+                  name = var.frontend_service_slug
+                  port = var.frontend_service_port
+                }
+              ]
+            }
+          ]
+        )
+      }
+    )
   }
 }
 
-/* Regcred */
+/* Secrets */
 
-resource "kubernetes_secret" "regcred" {
+resource "kubernetes_secret_v1" "regcred" {
   metadata {
     name      = "regcred"
     namespace = local.namespace
@@ -231,11 +218,9 @@ resource "kubernetes_secret" "regcred" {
   type = "kubernetes.io/dockerconfigjson"
 }
 
-/* Config Maps */
-
 resource "kubernetes_secret_v1" "database_url" {
   metadata {
-    name      = "${local.env_resource_name}-database-url"
+    name      = "${local.env_resources_prefix}-database-url"
     namespace = local.namespace
   }
 
@@ -248,7 +233,7 @@ resource "kubernetes_secret_v1" "cache_url" {
   count = var.use_redis == "true" ? 1 : 0
 
   metadata {
-    name      = "${local.env_resource_name}-cache-url"
+    name      = "${local.env_resources_prefix}-cache-url"
     namespace = local.namespace
   }
 

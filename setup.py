@@ -40,7 +40,6 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option(
     "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)
 )
-@click.option("--use-monitoring/--no-monitoring", is_flag=True, default=None)
 @click.option("--project-domain")
 @click.option("--domain-prefix-dev")
 @click.option("--domain-prefix-stage")
@@ -50,6 +49,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--project-url-stage")
 @click.option("--project-url-prod")
 @click.option("--project-url-monitoring")
+@click.option("--letsencrypt-certificate-email")
 @click.option("--digitalocean-k8s-cluster-region")
 @click.option("--digitalocean-database-cluster-region")
 @click.option("--digitalocean-database-cluster-node-size")
@@ -61,7 +61,6 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--backend-sentry-dsn")
 @click.option("--frontend-sentry-dsn")
 @click.option("--sentry-auth-token")
-@click.option("--use-pact/--no-pact", is_flag=True, default=None)
 @click.option("--pact-broker-url")
 @click.option("--pact-broker-username")
 @click.option("--pact-broker-password")
@@ -72,7 +71,6 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--digitalocean-spaces-bucket-region")
 @click.option("--digitalocean-spaces-access-id")
 @click.option("--digitalocean-spaces-secret-key")
-@click.option("--use-gitlab/--no-gitlab", is_flag=True, default=None)
 @click.option("--gitlab-private-token", envvar=GITLAB_TOKEN_ENV_VAR)
 @click.option("--gitlab-group-slug")
 @click.option("--gitlab-group-owners")
@@ -80,7 +78,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gitlab-group-developers")
 @click.option("--terraform-dir")
 @click.option("--logs-dir")
-@click.option("--silent", is_flag=True)
+@click.option("--quiet", is_flag=True)
 def main(**options):
     """Run the setup."""
     try:

@@ -70,12 +70,6 @@ variable "media_storage" {
   default     = "{{ cookiecutter.media_storage }}"
 }
 
-variable "project_domain" {
-  description = "The project domain."
-  type        = string
-  default     = ""
-}
-
 variable "project_url" {
   description = "The project url."
   type        = string

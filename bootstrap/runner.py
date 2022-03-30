@@ -15,7 +15,7 @@ from cookiecutter.main import cookiecutter
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
     FRONTEND_TEMPLATE_URLS,
-    SERVICE_SLUG_DEFAULT,
+    ORCHESTRATOR_SERVICE_SLUG,
     SUBREPOS_DIR,
 )
 from bootstrap.exceptions import BootstrapError
@@ -46,7 +46,6 @@ def run(
     deployment_type,
     digitalocean_token,
     environment_distribution,
-    use_monitoring,
     project_domain,
     domain_prefix_dev,
     domain_prefix_stage,
@@ -56,6 +55,7 @@ def run(
     project_url_stage,
     project_url_prod,
     project_url_monitoring,
+    letsencrypt_certificate_email,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -67,7 +67,6 @@ def run(
     backend_sentry_dsn,
     frontend_sentry_dsn,
     sentry_auth_token,
-    use_pact,
     pact_broker_url,
     pact_broker_username,
     pact_broker_password,
@@ -75,7 +74,6 @@ def run(
     digitalocean_spaces_bucket_region,
     digitalocean_spaces_access_id,
     digitalocean_spaces_secret_key,
-    use_gitlab,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -85,7 +83,7 @@ def run(
     logs_dir,
 ):
     """Run the bootstrap."""
-    service_slug = SERVICE_SLUG_DEFAULT
+    service_slug = ORCHESTRATOR_SERVICE_SLUG
     run_id = f"{time():.0f}"
     terraform_dir = str(Path(terraform_dir or f".terraform/{run_id}").resolve())
     logs_dir = str(Path(logs_dir or f".logs/{run_id}").resolve())
@@ -117,7 +115,7 @@ def run(
         environment_distribution,
     )
     create_env_file(service_dir)
-    if use_gitlab:
+    if gitlab_group_slug:
         gitlab_project_variables = {}
         backend_service_slug and gitlab_project_variables.update(
             BACKEND_SERVICE_SLUG=f'{{value = "{backend_service_slug}"}}'
@@ -145,25 +143,27 @@ def run(
                 % (backend_service_slug, backend_service_port)
             )
         )
+        letsencrypt_certificate_email and gitlab_project_variables.update(
+            LETSENCRYPT_CERTIFICATE_EMAIL=(
+                f'{{value = "{letsencrypt_certificate_email}"}}'
+            )
+        )
         sentry_org and gitlab_group_variables.update(
             SENTRY_ORG='{value = "%s"}' % sentry_org,
             SENTRY_URL='{value = "%s"}' % sentry_url,
             SENTRY_AUTH_TOKEN='{value = "%s", masked = true}' % sentry_auth_token,
         )
         use_redis and gitlab_project_variables.update(USE_REDIS='{value = "true"}')
-        if use_monitoring:
+        if project_url_monitoring:
             gitlab_project_variables.update(
-                USE_MONITORING='{value = "true"}',
+                MONITORING_URL='{value = "%s"}' % project_url_monitoring,
                 GRAFANA_PASSWORD='{value = "%s", masked = true}'
                 % secrets.token_urlsafe(12),
             )
             domain_prefix_monitoring and gitlab_project_variables.update(
                 MONITORING_DOMAIN_PREFIX='{value = "%s"}' % domain_prefix_monitoring
             )
-            project_url_monitoring and gitlab_project_variables.update(
-                MONITORING_URL='{value = "%s"}' % project_url_monitoring
-            )
-        if use_pact:
+        if pact_broker_url:
             pact_broker_auth_url = re.sub(
                 r"^(https?)://(.*)$",
                 rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
@@ -242,7 +242,6 @@ def run(
         "project_url_stage": project_url_stage,
         "project_url_prod": project_url_prod,
         "use_redis": use_redis,
-        "use_gitlab": use_gitlab,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
     }

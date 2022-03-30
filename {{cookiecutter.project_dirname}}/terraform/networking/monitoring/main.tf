@@ -9,7 +9,7 @@ resource "helm_release" "kube_state_metrics" {
 
 /* Grafana Loki - logs storage */
 
-resource "kubernetes_namespace" "log_storage" {
+resource "kubernetes_namespace_v1" "log_storage" {
   metadata {
     name = "log-storage"
   }
@@ -17,7 +17,7 @@ resource "kubernetes_namespace" "log_storage" {
 
 resource "helm_release" "loki" {
   name       = "loki"
-  namespace  = kubernetes_namespace.log_storage.metadata[0].name
+  namespace  = kubernetes_namespace_v1.log_storage.metadata[0].name
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
   version    = "2.5.1"
@@ -45,7 +45,7 @@ resource "kubernetes_config_map_v1" "k8s_logs_dashboard" {
 
   metadata {
     name      = "grafana-k8s-logs-dashboard"
-    namespace = kubernetes_namespace.log_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.log_storage.metadata[0].name
   }
 
   data = {
@@ -55,7 +55,7 @@ resource "kubernetes_config_map_v1" "k8s_logs_dashboard" {
 
 resource "helm_release" "grafana" {
   name       = "grafana"
-  namespace  = kubernetes_namespace.log_storage.metadata[0].name
+  namespace  = kubernetes_namespace_v1.log_storage.metadata[0].name
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana"
 
@@ -76,41 +76,30 @@ resource "helm_release" "grafana" {
   depends_on = [kubernetes_config_map_v1.k8s_logs_dashboard]
 }
 
-/* Grafana Ingress */
+/* Grafana Ingress Route */
 
-resource "kubernetes_ingress_v1" "grafana" {
-  count = var.host == "" ? 0 : 1
-
-  metadata {
-    name      = "log-storage-ingress"
-    namespace = helm_release.grafana.namespace
-    annotations = merge(
-      {
-        "kubernetes.io/ingress.class"                      = "traefik"
-        "traefik.ingress.kubernetes.io/router.entrypoints" = "web,websecure"
-      },
-    )
-  }
-
-  spec {
-    tls {
-      hosts = ["${var.host}"]
+resource "kubernetes_manifest" "grafana_ingress_route" {
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "grafana-ingress-route"
+      namespace = kubernetes_namespace_v1.log_storage.metadata[0].name
     }
-    rule {
-      host = var.host
-      http {
-        path {
-          backend {
-            service {
+    spec = {
+      entryPoints = ["web", "websecure"]
+      routes = [
+        {
+          kind  = "Rule"
+          match = "Host(`${var.host}`) && PathPrefix(`/`)"
+          services = [
+            {
               name = "grafana"
-              port {
-                number = 80
-              }
+              port = 80
             }
-          }
-          path = "/"
+          ]
         }
-      }
+      ]
     }
   }
 }
