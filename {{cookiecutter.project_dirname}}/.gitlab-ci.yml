@@ -17,7 +17,7 @@ stages:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
 image: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
 
 variables:
-  TERRAFORM_CMD: "gitlab-terraform"
+  TERRAFORM_CMD: gitlab-terraform
   TF_IN_AUTOMATION: 1{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
   TF_VAR_digitalocean_token: "${DIGITALOCEAN_TOKEN}"{% endif %}{% if cookiecutter.deployment_type == "other-k8s" %}
   TF_VAR_kubernetes_cluster_ca_certificate: "${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
