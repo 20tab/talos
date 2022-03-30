@@ -131,7 +131,7 @@ $ docker-compose up
 
 To show the Makefile self documentation help:
 
-```shell
+```console
 $ make
 ```
 

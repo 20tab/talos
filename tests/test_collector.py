@@ -266,7 +266,6 @@ class TestBootstrapCollector(TestCase):
                     "",
                 ),
             )
-
         with input(
             "N",
         ):
