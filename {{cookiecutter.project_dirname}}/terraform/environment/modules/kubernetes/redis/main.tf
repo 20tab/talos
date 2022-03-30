@@ -78,7 +78,7 @@ resource "kubernetes_deployment_v1" "main" {
 resource "kubernetes_service_v1" "main" {
 
   metadata {
-    name      = "${var.resources_prefix}-redis"
+    name      = "redis"
     namespace = var.namespace
   }
   spec {
