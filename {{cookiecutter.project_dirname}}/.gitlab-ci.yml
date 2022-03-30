@@ -60,6 +60,7 @@ before_script:
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_core
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/core/{{ cookiecutter.deployment_type }}
+    TF_VAR_create_domain: "${CREATE_DOMAIN}"
     TF_VAR_database_cluster_node_size: "${DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE}"
     TF_VAR_database_cluster_region: "${DIGITALOCEAN_DATABASE_CLUSTER_REGION}"
     TF_VAR_redis_cluster_node_size: "${DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE}"

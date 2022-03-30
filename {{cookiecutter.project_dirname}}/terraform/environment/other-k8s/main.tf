@@ -12,8 +12,16 @@ locals {
 
   use_s3 = length(regexall("s3", var.media_storage)) > 0
 
-  postgres_dump_enabled = var.env_slug == "prod" && local.use_s3 && var.s3_bucket_access_id != "" && var.s3_bucket_secret_key != ""
-}
+  postgres_dump_enabled = var.env_slug == "prod" && local.use_s3 && length(
+    compact(
+      [
+        var.s3_bucket_access_id,
+        var.s3_bucket_secret_key,
+        var.s3_bucket_name,
+        var.s3_host
+      ]
+    )
+  ) == 4
 
 terraform {
   backend "http" {

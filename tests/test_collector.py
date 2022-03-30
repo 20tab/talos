@@ -10,22 +10,22 @@ from bootstrap.collector import (
     clean_backend_service_slug,
     clean_backend_type,
     clean_deployment_type,
-    clean_digitalocean_clusters_data,
+    clean_digitalocean_options,
     clean_environment_distribution,
     clean_frontend_sentry_dsn,
     clean_frontend_service_slug,
     clean_frontend_type,
     clean_gitlab_group_data,
     clean_kubernetes_credentials,
-    clean_kubernetes_database,
     clean_media_storage,
+    clean_other_k8s_options,
     clean_pact_broker_data,
     clean_project_domain,
     clean_project_slug,
     clean_project_urls,
+    clean_s3_media_storage_data,
     clean_sentry_org,
     clean_service_dir,
-    clean_spaces_media_storage_data,
 )
 
 
@@ -134,28 +134,28 @@ class TestBootstrapCollector(TestCase):
                 (str(certificate_path), "https://kube.com:16443", "K8sT0k3n"),
             )
 
-    def test_clean_kubernetes_database(self):
+    def test_clean_other_k8s_options(self):
         """Test cleaning the Kubernetes database."""
         self.assertEqual(
-            clean_kubernetes_database(
+            clean_other_k8s_options(
                 "postgres:14", "10Gi", None, "/etc/k8s-volume-data", None, False
             ),
-            ("postgres:14", "10Gi", None, "/etc/k8s-volume-data", None),
+            ("postgres:14", "10Gi", "", "/etc/k8s-volume-data", ""),
         )
         self.assertEqual(
-            clean_kubernetes_database(
+            clean_other_k8s_options(
                 "postgres:14", "10Gi", None, "/etc/k8s-volume-data", "redis:6.2", True
             ),
-            ("postgres:14", "10Gi", None, "/etc/k8s-volume-data", "redis:6.2"),
+            ("postgres:14", "10Gi", "", "/etc/k8s-volume-data", "redis:6.2"),
         )
         with input(
             "redis:6",
         ):
             self.assertEqual(
-                clean_kubernetes_database(
+                clean_other_k8s_options(
                     "postgres:14", "10Gi", None, "/etc/k8s-volume-data", None, True
                 ),
-                ("postgres:14", "10Gi", None, "/etc/k8s-volume-data", "redis:6"),
+                ("postgres:14", "10Gi", "", "/etc/k8s-volume-data", "redis:6"),
             )
 
     def test_clean_project_domain(self):
@@ -173,6 +173,7 @@ class TestBootstrapCollector(TestCase):
         with input("alpha", "beta", "www2"):
             self.assertEqual(
                 clean_project_urls(
+                    "digitalocean-k8s",
                     "my-project",
                     "myproject.com",
                     False,
@@ -187,6 +188,7 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
+                    "myproject.com",
                     "alpha",
                     "beta",
                     "www2",
@@ -200,6 +202,7 @@ class TestBootstrapCollector(TestCase):
             )
         self.assertEqual(
             clean_project_urls(
+                "digitalocean-k8s",
                 "my-project",
                 "myproject.com",
                 False,
@@ -214,6 +217,7 @@ class TestBootstrapCollector(TestCase):
                 None,
             ),
             (
+                "myproject.com",
                 "alpha",
                 "beta",
                 "www2",
@@ -227,6 +231,7 @@ class TestBootstrapCollector(TestCase):
         )
         # project domain not set
         with input(
+            "N",
             "https://alpha.myproject.com/",
             "https://beta.myproject.com/",
             "https://www2.myproject.com/",
@@ -234,6 +239,7 @@ class TestBootstrapCollector(TestCase):
         ):
             self.assertEqual(
                 clean_project_urls(
+                    "digitalocean-k8s",
                     "my-project",
                     None,
                     False,
@@ -252,6 +258,7 @@ class TestBootstrapCollector(TestCase):
                     "",
                     "",
                     "",
+                    "",
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
@@ -259,11 +266,13 @@ class TestBootstrapCollector(TestCase):
                     "",
                 ),
             )
+
         with input(
             "N",
         ):
             self.assertEqual(
                 clean_project_urls(
+                    "digitalocean-k8s",
                     "my-project",
                     "",
                     False,
@@ -282,6 +291,43 @@ class TestBootstrapCollector(TestCase):
                     "",
                     "",
                     "",
+                    "",
+                    "https://alpha.myproject.com",
+                    "https://beta.myproject.com",
+                    "https://www2.myproject.com",
+                    "",
+                    "",
+                ),
+            )
+        # other kubernetes
+        with input(
+            "https://alpha.myproject.com/",
+            "https://beta.myproject.com/",
+            "https://www2.myproject.com/",
+            "N",
+        ):
+            self.assertEqual(
+                clean_project_urls(
+                    "other-k8s",
+                    "my-project",
+                    None,
+                    False,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ),
+                (
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
@@ -293,6 +339,7 @@ class TestBootstrapCollector(TestCase):
         with input("alpha", "beta", "www2", "mylogs", "N"):
             self.assertEqual(
                 clean_project_urls(
+                    "digitalocean-k8s",
                     "my-project",
                     "myproject.com",
                     True,
@@ -307,6 +354,7 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
+                    "myproject.com",
                     "alpha",
                     "beta",
                     "www2",
@@ -327,6 +375,7 @@ class TestBootstrapCollector(TestCase):
         ):
             self.assertEqual(
                 clean_project_urls(
+                    "digitalocean-k8s",
                     "my-project",
                     "",
                     True,
@@ -341,6 +390,7 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
+                    "",
                     "",
                     "",
                     "",
@@ -363,6 +413,7 @@ class TestBootstrapCollector(TestCase):
         ):
             self.assertEqual(
                 clean_project_urls(
+                    "digitalocean-k8s",
                     "my-project",
                     "",
                     True,
@@ -377,6 +428,7 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
+                    "",
                     "",
                     "",
                     "",
@@ -417,24 +469,40 @@ class TestBootstrapCollector(TestCase):
                 "https://public@sentry.example.com/1",
             )
 
-    def test_clean_cluster_data(self):
-        """Test cleaning the cluster data."""
+    def test_clean_digitalocean_options(self):
+        """Test cleaning the DigitalOcean options."""
         self.assertEqual(
-            clean_digitalocean_clusters_data(
-                "nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb", True
+            clean_digitalocean_options(
+                "",
+                None,
+                "nyc1",
+                "nyc1",
+                "db-s-8vcpu-16gb",
+                "nyc1",
+                "db-s-8vcpu-16gb",
+                True,
             ),
-            ("nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb"),
+            (None, "nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb"),
         )
         self.assertEqual(
-            clean_digitalocean_clusters_data(
-                "nyc1", "nyc1", "db-s-8vcpu-16gb", None, None, False
+            clean_digitalocean_options(
+                "myproject.com",
+                True,
+                "nyc1",
+                "nyc1",
+                "db-s-8vcpu-16gb",
+                None,
+                None,
+                False,
             ),
-            ("nyc1", "nyc1", "db-s-8vcpu-16gb", None, None),
+            (True, "nyc1", "nyc1", "db-s-8vcpu-16gb", None, None),
         )
-        with input("nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb"):
+        with input("n", "nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb"):
             self.assertEqual(
-                clean_digitalocean_clusters_data(None, None, None, None, None, True),
-                ("nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb"),
+                clean_digitalocean_options(
+                    "myproject.com", None, None, None, None, None, None, True
+                ),
+                (False, "nyc1", "nyc1", "db-s-8vcpu-16gb", "nyc1", "db-s-8vcpu-16gb"),
             )
 
     def test_clean_broker_data(self):
@@ -521,14 +589,14 @@ class TestBootstrapCollector(TestCase):
             ("", "", "", "", ""),
         )
 
-    def clean_spaces_media_storage_data(self):
-        """Test cleaning the spaces media storage data."""
+    def test_clean_s3_media_storage_data(self):
+        """Test cleaning the S3 media storage data."""
         self.assertEqual(
-            clean_spaces_media_storage_data(
+            clean_s3_media_storage_data(
                 "digitalocean-s3",
                 "mYV4l1DT0k3N",
                 "nyc1",
-                "",
+                None,
                 "mYV4l1D1D",
                 "mYV4l1Ds3cR3tK3y",
             ),
@@ -541,12 +609,19 @@ class TestBootstrapCollector(TestCase):
             {"hidden": "mYV4l1Ds3cR3tK3y"},
         ):
             self.assertEqual(
-                clean_spaces_media_storage_data("digitalocean-s3", "", "", "", "", ""),
+                clean_s3_media_storage_data(
+                    "digitalocean-s3", None, None, None, None, None
+                ),
                 ("mYV4l1DT0k3N", "nyc1", "", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
             )
         self.assertEqual(
-            clean_spaces_media_storage_data(
-                "other-s3", "", "" "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"
+            clean_s3_media_storage_data(
+                "other-s3",
+                None,
+                None,
+                "s3.example.com",
+                "mYV4l1D1D",
+                "mYV4l1Ds3cR3tK3y",
             ),
             ("", "", "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
         )
@@ -556,6 +631,6 @@ class TestBootstrapCollector(TestCase):
             {"hidden": "mYV4l1Ds3cR3tK3y"},
         ):
             self.assertEqual(
-                clean_spaces_media_storage_data("other-s3", "", "", "", "", ""),
+                clean_s3_media_storage_data("other-s3", None, None, None, None, None),
                 ("", "", "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
             )
