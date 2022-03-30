@@ -2,6 +2,7 @@
 
 from contextlib import contextmanager
 from io import StringIO
+from pathlib import Path
 from unittest import TestCase, mock
 
 from bootstrap.collector import (
@@ -16,6 +17,8 @@ from bootstrap.collector import (
     clean_frontend_service_slug,
     clean_frontend_type,
     clean_gitlab_group_data,
+    clean_kubernetes_credentials,
+    clean_kubernetes_database,
     clean_media_storage,
     clean_pact_broker_data,
     clean_project_domain,
@@ -94,16 +97,66 @@ class TestBootstrapCollector(TestCase):
     def test_clean_deployment_type(self):
         """Test cleaning the deployment type."""
         with input(""):
-            self.assertEqual(clean_deployment_type(None), "k8s-digitalocean")
+            self.assertEqual(clean_deployment_type(None), "digitalocean-k8s")
         with input("non-existing", ""):
-            self.assertEqual(clean_deployment_type(None), "k8s-digitalocean")
+            self.assertEqual(clean_deployment_type(None), "digitalocean-k8s")
 
     def test_clean_environment_distribution(self):
         """Test cleaning the environment distribution."""
+        self.assertEqual(clean_environment_distribution(None, "other-k8s"), "1")
         with input("1", ""):
-            self.assertEqual(clean_environment_distribution(None), "1")
+            self.assertEqual(
+                clean_environment_distribution(None, "digitalocean-k8s"), "1"
+            )
         with input("999", "3"):
-            self.assertEqual(clean_environment_distribution(None), "3")
+            self.assertEqual(
+                clean_environment_distribution(None, "digitalocean-k8s"), "3"
+            )
+
+    def test_clean_kubernetes_credentials(self):
+        """Test cleaning the Kubernetes credentials."""
+        certificate_path = Path(__file__).parent / "__init__.py"
+        with input(
+            str(certificate_path),
+            "https://kube.com:16443",
+            {"hidden": "K8sT0k3n"},
+        ):
+            self.assertEqual(
+                clean_kubernetes_credentials(None, None, None),
+                (str(certificate_path), "https://kube.com:16443", "K8sT0k3n"),
+            )
+        with input(
+            str(certificate_path),
+            {"hidden": "K8sT0k3n"},
+        ):
+            self.assertEqual(
+                clean_kubernetes_credentials(None, "https://kube.com:16443", None),
+                (str(certificate_path), "https://kube.com:16443", "K8sT0k3n"),
+            )
+
+    def test_clean_kubernetes_database(self):
+        """Test cleaning the Kubernetes database."""
+        self.assertEqual(
+            clean_kubernetes_database(
+                "postgres:14", "10Gi", None, "/etc/k8s-volume-data", None, False
+            ),
+            ("postgres:14", "10Gi", None, "/etc/k8s-volume-data", None),
+        )
+        self.assertEqual(
+            clean_kubernetes_database(
+                "postgres:14", "10Gi", None, "/etc/k8s-volume-data", "redis:6.2", True
+            ),
+            ("postgres:14", "10Gi", None, "/etc/k8s-volume-data", "redis:6.2"),
+        )
+        with input(
+            "redis:6",
+        ):
+            self.assertEqual(
+                clean_kubernetes_database(
+                    "postgres:14", "10Gi", None, "/etc/k8s-volume-data", None, True
+                ),
+                ("postgres:14", "10Gi", None, "/etc/k8s-volume-data", "redis:6"),
+            )
 
     def test_clean_project_domain(self):
         """Test cleaning the project domain."""

@@ -38,6 +38,12 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 )
 @click.option("--digitalocean-token")
 @click.option(
+    "--kubernetes-cluster-ca-certificate",
+    type=click.Path(dir_okay=False, exists=True, resolve_path=True),
+)
+@click.option("--kubernetes-host")
+@click.option("--kubernetes-token")
+@click.option(
     "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)
 )
 @click.option("--project-domain")
@@ -53,7 +59,12 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--digitalocean-k8s-cluster-region")
 @click.option("--digitalocean-database-cluster-region")
 @click.option("--digitalocean-database-cluster-node-size")
+@click.option("--postgres_image")
+@click.option("--postgres_persistent_volume_capacity")
+@click.option("--postgres_persistent_volume_claim_capacity")
+@click.option("--postgres_persistent_volume_host_path")
 @click.option("--use-redis/--no-redis", is_flag=True, default=None)
+@click.option("--redis_image")
 @click.option("--digitalocean-redis-cluster-region")
 @click.option("--digitalocean-redis-cluster-node-size")
 @click.option("--sentry-org")

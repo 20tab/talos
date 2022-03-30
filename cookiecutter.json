@@ -24,6 +24,6 @@
     }
   },
   "deployment_type": ["digitalocean-k8s", "other-k8s"],
-  "environment_distribution": 1,
+  "environment_distribution": "1",
   "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }

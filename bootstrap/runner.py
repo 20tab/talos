@@ -14,6 +14,7 @@ from cookiecutter.main import cookiecutter
 
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
+    DEPLOYMENT_TYPE_OTHER,
     FRONTEND_TEMPLATE_URLS,
     ORCHESTRATOR_SERVICE_SLUG,
     SUBREPOS_DIR,
@@ -45,6 +46,9 @@ def run(
     frontend_service_port,
     deployment_type,
     digitalocean_token,
+    kubernetes_cluster_ca_certificate,
+    kubernetes_host,
+    kubernetes_token,
     environment_distribution,
     project_domain,
     domain_prefix_dev,
@@ -59,7 +63,12 @@ def run(
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
+    postgres_image,
+    postgres_persistent_volume_capacity,
+    postgres_persistent_volume_claim_capacity,
+    postgres_persistent_volume_host_path,
     use_redis,
+    redis_image,
     digitalocean_redis_cluster_region,
     digitalocean_redis_cluster_node_size,
     sentry_org,
@@ -216,6 +225,23 @@ def run(
                 % digitalocean_redis_cluster_region,
                 DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE='{value = "%s"}'
                 % digitalocean_redis_cluster_node_size,
+            )
+        elif deployment_type == DEPLOYMENT_TYPE_OTHER:
+            # TODO add decode to CA file...
+            # Are we sure they go on orchestrator project variable?
+            gitlab_project_variables.update(
+                kubernetes_cluster_ca_certificate='{value = "%s", masked = true}'
+                % kubernetes_cluster_ca_certificate,
+                kubernetes_host='{value = "%s"}' % kubernetes_host,
+                kubernetes_token='{value = "%s", masked = true}' % kubernetes_token,
+                postgres_image='{value = "%s"}' % postgres_image,
+                postgres_persistent_volume_capacity='{value = "%s"}'
+                % postgres_persistent_volume_capacity,
+                postgres_persistent_volume_claim_capacity='{value = "%s"}'
+                % postgres_persistent_volume_claim_capacity,
+                postgres_persistent_volume_host_path='{value = "%s"}'
+                % postgres_persistent_volume_host_path,
+                redis_image='{value = "%s"}' % redis_image,
             )
         init_gitlab(
             gitlab_group_slug,

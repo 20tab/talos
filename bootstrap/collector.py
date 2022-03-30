@@ -13,6 +13,7 @@ from bootstrap.constants import (
     BACKEND_TYPE_DEFAULT,
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DEFAULT,
+    DEPLOYMENT_TYPE_OTHER,
     DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
@@ -46,6 +47,9 @@ def collect(
     frontend_service_port,
     deployment_type,
     digitalocean_token,
+    kubernetes_cluster_ca_certificate,
+    kubernetes_host,
+    kubernetes_token,
     environment_distribution,
     project_domain,
     domain_prefix_dev,
@@ -60,7 +64,12 @@ def collect(
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
+    postgres_image,
+    postgres_persistent_volume_capacity,
+    postgres_persistent_volume_claim_capacity,
+    postgres_persistent_volume_host_path,
     use_redis,
+    redis_image,
     digitalocean_redis_cluster_region,
     digitalocean_redis_cluster_node_size,
     sentry_org,
@@ -92,15 +101,27 @@ def collect(
         backend_service_slug = clean_backend_service_slug(backend_service_slug)
     if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
-    environment_distribution = clean_environment_distribution(environment_distribution)
+    deployment_type = clean_deployment_type(deployment_type)
+    environment_distribution = clean_environment_distribution(
+        environment_distribution, deployment_type
+    )
     use_monitoring = click.confirm(
         warning("Do you want to enable the monitoring stack?"), default=False
     )
-    deployment_type = clean_deployment_type(deployment_type)
-    # The "k8s-digitalocean" deployment type includes Postgres by default
+    # The "digitalocean-k8s" deployment type includes Postgres by default
     if digitalocean_enabled := ("digitalocean" in deployment_type):
         digitalocean_token = validate_or_prompt_password(
             "DigitalOcean token", digitalocean_token, required=True
+        )
+    if other_kubernetes_enabled := (deployment_type == DEPLOYMENT_TYPE_OTHER):
+        (
+            kubernetes_cluster_ca_certificate,
+            kubernetes_host,
+            kubernetes_token,
+        ) = clean_kubernetes_credentials(
+            kubernetes_cluster_ca_certificate,
+            kubernetes_host,
+            kubernetes_token,
         )
     project_domain = clean_project_domain(project_domain)
     (
@@ -141,6 +162,21 @@ def collect(
             digitalocean_database_cluster_node_size,
             digitalocean_redis_cluster_region,
             digitalocean_redis_cluster_node_size,
+            use_redis,
+        )
+    if other_kubernetes_enabled:
+        (
+            postgres_image,
+            postgres_persistent_volume_capacity,
+            postgres_persistent_volume_claim_capacity,
+            postgres_persistent_volume_host_path,
+            redis_image,
+        ) = clean_kubernetes_database(
+            postgres_image,
+            postgres_persistent_volume_capacity,
+            postgres_persistent_volume_claim_capacity,
+            postgres_persistent_volume_host_path,
+            redis_image,
             use_redis,
         )
     media_storage = clean_media_storage(media_storage)
@@ -209,6 +245,9 @@ def collect(
         "frontend_service_port": frontend_service_port,
         "deployment_type": deployment_type,
         "digitalocean_token": digitalocean_token,
+        "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
+        "kubernetes_host": kubernetes_host,
+        "kubernetes_token": kubernetes_token,
         "environment_distribution": environment_distribution,
         "project_domain": project_domain,
         "domain_prefix_dev": domain_prefix_dev,
@@ -225,7 +264,12 @@ def collect(
         "digitalocean_database_cluster_node_size": (
             digitalocean_database_cluster_node_size
         ),
+        "postgres_image": postgres_image,
+        "postgres_persistent_volume_capacity": postgres_persistent_volume_capacity,
+        "postgres_persistent_volume_claim_capacity": postgres_persistent_volume_claim_capacity,  # noqa
+        "postgres_persistent_volume_host_path": postgres_persistent_volume_host_path,
         "use_redis": use_redis,
+        "redis_image": redis_image,
         "digitalocean_redis_cluster_region": digitalocean_redis_cluster_region,
         "digitalocean_redis_cluster_node_size": digitalocean_redis_cluster_node_size,
         "sentry_org": sentry_org,
@@ -379,8 +423,10 @@ def clean_deployment_type(deployment_type):
     ).lower()
 
 
-def clean_environment_distribution(environment_distribution):
+def clean_environment_distribution(environment_distribution, deployment_type):
     """Return the environment distribution."""
+    if deployment_type == DEPLOYMENT_TYPE_OTHER:
+        return "1"
     return (
         environment_distribution
         if environment_distribution in ENVIRONMENT_DISTRIBUTION_CHOICES
@@ -390,6 +436,29 @@ def clean_environment_distribution(environment_distribution):
             type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES),
         )
     )
+
+
+def clean_kubernetes_credentials(
+    kubernetes_cluster_ca_certificate,
+    kubernetes_host,
+    kubernetes_token,
+):
+    """Return the clean Kubernetes credentials."""
+    kubernetes_cluster_ca_certificate = (
+        kubernetes_cluster_ca_certificate
+        or click.prompt(
+            "Kubernetes cluster CA certificate",
+            type=click.Path(dir_okay=False, exists=True, resolve_path=True),
+        )
+    )
+    kubernetes_host = kubernetes_host or validate_or_prompt_url(
+        "Kubernetes host", kubernetes_host
+    )
+    kubernetes_token = kubernetes_token or validate_or_prompt_password(
+        "Kubernates token", kubernetes_token
+    )
+
+    return kubernetes_cluster_ca_certificate, kubernetes_host, kubernetes_token
 
 
 def clean_project_domain(project_domain):
@@ -634,6 +703,38 @@ def clean_digitalocean_clusters_data(
         digitalocean_database_cluster_node_size,
         digitalocean_redis_cluster_region,
         digitalocean_redis_cluster_node_size,
+    )
+
+
+def clean_kubernetes_database(
+    postgres_image,
+    postgres_persistent_volume_capacity,
+    postgres_persistent_volume_claim_capacity,
+    postgres_persistent_volume_host_path,
+    redis_image,
+    use_redis,
+):
+    """Return the clean Kubernetes database."""
+    # TODO: ask these settings for each stack
+    postgres_image = postgres_image or click.prompt(
+        "Postgres image", default="postgres:14"
+    )
+    postgres_persistent_volume_capacity = (
+        postgres_persistent_volume_capacity
+        or click.prompt("Postgres persistent volume capacity", default="10Gi")
+    )
+    postgres_persistent_volume_host_path = (
+        postgres_persistent_volume_host_path
+        or click.prompt("Postgres persistent volume host path")
+    )
+    if use_redis:
+        redis_image = redis_image or click.prompt("Redis image", default="redis:6.2")
+    return (
+        postgres_image,
+        postgres_persistent_volume_capacity,
+        postgres_persistent_volume_claim_capacity,
+        postgres_persistent_volume_host_path,
+        redis_image,
     )
 
 
