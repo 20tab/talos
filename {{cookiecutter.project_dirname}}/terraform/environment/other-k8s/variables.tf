@@ -81,12 +81,6 @@ variable "kubernetes_token" {
   sensitive   = true
 }
 
-variable "media_storage" {
-  description = "The media storage solution."
-  type        = string
-  default     = "local"
-}
-
 variable "postgres_image" {
   description = "The Postgres Docker image."
   type        = string

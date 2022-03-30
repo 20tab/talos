@@ -1,6 +1,8 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
+  media_storage = "{{ cookiecutter.media_storage }}"
+
   stack_resources_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
   env_resources_prefix   = "${local.project_slug}-${var.env_slug}"
 
@@ -10,10 +12,10 @@ locals {
 
   registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
 
-  use_s3 = length(regexall("s3", var.media_storage)) > 0
+  use_s3 = length(regexall("s3", local.media_storage)) > 0
 
-  s3_host        = var.media_storage == "digitalocean-s3" ? "digitaloceanspaces.com" : var.s3_host
-  s3_bucket_name = var.media_storage == "digitalocean-s3" ? "${local.stack_resources_prefix}-s3-bucket" : var.s3_bucket_name
+  s3_host        = local.media_storage == "digitalocean-s3" ? "digitaloceanspaces.com" : var.s3_host
+  s3_bucket_name = local.media_storage == "digitalocean-s3" ? "${local.stack_resources_prefix}-s3-bucket" : var.s3_bucket_name
 
   postgres_dump_enabled = alltrue(
     [
@@ -136,7 +138,7 @@ module "routing" {
   frontend_service_port = var.frontend_service_port
   frontend_service_slug = var.frontend_service_slug
 
-  media_storage = var.media_storage
+  media_storage = local.media_storage
 }
 
 /* Secrets */
@@ -191,7 +193,7 @@ module "database_dump_cronjob" {
 
   resources_prefix = local.project_slug
 
-  media_storage = var.media_storage
+  media_storage = local.media_storage
 
   s3_region      = var.s3_region
   s3_access_id   = var.s3_access_id

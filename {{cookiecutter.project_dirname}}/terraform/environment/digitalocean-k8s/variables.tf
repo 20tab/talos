@@ -76,12 +76,6 @@ variable "frontend_service_slug" {
   default     = ""
 }
 
-variable "media_storage" {
-  description = "The media storage solution."
-  type        = string
-  default     = "local"
-}
-
 variable "project_url" {
   description = "The project url."
   type        = string

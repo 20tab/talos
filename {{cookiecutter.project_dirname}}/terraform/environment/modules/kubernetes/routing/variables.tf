@@ -56,7 +56,6 @@ variable "frontend_service_slug" {
 variable "media_storage" {
   description = "The media storage solution."
   type        = string
-  default     = "local"
 }
 
 variable "namespace" {

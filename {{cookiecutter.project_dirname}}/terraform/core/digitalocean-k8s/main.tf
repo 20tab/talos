@@ -1,6 +1,8 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
+  media_storage = "{{ cookiecutter.media_storage }}"
+
   digitalocean_default_region = "fra1"
   digitalocean_regions        = data.digitalocean_regions.main.regions[*].slug
 
@@ -109,7 +111,7 @@ resource "digitalocean_kubernetes_cluster" "main" {
 /* Spaces Bucket */
 
 resource "digitalocean_spaces_bucket" "main" {
-  count = var.media_storage == "digitalocean-s3" ? 1 : 0
+  count = local.media_storage == "digitalocean-s3" ? 1 : 0
 
   name = "${local.resource_name}-s3-bucket"
   region = contains(
