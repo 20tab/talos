@@ -39,8 +39,8 @@ terraform {
 provider "digitalocean" {
   token = var.digitalocean_token
 
-  spaces_access_id  = var.s3_bucket_access_id
-  spaces_secret_key = var.s3_bucket_secret_key
+  spaces_access_id  = var.s3_access_id
+  spaces_secret_key = var.s3_secret_key
 }
 
 /* Data Sources */
@@ -114,8 +114,8 @@ resource "digitalocean_spaces_bucket" "main" {
   name = "${local.resource_name}-s3-bucket"
   region = contains(
     local.digitalocean_regions,
-    var.s3_bucket_region
-  ) ? var.s3_bucket_region : local.digitalocean_default_region
+    var.s3_region
+  ) ? var.s3_region : local.digitalocean_default_region
 }
 
 /* Postgres Cluster */

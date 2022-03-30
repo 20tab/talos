@@ -146,7 +146,7 @@ variable "registry_server" {
   default     = "registry.gitlab.com"
 }
 
-variable "s3_bucket_access_id" {
+variable "s3_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
   default     = ""
@@ -159,17 +159,23 @@ variable "s3_bucket_name" {
   default     = ""
 }
 
-variable "s3_bucket_secret_key" {
+variable "s3_host" {
+  description = "The S3 bucket host."
+  type        = string
+  default     = ""
+}
+
+variable "s3_region" {
+  description = "The S3 bucket region."
+  type        = string
+  default     = ""
+}
+
+variable "s3_secret_key" {
   description = "The S3 bucket secret access key."
   type        = string
   default     = ""
   sensitive   = true
-}
-
-variable "s3_host" {
-  description = "The S3 host."
-  type        = string
-  default     = ""
 }
 
 variable "stack_slug" {

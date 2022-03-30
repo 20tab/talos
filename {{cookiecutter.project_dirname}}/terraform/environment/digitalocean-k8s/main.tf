@@ -12,7 +12,20 @@ locals {
 
   use_s3 = length(regexall("s3", var.media_storage)) > 0
 
-  postgres_dump_enabled = var.env_slug == "prod" && local.use_s3 && var.s3_bucket_access_id != "" && var.s3_bucket_secret_key != ""
+  s3_host        = var.media_storage == "digitalocean-s3" ? "digitaloceanspaces.com" : var.s3_host
+  s3_bucket_name = var.media_storage == "digitalocean-s3" ? "${local.stack_resources_prefix}-s3-bucket" : var.s3_bucket_name
+
+  postgres_dump_enabled = alltrue(
+    [
+      var.env_slug == "prod",
+      local.use_s3,
+      var.s3_region != "",
+      var.s3_access_id != "",
+      var.s3_secret_key != "",
+      local.s3_host != "",
+      local.s3_bucket_name != "",
+    ]
+  )
 }
 
 terraform {
@@ -36,8 +49,8 @@ terraform {
 provider "digitalocean" {
   token = var.digitalocean_token
 
-  spaces_access_id  = var.s3_bucket_access_id
-  spaces_secret_key = var.s3_bucket_secret_key
+  spaces_access_id  = var.s3_access_id
+  spaces_secret_key = var.s3_secret_key
 }
 
 provider "kubernetes" {
@@ -68,7 +81,7 @@ data "digitalocean_spaces_bucket" "postgres_dump" {
   count = local.postgres_dump_enabled ? 1 : 0
 
   name   = "${local.stack_resources_prefix}-s3-bucket"
-  region = var.s3_bucket_region
+  region = var.s3_region
 }
 
 /* Database */
@@ -178,8 +191,11 @@ module "database_dump_cronjob" {
 
   resources_prefix = local.project_slug
 
-  s3_host              = "${var.s3_bucket_region}.digitaloceanspaces.com"
-  s3_bucket_name       = data.digitalocean_spaces_bucket.postgres_dump[0].name
-  s3_bucket_access_id  = var.s3_bucket_access_id
-  s3_bucket_secret_key = var.s3_bucket_secret_key
+  media_storage = var.media_storage
+
+  s3_region      = var.s3_region
+  s3_access_id   = var.s3_access_id
+  s3_secret_key  = var.s3_secret_key
+  s3_host        = local.s3_host
+  s3_bucket_name = local.s3_bucket_name
 }

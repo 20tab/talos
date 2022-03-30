@@ -14,8 +14,8 @@ resource "kubernetes_secret_v1" "main" {
   }
 
   data = {
-    AWS_ACCESS_KEY_ID     = var.s3_bucket_access_id
-    AWS_SECRET_ACCESS_KEY = var.s3_bucket_secret_key
+    AWS_ACCESS_KEY_ID     = var.s3_access_id
+    AWS_SECRET_ACCESS_KEY = var.s3_secret_key
   }
 }
 
@@ -27,7 +27,7 @@ resource "kubernetes_config_map_v1" "main" {
 
   data = {
     AWS_S3_BACKUP_PATH      = var.s3_backup_path
-    AWS_S3_HOST             = var.s3_host
+    AWS_S3_HOST             = var.media_storage == "digitalocean-s3" ? "https://${var.s3_region}.${var.s3_host}" : var.s3_host
     AWS_STORAGE_BUCKET_NAME = var.s3_bucket_name
   }
 }

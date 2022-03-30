@@ -12,16 +12,20 @@ locals {
 
   use_s3 = length(regexall("s3", var.media_storage)) > 0
 
-  postgres_dump_enabled = var.env_slug == "prod" && local.use_s3 && length(
-    compact(
-      [
-        var.s3_bucket_access_id,
-        var.s3_bucket_secret_key,
-        var.s3_bucket_name,
-        var.s3_host
-      ]
-    )
-  ) == 4
+  s3_host = var.media_storage == "digitalocean-s3" ? "digitaloceanspaces.com" : var.s3_host
+
+  postgres_dump_enabled = alltrue(
+    [
+      var.env_slug == "prod",
+      local.use_s3,
+      var.s3_region != "",
+      var.s3_access_id != "",
+      var.s3_secret_key != "",
+      local.s3_host != "",
+      var.s3_bucket_name != "",
+    ]
+  )
+}
 
 terraform {
   backend "http" {
@@ -142,8 +146,11 @@ module "database_dump_cronjob" {
 
   resources_prefix = local.project_slug
 
-  s3_host              = var.s3_host
-  s3_bucket_name       = var.s3_bucket_name
-  s3_bucket_access_id  = var.s3_bucket_access_id
-  s3_bucket_secret_key = var.s3_bucket_secret_key
+  media_storage = var.media_storage
+
+  s3_region      = var.s3_region
+  s3_access_id   = var.s3_access_id
+  s3_secret_key  = var.s3_secret_key
+  s3_host        = local.s3_host
+  s3_bucket_name = var.s3_bucket_name
 }

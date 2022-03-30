@@ -598,8 +598,16 @@ class TestBootstrapCollector(TestCase):
                 None,
                 "mYV4l1D1D",
                 "mYV4l1Ds3cR3tK3y",
+                None,
             ),
-            ("mYV4l1DT0k3N", "nyc1", "", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+            (
+                "mYV4l1DT0k3N",
+                "nyc1",
+                "digitaloceanspaces.com",
+                "mYV4l1D1D",
+                "mYV4l1Ds3cR3tK3y",
+                "",
+            ),
         )
         with input(
             {"hidden": "mYV4l1DT0k3N"},
@@ -609,27 +617,45 @@ class TestBootstrapCollector(TestCase):
         ):
             self.assertEqual(
                 clean_s3_media_storage_data(
-                    "digitalocean-s3", None, None, None, None, None
+                    "digitalocean-s3", None, None, None, None, None, None
                 ),
-                ("mYV4l1DT0k3N", "nyc1", "", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+                (
+                    "mYV4l1DT0k3N",
+                    "nyc1",
+                    "digitaloceanspaces.com",
+                    "mYV4l1D1D",
+                    "mYV4l1Ds3cR3tK3y",
+                    "",
+                ),
             )
         self.assertEqual(
             clean_s3_media_storage_data(
-                "other-s3",
+                "aws-s3",
                 None,
+                "eu-central-1",
                 None,
-                "s3.example.com",
                 "mYV4l1D1D",
                 "mYV4l1Ds3cR3tK3y",
+                "mybucket",
             ),
-            ("", "", "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+            (
+                "",
+                "eu-central-1",
+                "",
+                "mYV4l1D1D",
+                "mYV4l1Ds3cR3tK3y",
+                "mybucket",
+            ),
         )
         with input(
-            "s3.example.com",
+            "eu-central-1",
             {"hidden": "mYV4l1D1D"},
             {"hidden": "mYV4l1Ds3cR3tK3y"},
+            "mybucket",
         ):
             self.assertEqual(
-                clean_s3_media_storage_data("other-s3", None, None, None, None, None),
-                ("", "", "s3.example.com", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y"),
+                clean_s3_media_storage_data(
+                    "aws-s3", None, None, None, None, None, None
+                ),
+                ("", "eu-central-1", "", "mYV4l1D1D", "mYV4l1Ds3cR3tK3y", "mybucket"),
             )

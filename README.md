@@ -87,7 +87,7 @@ Do you want to configure Redis? [y/N]:
 Sentry organization (e.g. "20tab", leave blank if unused) []:
 Do you want to enable the monitoring stack? [y/N]:
 Do you want to configure Pact? [Y/n]: n
-Media storage (digitalocean-s3, other-s3, local, none) [digitalocean-s3]:
+Media storage (digitalocean-s3, aws-s3, local, none) [digitalocean-s3]:
 Do you want to configure GitLab? [Y/n]:
 GitLab group slug [my-project-name]:
 Make sure the GitLab "my-project-name" group exists before proceeding. Continue? [y/N]: y
@@ -195,7 +195,7 @@ If you don't want DigitalOcean DNS configuration the following args are required
 Value  | Description | Argument
 ------------- | ------------- | -------------
 digitalocean-s3  | DigitalOcean Spaces are used to store media | [DigitalOcean Media storage](#media-storage)
-other-s3  | Spaces are used to store media | [DigitalOcean Media storage](#media-storage)
+aws-s3  | AWS S3 are used to store media | `--media-storage=aws-s3`
 local  | Docker Volume are used to store media | `--media-storage=local`
 none  | Project have no media | `--media-storage=none`
 

@@ -17,8 +17,8 @@ from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
     DEPLOYMENT_TYPE_OTHER,
     FRONTEND_TEMPLATE_URLS,
+    MEDIA_STORAGE_AWS_S3,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
-    MEDIA_STORAGE_OTHER_S3,
     ORCHESTRATOR_SERVICE_SLUG,
     SUBREPOS_DIR,
 )
@@ -84,10 +84,11 @@ def run(
     pact_broker_username,
     pact_broker_password,
     media_storage,
-    digitalocean_spaces_bucket_region,
+    s3_region,
     s3_host,
     s3_access_id,
     s3_secret_key,
+    s3_bucket_name,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -242,23 +243,19 @@ def run(
                 REDIS_IMAGE='{value = "%s"}' % redis_image,
             )
         "s3" in media_storage and gitlab_group_variables.update(
-            S3_BUCKET_ACCESS_ID=('{value = "%s", masked = true}' % s3_access_id),
-            S3_BUCKET_SECRET_KEY=('{value = "%s", masked = true}' % s3_secret_key),
+            S3_ACCESS_ID='{value = "%s", masked = true}' % s3_access_id,
+            S3_SECRET_KEY='{value = "%s", masked = true}' % s3_secret_key,
+            S3_REGION='{value = "%s"}' % s3_region,
+            S3_HOST='{value = "%s"}' % s3_host,
         )
-        media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and (
+        if media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
             gitlab_group_variables.update(
-                DIGITALOCEAN_BUCKET_REGION=(
-                    '{value = "%s"}' % digitalocean_spaces_bucket_region
-                ),
-                S3_BUCKET_ENDPOINT_URL=(
-                    '{value = "https://%s.digitaloceanspaces.com"}'
-                    % digitalocean_spaces_bucket_region
-                ),
+                S3_HOST='{value = "%s"}' % s3_host,
             )
-        )
-        media_storage == MEDIA_STORAGE_OTHER_S3 and gitlab_group_variables.update(
-            S3_HOST=('{value = "%s"}' % s3_host),
-        )
+        elif media_storage == MEDIA_STORAGE_AWS_S3:
+            gitlab_group_variables.update(
+                S3_BUCKET_NAME='{value = "%s"}' % s3_bucket_name,
+            )
         init_gitlab(
             gitlab_group_slug,
             gitlab_private_token,
@@ -297,6 +294,7 @@ def run(
             media_storage=media_storage,
             sentry_dsn=backend_sentry_dsn,
             terraform_dir=terraform_dir,
+            deployment_type=deployment_type,
             **common_options,
         )
     frontend_template_url = FRONTEND_TEMPLATE_URLS.get(frontend_type)
@@ -308,6 +306,7 @@ def run(
             logs_dir=logs_dir,
             sentry_dsn=frontend_sentry_dsn,
             terraform_dir=terraform_dir,
+            deployment_type=deployment_type,
             **common_options,
         )
     change_output_owner(service_dir, uid, gid)

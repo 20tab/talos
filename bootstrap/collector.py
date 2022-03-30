@@ -9,6 +9,7 @@ import validators
 from slugify import slugify
 
 from bootstrap.constants import (
+    AWS_S3_REGION_DEFAULT,
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
     DEPLOYMENT_TYPE_CHOICES,
@@ -23,9 +24,9 @@ from bootstrap.constants import (
     ENVIRONMENT_DISTRIBUTION_PROMPT,
     FRONTEND_TYPE_CHOICES,
     FRONTEND_TYPE_DEFAULT,
+    MEDIA_STORAGE_AWS_S3,
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
-    MEDIA_STORAGE_OTHER_S3,
 )
 
 error = partial(click.style, fg="red")
@@ -83,10 +84,11 @@ def collect(
     pact_broker_username,
     pact_broker_password,
     media_storage,
-    digitalocean_spaces_bucket_region,
+    s3_region,
     s3_host,
     s3_access_id,
     s3_secret_key,
+    s3_bucket_name,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -227,17 +229,19 @@ def collect(
     if gitlab_group_slug and "s3" in media_storage:
         (
             digitalocean_token,
-            digitalocean_spaces_bucket_region,
+            s3_region,
             s3_host,
             s3_access_id,
             s3_secret_key,
+            s3_bucket_name,
         ) = clean_s3_media_storage_data(
             media_storage,
             digitalocean_token,
-            digitalocean_spaces_bucket_region,
+            s3_region,
             s3_host,
             s3_access_id,
             s3_secret_key,
+            s3_bucket_name,
         )
     return {
         "uid": uid,
@@ -294,10 +298,11 @@ def collect(
         "pact_broker_username": pact_broker_username,
         "pact_broker_password": pact_broker_password,
         "media_storage": media_storage,
-        "digitalocean_spaces_bucket_region": digitalocean_spaces_bucket_region,
+        "s3_region": s3_region,
         "s3_host": s3_host,
         "s3_access_id": s3_access_id,
         "s3_secret_key": s3_secret_key,
+        "s3_bucket_name": s3_bucket_name,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
@@ -876,10 +881,11 @@ def clean_gitlab_group_data(
 def clean_s3_media_storage_data(
     media_storage,
     digitalocean_token,
-    digitalocean_spaces_bucket_region,
+    s3_region,
     s3_host,
     s3_access_id,
     s3_secret_key,
+    s3_bucket_name,
 ):
     """Return S3 media storage data."""
     if media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
@@ -888,22 +894,22 @@ def clean_s3_media_storage_data(
             digitalocean_token,
             required=True,
         )
-        digitalocean_spaces_bucket_region = (
-            digitalocean_spaces_bucket_region
-            or click.prompt(
-                "DigitalOcean Spaces region",
-                default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
-            )
+        s3_region = s3_region or click.prompt(
+            "DigitalOcean Spaces region",
+            default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
+        )
+        s3_host = "digitaloceanspaces.com"
+        s3_bucket_name = ""
+    elif media_storage == MEDIA_STORAGE_AWS_S3:
+        digitalocean_token = ""
+        s3_region = s3_region or click.prompt(
+            "AWS S3 region name",
+            default=AWS_S3_REGION_DEFAULT,
         )
         s3_host = ""
-    elif media_storage == MEDIA_STORAGE_OTHER_S3:
-        s3_host = validate_or_prompt_domain(
-            "S3 host",
-            s3_host,
-            required=True,
+        s3_bucket_name = s3_bucket_name or click.prompt(
+            "AWS S3 bucket name",
         )
-        digitalocean_token = ""
-        digitalocean_spaces_bucket_region = ""
     s3_access_id = validate_or_prompt_password(
         "S3 Access Key ID",
         s3_access_id,
@@ -916,8 +922,9 @@ def clean_s3_media_storage_data(
     )
     return (
         digitalocean_token,
-        digitalocean_spaces_bucket_region,
+        s3_region,
         s3_host,
         s3_access_id,
         s3_secret_key,
+        s3_bucket_name,
     )
