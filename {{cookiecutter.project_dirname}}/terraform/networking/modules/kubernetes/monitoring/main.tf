@@ -1,3 +1,20 @@
+locals {
+  namespace = kubernetes_namespace_v1.log_storage.metadata[0].name
+}
+
+terraform {
+  required_providers {
+    helm = {
+      source  = "hashicorp/helm"
+      version = "2.5.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "2.9.0"
+    }
+  }
+}
+
 /* Kube State Metrics */
 
 resource "helm_release" "kube_state_metrics" {
@@ -17,7 +34,7 @@ resource "kubernetes_namespace_v1" "log_storage" {
 
 resource "helm_release" "loki" {
   name       = "loki"
-  namespace  = kubernetes_namespace_v1.log_storage.metadata[0].name
+  namespace  = local.namespace
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
   version    = "2.5.1"
@@ -45,7 +62,7 @@ resource "kubernetes_config_map_v1" "k8s_logs_dashboard" {
 
   metadata {
     name      = "grafana-k8s-logs-dashboard"
-    namespace = kubernetes_namespace_v1.log_storage.metadata[0].name
+    namespace = local.namespace
   }
 
   data = {
@@ -55,7 +72,7 @@ resource "kubernetes_config_map_v1" "k8s_logs_dashboard" {
 
 resource "helm_release" "grafana" {
   name       = "grafana"
-  namespace  = kubernetes_namespace_v1.log_storage.metadata[0].name
+  namespace  = local.namespace
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana"
 
@@ -84,7 +101,7 @@ resource "kubernetes_manifest" "grafana_ingress_route" {
     kind       = "IngressRoute"
     metadata = {
       name      = "grafana-ingress-route"
-      namespace = kubernetes_namespace_v1.log_storage.metadata[0].name
+      namespace = local.namespace
     }
     spec = {
       entryPoints = ["web", "websecure"]

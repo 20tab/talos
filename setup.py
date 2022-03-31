@@ -38,6 +38,12 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 )
 @click.option("--digitalocean-token")
 @click.option(
+    "--kubernetes-cluster-ca-certificate",
+    type=click.Path(dir_okay=False, exists=True, resolve_path=True),
+)
+@click.option("--kubernetes-host")
+@click.option("--kubernetes-token")
+@click.option(
     "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)
 )
 @click.option("--project-domain")
@@ -50,10 +56,16 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--project-url-prod")
 @click.option("--project-url-monitoring")
 @click.option("--letsencrypt-certificate-email")
+@click.option("--digitalocean-create-domain")
 @click.option("--digitalocean-k8s-cluster-region")
 @click.option("--digitalocean-database-cluster-region")
 @click.option("--digitalocean-database-cluster-node-size")
+@click.option("--postgres_image")
+@click.option("--postgres_persistent_volume_capacity")
+@click.option("--postgres_persistent_volume_claim_capacity")
+@click.option("--postgres_persistent_volume_host_path")
 @click.option("--use-redis/--no-redis", is_flag=True, default=None)
+@click.option("--redis_image")
 @click.option("--digitalocean-redis-cluster-region")
 @click.option("--digitalocean-redis-cluster-node-size")
 @click.option("--sentry-org")
@@ -68,9 +80,11 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
     "--media-storage",
     type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
 )
-@click.option("--digitalocean-spaces-bucket-region")
-@click.option("--digitalocean-spaces-access-id")
-@click.option("--digitalocean-spaces-secret-key")
+@click.option("--s3-region")
+@click.option("--s3-host")
+@click.option("--s3-access-id")
+@click.option("--s3-secret-key")
+@click.option("--s3-bucket-name")
 @click.option("--gitlab-private-token", envvar=GITLAB_TOKEN_ENV_VAR)
 @click.option("--gitlab-group-slug")
 @click.option("--gitlab-group-owners")

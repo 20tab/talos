@@ -9,10 +9,12 @@ import validators
 from slugify import slugify
 
 from bootstrap.constants import (
+    AWS_S3_REGION_DEFAULT,
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
     DEPLOYMENT_TYPE_CHOICES,
-    DEPLOYMENT_TYPE_DEFAULT,
+    DEPLOYMENT_TYPE_DIGITALOCEAN,
+    DEPLOYMENT_TYPE_OTHER,
     DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
@@ -22,8 +24,9 @@ from bootstrap.constants import (
     ENVIRONMENT_DISTRIBUTION_PROMPT,
     FRONTEND_TYPE_CHOICES,
     FRONTEND_TYPE_DEFAULT,
+    MEDIA_STORAGE_AWS_S3,
     MEDIA_STORAGE_CHOICES,
-    MEDIA_STORAGE_DEFAULT,
+    MEDIA_STORAGE_DIGITALOCEAN_S3,
 )
 
 error = partial(click.style, fg="red")
@@ -46,6 +49,9 @@ def collect(
     frontend_service_port,
     deployment_type,
     digitalocean_token,
+    kubernetes_cluster_ca_certificate,
+    kubernetes_host,
+    kubernetes_token,
     environment_distribution,
     project_domain,
     domain_prefix_dev,
@@ -57,10 +63,16 @@ def collect(
     project_url_prod,
     project_url_monitoring,
     letsencrypt_certificate_email,
+    digitalocean_create_domain,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
+    postgres_image,
+    postgres_persistent_volume_capacity,
+    postgres_persistent_volume_claim_capacity,
+    postgres_persistent_volume_host_path,
     use_redis,
+    redis_image,
     digitalocean_redis_cluster_region,
     digitalocean_redis_cluster_node_size,
     sentry_org,
@@ -72,9 +84,11 @@ def collect(
     pact_broker_username,
     pact_broker_password,
     media_storage,
-    digitalocean_spaces_bucket_region,
-    digitalocean_spaces_access_id,
-    digitalocean_spaces_secret_key,
+    s3_region,
+    s3_host,
+    s3_access_id,
+    s3_secret_key,
+    s3_bucket_name,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -92,18 +106,30 @@ def collect(
         backend_service_slug = clean_backend_service_slug(backend_service_slug)
     if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
-    environment_distribution = clean_environment_distribution(environment_distribution)
+    deployment_type = clean_deployment_type(deployment_type)
+    environment_distribution = clean_environment_distribution(
+        environment_distribution, deployment_type
+    )
     use_monitoring = click.confirm(
         warning("Do you want to enable the monitoring stack?"), default=False
     )
-    deployment_type = clean_deployment_type(deployment_type)
-    # The "k8s-digitalocean" deployment type includes Postgres by default
+    # The "digitalocean-k8s" deployment type includes Postgres by default
     if digitalocean_enabled := ("digitalocean" in deployment_type):
         digitalocean_token = validate_or_prompt_password(
             "DigitalOcean token", digitalocean_token, required=True
         )
-    project_domain = clean_project_domain(project_domain)
+    if other_kubernetes_enabled := (deployment_type == DEPLOYMENT_TYPE_OTHER):
+        (
+            kubernetes_cluster_ca_certificate,
+            kubernetes_host,
+            kubernetes_token,
+        ) = clean_kubernetes_credentials(
+            kubernetes_cluster_ca_certificate,
+            kubernetes_host,
+            kubernetes_token,
+        )
     (
+        project_domain,
         domain_prefix_dev,
         domain_prefix_stage,
         domain_prefix_prod,
@@ -114,6 +140,7 @@ def collect(
         project_url_monitoring,
         letsencrypt_certificate_email,
     ) = clean_project_urls(
+        deployment_type,
         project_slug,
         project_domain,
         use_monitoring,
@@ -130,17 +157,35 @@ def collect(
     use_redis = click.confirm(warning("Do you want to use Redis?"), default=False)
     if digitalocean_enabled:
         (
+            digitalocean_create_domain,
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
             digitalocean_redis_cluster_region,
             digitalocean_redis_cluster_node_size,
-        ) = clean_digitalocean_clusters_data(
+        ) = clean_digitalocean_options(
+            project_domain,
+            digitalocean_create_domain,
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
             digitalocean_redis_cluster_region,
             digitalocean_redis_cluster_node_size,
+            use_redis,
+        )
+    if other_kubernetes_enabled:
+        (
+            postgres_image,
+            postgres_persistent_volume_capacity,
+            postgres_persistent_volume_claim_capacity,
+            postgres_persistent_volume_host_path,
+            redis_image,
+        ) = clean_other_k8s_options(
+            postgres_image,
+            postgres_persistent_volume_capacity,
+            postgres_persistent_volume_claim_capacity,
+            postgres_persistent_volume_host_path,
+            redis_image,
             use_redis,
         )
     media_storage = clean_media_storage(media_storage)
@@ -181,17 +226,22 @@ def collect(
         gitlab_group_developers,
         quiet,
     )
-    if gitlab_group_slug and media_storage == "s3-digitalocean":
+    if gitlab_group_slug and "s3" in media_storage:
         (
             digitalocean_token,
-            digitalocean_spaces_bucket_region,
-            digitalocean_spaces_access_id,
-            digitalocean_spaces_secret_key,
-        ) = clean_digitalocean_media_storage_data(
+            s3_region,
+            s3_host,
+            s3_access_id,
+            s3_secret_key,
+            s3_bucket_name,
+        ) = clean_s3_media_storage_data(
+            media_storage,
             digitalocean_token,
-            digitalocean_spaces_bucket_region,
-            digitalocean_spaces_access_id,
-            digitalocean_spaces_secret_key,
+            s3_region,
+            s3_host,
+            s3_access_id,
+            s3_secret_key,
+            s3_bucket_name,
         )
     return {
         "uid": uid,
@@ -209,6 +259,9 @@ def collect(
         "frontend_service_port": frontend_service_port,
         "deployment_type": deployment_type,
         "digitalocean_token": digitalocean_token,
+        "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
+        "kubernetes_host": kubernetes_host,
+        "kubernetes_token": kubernetes_token,
         "environment_distribution": environment_distribution,
         "project_domain": project_domain,
         "domain_prefix_dev": domain_prefix_dev,
@@ -220,12 +273,20 @@ def collect(
         "project_url_prod": project_url_prod,
         "project_url_monitoring": project_url_monitoring,
         "letsencrypt_certificate_email": letsencrypt_certificate_email,
+        "digitalocean_create_domain": digitalocean_create_domain,
         "digitalocean_k8s_cluster_region": digitalocean_k8s_cluster_region,
         "digitalocean_database_cluster_region": digitalocean_database_cluster_region,
         "digitalocean_database_cluster_node_size": (
             digitalocean_database_cluster_node_size
         ),
+        "postgres_image": postgres_image,
+        "postgres_persistent_volume_capacity": postgres_persistent_volume_capacity,
+        "postgres_persistent_volume_claim_capacity": (
+            postgres_persistent_volume_claim_capacity
+        ),
+        "postgres_persistent_volume_host_path": postgres_persistent_volume_host_path,
         "use_redis": use_redis,
+        "redis_image": redis_image,
         "digitalocean_redis_cluster_region": digitalocean_redis_cluster_region,
         "digitalocean_redis_cluster_node_size": digitalocean_redis_cluster_node_size,
         "sentry_org": sentry_org,
@@ -237,9 +298,11 @@ def collect(
         "pact_broker_username": pact_broker_username,
         "pact_broker_password": pact_broker_password,
         "media_storage": media_storage,
-        "digitalocean_spaces_bucket_region": digitalocean_spaces_bucket_region,
-        "digitalocean_spaces_access_id": digitalocean_spaces_access_id,
-        "digitalocean_spaces_secret_key": digitalocean_spaces_secret_key,
+        "s3_region": s3_region,
+        "s3_host": s3_host,
+        "s3_access_id": s3_access_id,
+        "s3_secret_key": s3_secret_key,
+        "s3_bucket_name": s3_bucket_name,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
@@ -373,14 +436,16 @@ def clean_deployment_type(deployment_type):
         if deployment_type in DEPLOYMENT_TYPE_CHOICES
         else click.prompt(
             "Deploy type",
-            default=DEPLOYMENT_TYPE_DEFAULT,
+            default=DEPLOYMENT_TYPE_DIGITALOCEAN,
             type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
         )
     ).lower()
 
 
-def clean_environment_distribution(environment_distribution):
+def clean_environment_distribution(environment_distribution, deployment_type):
     """Return the environment distribution."""
+    if deployment_type == DEPLOYMENT_TYPE_OTHER:
+        return "1"
     return (
         environment_distribution
         if environment_distribution in ENVIRONMENT_DISTRIBUTION_CHOICES
@@ -390,6 +455,29 @@ def clean_environment_distribution(environment_distribution):
             type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES),
         )
     )
+
+
+def clean_kubernetes_credentials(
+    kubernetes_cluster_ca_certificate,
+    kubernetes_host,
+    kubernetes_token,
+):
+    """Return the clean Kubernetes credentials."""
+    kubernetes_cluster_ca_certificate = (
+        kubernetes_cluster_ca_certificate
+        or click.prompt(
+            "Kubernetes cluster CA certificate",
+            type=click.Path(dir_okay=False, exists=True, resolve_path=True),
+        )
+    )
+    kubernetes_host = kubernetes_host or validate_or_prompt_url(
+        "Kubernetes host", kubernetes_host
+    )
+    kubernetes_token = kubernetes_token or validate_or_prompt_password(
+        "Kubernetes token", kubernetes_token
+    )
+
+    return kubernetes_cluster_ca_certificate, kubernetes_host, kubernetes_token
 
 
 def clean_project_domain(project_domain):
@@ -413,6 +501,7 @@ def clean_project_domain(project_domain):
 
 
 def clean_project_urls(
+    deployment_type,
     project_slug,
     project_domain,
     use_monitoring,
@@ -427,7 +516,9 @@ def clean_project_urls(
     letsencrypt_certificate_email,
 ):
     """Return project URLs."""
-    if project_domain:
+    if deployment_type == DEPLOYMENT_TYPE_DIGITALOCEAN and (
+        project_domain := clean_project_domain(project_domain)
+    ):
         domain_prefix_dev = domain_prefix_dev or click.prompt(
             "Development domain prefix", default="dev"
         )
@@ -452,6 +543,7 @@ def clean_project_urls(
             project_url_monitoring = ""
         letsencrypt_certificate_email = ""
     else:
+        project_domain = ""
         domain_prefix_dev = ""
         domain_prefix_stage = ""
         domain_prefix_prod = ""
@@ -483,6 +575,7 @@ def clean_project_urls(
             letsencrypt_certificate_email
         )
     return (
+        project_domain,
         domain_prefix_dev,
         domain_prefix_stage,
         domain_prefix_prod,
@@ -590,7 +683,9 @@ def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
         )
 
 
-def clean_digitalocean_clusters_data(
+def clean_digitalocean_options(
+    project_domain,
+    digitalocean_create_domain,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -598,8 +693,19 @@ def clean_digitalocean_clusters_data(
     digitalocean_redis_cluster_node_size,
     use_redis,
 ):
-    """Return DigitalOcean k8s and database clusters data."""
+    """Return DigitalOcean configuration options."""
     # TODO: ask these settings for each stack
+    if project_domain:
+        digitalocean_create_domain = (
+            digitalocean_create_domain
+            if digitalocean_create_domain is not None
+            else click.confirm(
+                f"Do you want to create DigitalOcean domain '{project_domain}'?",
+                default=True,
+            )
+        )
+    else:
+        digitalocean_create_domain = None
     digitalocean_k8s_cluster_region = digitalocean_k8s_cluster_region or click.prompt(
         "Kubernetes cluster DigitalOcean region", default="fra1"
     )
@@ -629,11 +735,51 @@ def clean_digitalocean_clusters_data(
             )
         )
     return (
+        digitalocean_create_domain,
         digitalocean_k8s_cluster_region,
         digitalocean_database_cluster_region,
         digitalocean_database_cluster_node_size,
         digitalocean_redis_cluster_region,
         digitalocean_redis_cluster_node_size,
+    )
+
+
+def clean_other_k8s_options(
+    postgres_image,
+    postgres_persistent_volume_capacity,
+    postgres_persistent_volume_claim_capacity,
+    postgres_persistent_volume_host_path,
+    redis_image,
+    use_redis,
+):
+    """Return the Kubernetes custom deployment options."""
+    # TODO: ask these settings for each stack
+    postgres_image = postgres_image or click.prompt(
+        "Postgres Docker image", default="postgres:14"
+    )
+    postgres_persistent_volume_capacity = (
+        postgres_persistent_volume_capacity
+        or click.prompt("Postgres K8s PersistentVolume capacity", default="10Gi")
+    )
+    postgres_persistent_volume_claim_capacity = (
+        postgres_persistent_volume_claim_capacity or ""
+    )
+    postgres_persistent_volume_host_path = (
+        postgres_persistent_volume_host_path
+        or click.prompt("Postgres K8s PersistentVolume host path")
+    )
+    if use_redis:
+        redis_image = redis_image or click.prompt(
+            "Redis Docker image", default="redis:6.2"
+        )
+    else:
+        redis_image = ""
+    return (
+        postgres_image,
+        postgres_persistent_volume_capacity,
+        postgres_persistent_volume_claim_capacity,
+        postgres_persistent_volume_host_path,
+        redis_image,
     )
 
 
@@ -669,7 +815,7 @@ def clean_media_storage(media_storage):
         media_storage
         or click.prompt(
             "Media storage",
-            default=MEDIA_STORAGE_DEFAULT,
+            default=MEDIA_STORAGE_DIGITALOCEAN_S3,
             type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
         ).lower()
     )
@@ -732,38 +878,53 @@ def clean_gitlab_group_data(
     )
 
 
-def clean_digitalocean_media_storage_data(
+def clean_s3_media_storage_data(
+    media_storage,
     digitalocean_token,
-    digitalocean_spaces_bucket_region,
-    digitalocean_spaces_access_id,
-    digitalocean_spaces_secret_key,
+    s3_region,
+    s3_host,
+    s3_access_id,
+    s3_secret_key,
+    s3_bucket_name,
 ):
-    """Return DigitalOcean media storage data."""
-    digitalocean_token = validate_or_prompt_password(
-        "DigitalOcean token",
-        digitalocean_token,
-        required=True,
-    )
-    digitalocean_spaces_bucket_region = (
-        digitalocean_spaces_bucket_region
-        or click.prompt(
+    """Return S3 media storage data."""
+    if media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
+        digitalocean_token = validate_or_prompt_password(
+            "DigitalOcean token",
+            digitalocean_token,
+            required=True,
+        )
+        s3_region = s3_region or click.prompt(
             "DigitalOcean Spaces region",
             default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
         )
-    )
-    digitalocean_spaces_access_id = validate_or_prompt_password(
-        "DigitalOcean Spaces Access Key ID",
-        digitalocean_spaces_access_id,
+        s3_host = "digitaloceanspaces.com"
+        s3_bucket_name = ""
+    elif media_storage == MEDIA_STORAGE_AWS_S3:
+        digitalocean_token = ""
+        s3_region = s3_region or click.prompt(
+            "AWS S3 region name",
+            default=AWS_S3_REGION_DEFAULT,
+        )
+        s3_host = ""
+        s3_bucket_name = s3_bucket_name or click.prompt(
+            "AWS S3 bucket name",
+        )
+    s3_access_id = validate_or_prompt_password(
+        "S3 Access Key ID",
+        s3_access_id,
         required=True,
     )
-    digitalocean_spaces_secret_key = validate_or_prompt_password(
-        "DigitalOcean Spaces Secret Access Key",
-        digitalocean_spaces_secret_key,
+    s3_secret_key = validate_or_prompt_password(
+        "S3 Secret Access Key",
+        s3_secret_key,
         required=True,
     )
     return (
         digitalocean_token,
-        digitalocean_spaces_bucket_region,
-        digitalocean_spaces_access_id,
-        digitalocean_spaces_secret_key,
+        s3_region,
+        s3_host,
+        s3_access_id,
+        s3_secret_key,
+        s3_bucket_name,
     )

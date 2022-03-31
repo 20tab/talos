@@ -1,5 +1,6 @@
 """Run the bootstrap."""
 
+import base64
 import os
 import re
 import secrets
@@ -14,7 +15,10 @@ from cookiecutter.main import cookiecutter
 
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
+    DEPLOYMENT_TYPE_OTHER,
     FRONTEND_TEMPLATE_URLS,
+    MEDIA_STORAGE_AWS_S3,
+    MEDIA_STORAGE_DIGITALOCEAN_S3,
     ORCHESTRATOR_SERVICE_SLUG,
     SUBREPOS_DIR,
 )
@@ -45,6 +49,9 @@ def run(
     frontend_service_port,
     deployment_type,
     digitalocean_token,
+    kubernetes_cluster_ca_certificate,
+    kubernetes_host,
+    kubernetes_token,
     environment_distribution,
     project_domain,
     domain_prefix_dev,
@@ -56,10 +63,16 @@ def run(
     project_url_prod,
     project_url_monitoring,
     letsencrypt_certificate_email,
+    digitalocean_create_domain,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
+    postgres_image,
+    postgres_persistent_volume_capacity,
+    postgres_persistent_volume_claim_capacity,
+    postgres_persistent_volume_host_path,
     use_redis,
+    redis_image,
     digitalocean_redis_cluster_region,
     digitalocean_redis_cluster_node_size,
     sentry_org,
@@ -71,9 +84,11 @@ def run(
     pact_broker_username,
     pact_broker_password,
     media_storage,
-    digitalocean_spaces_bucket_region,
-    digitalocean_spaces_access_id,
-    digitalocean_spaces_secret_key,
+    s3_region,
+    s3_host,
+    s3_access_id,
+    s3_secret_key,
+    s3_bucket_name,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -186,36 +201,60 @@ def run(
                     % pact_broker_auth_url
                 ),
             )
-        media_storage == "s3-digitalocean" and gitlab_group_variables.update(
-            DIGITALOCEAN_BUCKET_REGION=(
-                '{value = "%s"}' % digitalocean_spaces_bucket_region
-            ),
-            S3_BUCKET_ENDPOINT_URL=(
-                '{value = "https://%s.digitaloceanspaces.com"}'
-                % digitalocean_spaces_bucket_region
-            ),
-            S3_BUCKET_ACCESS_ID=(
-                '{value = "%s", masked = true}' % digitalocean_spaces_access_id
-            ),
-            S3_BUCKET_SECRET_KEY=(
-                '{value = "%s", masked = true}' % digitalocean_spaces_secret_key
-            ),
-        )
         digitalocean_token and gitlab_group_variables.update(
             DIGITALOCEAN_TOKEN='{value = "%s", masked = true}' % digitalocean_token
         )
         if "digitalocean" in deployment_type:
             gitlab_project_variables.update(
+                CREATE_DOMAIN='{value = "%s"}'
+                % (digitalocean_create_domain and "true" or "false"),
                 DIGITALOCEAN_K8S_CLUSTER_REGION='{value = "%s"}'
                 % digitalocean_k8s_cluster_region,
                 DIGITALOCEAN_DATABASE_CLUSTER_REGION='{value = "%s"}'
                 % digitalocean_database_cluster_region,
                 DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE='{value = "%s"}'
                 % digitalocean_database_cluster_node_size,
+            )
+            use_redis and gitlab_project_variables.update(
                 DIGITALOCEAN_REDIS_CLUSTER_REGION='{value = "%s"}'
                 % digitalocean_redis_cluster_region,
                 DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE='{value = "%s"}'
                 % digitalocean_redis_cluster_node_size,
+            )
+        elif deployment_type == DEPLOYMENT_TYPE_OTHER:
+            gitlab_group_variables.update(
+                KUBERNETES_CLUSTER_CA_CERTIFICATE='{value = "%s", masked = true}'
+                % base64.b64encode(
+                    Path(kubernetes_cluster_ca_certificate).read_bytes()
+                ).decode(),
+                KUBERNETES_HOST='{value = "%s"}' % kubernetes_host,
+                KUBERNETES_TOKEN='{value = "%s", masked = true}' % kubernetes_token,
+            )
+            gitlab_project_variables.update(
+                POSTGRES_IMAGE='{value = "%s"}' % postgres_image,
+                POSTGRES_PERSISTENT_VOLUME_CAPACITY='{value = "%s"}'
+                % postgres_persistent_volume_capacity,
+                POSTGRES_PERSISTENT_VOLUME_CLAIM_CAPACITY='{value = "%s"}'
+                % postgres_persistent_volume_claim_capacity,
+                POSTGRES_PERSISTENT_VOLUME_HOST_PATH='{value = "%s"}'
+                % postgres_persistent_volume_host_path,
+            )
+            use_redis and gitlab_project_variables.update(
+                REDIS_IMAGE='{value = "%s"}' % redis_image,
+            )
+        "s3" in media_storage and gitlab_group_variables.update(
+            S3_ACCESS_ID='{value = "%s", masked = true}' % s3_access_id,
+            S3_SECRET_KEY='{value = "%s", masked = true}' % s3_secret_key,
+            S3_REGION='{value = "%s"}' % s3_region,
+            S3_HOST='{value = "%s"}' % s3_host,
+        )
+        if media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
+            gitlab_group_variables.update(
+                S3_HOST='{value = "%s"}' % s3_host,
+            )
+        elif media_storage == MEDIA_STORAGE_AWS_S3:
+            gitlab_group_variables.update(
+                S3_BUCKET_NAME='{value = "%s"}' % s3_bucket_name,
             )
         init_gitlab(
             gitlab_group_slug,
@@ -255,6 +294,7 @@ def run(
             media_storage=media_storage,
             sentry_dsn=backend_sentry_dsn,
             terraform_dir=terraform_dir,
+            deployment_type=deployment_type,
             **common_options,
         )
     frontend_template_url = FRONTEND_TEMPLATE_URLS.get(frontend_type)
@@ -266,6 +306,7 @@ def run(
             logs_dir=logs_dir,
             sentry_dsn=frontend_sentry_dsn,
             terraform_dir=terraform_dir,
+            deployment_type=deployment_type,
             **common_options,
         )
     change_output_owner(service_dir, uid, gid)

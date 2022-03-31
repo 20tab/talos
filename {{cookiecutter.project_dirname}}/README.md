@@ -37,17 +37,17 @@ If you want to choose what to activate to limit any costs, read below.
 
 ### Stages
 
-Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster.
-Networking stage will create Ingress, Certificate and Monitoring if enabled.
+{% if cookiecutter.deployment_type == "digitalocean-k8s" %}Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster.
+{% endif %}Networking stage will create Ingress, Certificate and Monitoring if enabled.
 Environment stage will create the other resource for each of it.
 
 Value  | Description
 ------------- | -------------
-`core` | Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster
-`networking` | Networking stage will create Ingress, Certificate and Monitoring if enabled.
+{% if cookiecutter.deployment_type == "digitalocean-k8s" %}C`core` | Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster
+{% endif %}`networking` | Networking stage will create Ingress, Certificate and Monitoring if enabled.
 `environment`  | Environment stage will create the other resource for each of it.
 
-`ENABLED_STAGE` = `core, networking, environment`
+`ENABLED_STAGE` = `{% if cookiecutter.deployment_type == "digitalocean-k8s" %}core, {% endif %}networking, environment`
 
 ### Stacks
 

@@ -4,22 +4,25 @@ workflow:
       when: never
     - if: $ENABLED_ALL
       when: always
-    - if: $ENABLED_STAGES =~ /(?:^|,)\s*(?:core|networking)\s*(?:,|$)/i && $ENABLED_STACKS
+    - if: $ENABLED_STAGES =~ /(?:^|,)\s*{% if cookiecutter.deployment_type == "digitalocean-k8s" %}(?:core|networking){% else %}networking{% endif %}\s*(?:,|$)/i && $ENABLED_STACKS
       when: always
     - if: $ENABLED_STAGES =~ /(?:^|,)\s*environment\s*(?:,|$)/i && $ENABLED_ENVS
       when: always
 
-stages:
-  - Core
+stages:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+  - Core{% endif %}
   - Networking
   - Environment
 
 image: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
 
 variables:
-  TERRAFORM_CMD: "gitlab-terraform"
-  TF_IN_AUTOMATION: 1
-  TF_VAR_digitalocean_token: "${DIGITALOCEAN_TOKEN}"
+  TERRAFORM_CMD: gitlab-terraform
+  TF_IN_AUTOMATION: 1{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+  TF_VAR_digitalocean_token: "${DIGITALOCEAN_TOKEN}"{% elif cookiecutter.deployment_type == "other-k8s" %}
+  TF_VAR_kubernetes_cluster_ca_certificate: "${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
+  TF_VAR_kubernetes_host: "${KUBERNETES_HOST}"
+  TF_VAR_kubernetes_token: "${KUBERNETES_TOKEN}"{% endif %}
   TF_VAR_project_domain: "${DOMAIN}"
 
 before_script:
@@ -48,7 +51,7 @@ before_script:
   script:
     -  ${TERRAFORM_CMD} apply -auto-approve
 
-### CORE STACK ###{% for stack_slug in cookiecutter.stacks %}
+{% if cookiecutter.deployment_type == "digitalocean-k8s" %}### CORE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
 # CORE STACK - {{ stack_slug|title }} #
 
@@ -56,15 +59,16 @@ before_script:
   stage: Core
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_core
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core{% if cookiecutter.deployment_type == "k8s-digitalocean" %}
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core/{{ cookiecutter.deployment_type }}
+    TF_VAR_create_domain: "${CREATE_DOMAIN}"
     TF_VAR_database_cluster_node_size: "${DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE}"
     TF_VAR_database_cluster_region: "${DIGITALOCEAN_DATABASE_CLUSTER_REGION}"
     TF_VAR_redis_cluster_node_size: "${DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE}"
     TF_VAR_redis_cluster_region: "${DIGITALOCEAN_REDIS_CLUSTER_REGION}"
-    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% endif %}{% if cookiecutter.media_storage == "s3-digitalocean" %}
-    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"
-    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"
-    TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"{% endif %}
+    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% if "s3" in cookiecutter.media_storage %}
+    TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
+    TF_VAR_s3_region: "${S3_REGION}"
+    TF_VAR_s3_secret_key: "${S3_SECRET_KEY}"{% endif %}
     TF_VAR_stack_slug: {{ stack_slug }}
     TF_VAR_use_redis: "${USE_REDIS}"
   cache:
@@ -103,7 +107,7 @@ stack_{{ stack_slug }}_core_apply:
     - .stack_{{ stack_slug }}_core
   needs: ["stack_{{ stack_slug }}_core_plan"]{% endfor %}
 
-### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+{% endif %}### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
 # NETWORKING STACK - {{ stack_slug|title }} #
 
@@ -111,7 +115,7 @@ stack_{{ stack_slug }}_core_apply:
   stage: Networking
   variables:
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_networking
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking/{{ cookiecutter.deployment_type }}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
     TF_VAR_letsencrypt_certificate_email: "${LETSENCRYPT_CERTIFICATE_EMAIL}"
     TF_VAR_monitoring_domain_prefix: "${MONITORING_DOMAIN_PREFIX}"
@@ -145,9 +149,9 @@ stack_{{ stack_slug }}_networking_plan:
   extends:
     - .plan
     - .stack_{{ stack_slug }}_networking
-  needs:
+  needs:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
     - job: stack_{{ stack_slug }}_core_apply
-      optional: true
+      optional: true{% endif %}
     - job: stack_{{ stack_slug }}_networking_validate
 
 stack_{{ stack_slug }}_networking_apply:
@@ -161,19 +165,27 @@ stack_{{ stack_slug }}_networking_apply:
 .{{ stack_slug }}_env:
   stage: Environment
   variables:
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}
     TF_VAR_backend_service_port: "${BACKEND_SERVICE_PORT}"
     TF_VAR_backend_service_slug: "${BACKEND_SERVICE_SLUG}"
     TF_VAR_basic_auth_enabled: "${BASIC_AUTH_ENABLED}"
     TF_VAR_basic_auth_password: "${BASIC_AUTH_PASSWORD}"
-    TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
+    TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+    TF_VAR_database_connection_pool_size: "${DATABASE_CONNECTION_POOL_SIZE}"{% endif %}
     TF_VAR_frontend_service_port: "${FRONTEND_SERVICE_PORT}"
     TF_VAR_frontend_service_slug: "${FRONTEND_SERVICE_SLUG}"
-    TF_VAR_project_url: "${CI_ENVIRONMENT_URL}"
-    TF_VAR_registry_password: "${K8S_REGCRED}"{% if cookiecutter.media_storage == "s3-digitalocean" %}
-    TF_VAR_s3_bucket_access_id: "${S3_BUCKET_ACCESS_ID}"
-    TF_VAR_s3_bucket_region: "${DIGITALOCEAN_BUCKET_REGION}"
-    TF_VAR_s3_bucket_secret_key: "${S3_BUCKET_SECRET_KEY}"{% endif %}
+    TF_VAR_project_url: "${CI_ENVIRONMENT_URL}"{% if cookiecutter.deployment_type == "other-k8s" %}
+    TF_VAR_postgres_image: "${POSTGRES_IMAGE}"
+    TF_VAR_postgres_persistent_volume_capacity: "${POSTGRES_PERSISTENT_VOLUME_CAPACITY}"
+    TF_VAR_postgres_persistent_volume_claim_capacity: "${POSTGRES_PERSISTENT_VOLUME_CLAIM_CAPACITY}"
+    TF_VAR_postgres_persistent_volume_host_path: "${POSTGRES_PERSISTENT_VOLUME_HOST_PATH}"
+    TF_VAR_redis_image: "${REDIS_IMAGE}"{% endif %}
+    TF_VAR_registry_password: "${K8S_REGCRED}"{% if "s3" in cookiecutter.media_storage %}
+    TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
+    TF_VAR_s3_secret_key: "${S3_SECRET_KEY}"
+    TF_VAR_s3_region: "${S3_REGION}"{% if cookiecutter.media_storage == "digitalocean-s3" %}
+    TF_VAR_s3_host: "${S3_HOST}"{% elif cookiecutter.media_storage == "aws-s3" %}
+    TF_VAR_s3_bucket_name: "${S3_BUCKET_NAME}"{% endif %}{% endif %}
     TF_VAR_stack_slug: {{ stack_slug }}
     TF_VAR_use_redis: "${USE_REDIS}"{% for env_slug, env_conf in stack_envs.items() %}
 

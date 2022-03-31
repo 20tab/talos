@@ -1,7 +1,13 @@
+variable "backend_middlewares" {
+  description = "The backend middlewares list."
+  type        = list(string)
+  default     = []
+}
+
 variable "backend_service_port" {
   description = "The backend service port."
   type        = number
-  default     = {{ cookiecutter.backend_service_port }}
+  default     = 8000
 }
 
 variable "backend_service_slug" {
@@ -41,18 +47,6 @@ variable "digitalocean_token" {
   sensitive   = true
 }
 
-variable "frontend_service_port" {
-  description = "The frontend service port."
-  type        = number
-  default     = {{ cookiecutter.frontend_service_port }}
-}
-
-variable "frontend_service_slug" {
-  description = "The frontend service slug."
-  type        = string
-  default     = ""
-}
-
 variable "domain_prefix" {
   description = "The environment domain prefix (e.g. 'www')."
   type        = string
@@ -64,10 +58,22 @@ variable "env_slug" {
   type        = string
 }
 
-variable "media_storage" {
-  description = "The media storage solution."
+variable "frontend_middlewares" {
+  description = "The frontend middlewares list."
+  type        = list(string)
+  default     = []
+}
+
+variable "frontend_service_port" {
+  description = "The frontend service port."
+  type        = number
+  default     = 3000
+}
+
+variable "frontend_service_slug" {
+  description = "The frontend service slug."
   type        = string
-  default     = "{{ cookiecutter.media_storage }}"
+  default     = ""
 }
 
 variable "project_url" {
@@ -94,20 +100,32 @@ variable "registry_server" {
   default     = "registry.gitlab.com"
 }
 
-variable "s3_bucket_access_id" {
+variable "s3_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
   default     = ""
   sensitive   = true
 }
 
-variable "s3_bucket_region" {
-  description = "The DigitalOcean S3 Spaces region."
+variable "s3_bucket_name" {
+  description = "The S3 bucket name."
   type        = string
   default     = ""
 }
 
-variable "s3_bucket_secret_key" {
+variable "s3_host" {
+  description = "The S3 bucket host."
+  type        = string
+  default     = ""
+}
+
+variable "s3_region" {
+  description = "The S3 bucket region."
+  type        = string
+  default     = ""
+}
+
+variable "s3_secret_key" {
   description = "The S3 bucket secret access key."
   type        = string
   default     = ""
