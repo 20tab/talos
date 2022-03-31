@@ -47,7 +47,7 @@ Value  | Description
 {% endif %}`networking` | Networking stage will create Ingress, Certificate and Monitoring if enabled.
 `environment`  | Environment stage will create the other resource for each of it.
 
-`ENABLED_STAGE` = `{% if cookiecutter.deployment_type == "digitalocean-k8s" %}core{% endif %}, networking, environment`
+`ENABLED_STAGE` = `{% if cookiecutter.deployment_type == "digitalocean-k8s" %}core, {% endif %}networking, environment`
 
 ### Stacks
 
