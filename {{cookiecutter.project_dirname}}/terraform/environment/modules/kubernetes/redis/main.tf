@@ -20,7 +20,7 @@ resource "random_password" "main" {
 
 resource "kubernetes_config_map_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-redis"
+    name      = "redis"
     namespace = var.namespace
   }
 
@@ -34,25 +34,25 @@ resource "kubernetes_config_map_v1" "main" {
 
 resource "kubernetes_deployment_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-redis"
+    name      = "redis"
     namespace = var.namespace
   }
   spec {
     replicas = 1
     selector {
       match_labels = {
-        component = "${var.resources_prefix}-redis"
+        component = "redis"
       }
     }
     template {
       metadata {
         labels = {
-          component = "${var.resources_prefix}-redis"
+          component = "redis"
         }
       }
       spec {
         volume {
-          name = "${var.resources_prefix}-redis"
+          name = "redis"
           config_map {
             name = kubernetes_config_map_v1.main.metadata[0].name
           }
@@ -65,7 +65,7 @@ resource "kubernetes_deployment_v1" "main" {
             container_port = 6379
           }
           volume_mount {
-            name       = "${var.resources_prefix}-redis"
+            name       = "redis"
             mount_path = "/etc/redis"
           }
         }
@@ -85,7 +85,7 @@ resource "kubernetes_service_v1" "main" {
   spec {
     type = "ClusterIP"
     selector = {
-      component = "${var.resources_prefix}-redis"
+      component = "redis"
     }
     port {
       port        = 6379
@@ -99,10 +99,10 @@ resource "kubernetes_service_v1" "main" {
 
 resource "kubernetes_secret_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-cache-url"
+    name      = "cache-url"
     namespace = var.namespace
   }
   data = {
-    CACHE_URL = "redis://:${random_password.main.result}@$redis:6379"
+    CACHE_URL = "redis://:${random_password.main.result}@${kubernetes_service_v1.main.metadata[0].name}:6379"
   }
 }

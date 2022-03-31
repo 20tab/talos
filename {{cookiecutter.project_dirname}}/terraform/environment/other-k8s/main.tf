@@ -3,9 +3,6 @@ locals {
 
   media_storage = "{{ cookiecutter.media_storage }}"
 
-  stack_resources_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
-  env_resources_prefix   = "${local.project_slug}-${var.env_slug}"
-
   namespace = kubernetes_namespace_v1.main.metadata[0].name
 
   project_host = regexall("https?://([^/]+)", var.project_url)[0][0]
@@ -57,7 +54,7 @@ provider "kubernetes" {
 
 resource "kubernetes_namespace_v1" "main" {
   metadata {
-    name = local.env_resources_prefix
+    name = "${local.project_slug}-${var.env_slug}"
   }
 }
 
@@ -68,12 +65,10 @@ module "postgres" {
 
   namespace = local.namespace
 
-  resources_prefix = local.env_resources_prefix
-
   postgres_image = var.postgres_image
 
-  database_name = "${local.env_resources_prefix}-database"
-  database_user = "${local.env_resources_prefix}-database-user"
+  database_name = "${local.project_slug}-${var.env_slug}-database"
+  database_user = "${local.project_slug}-${var.env_slug}-database-user"
 
   persistent_volume_capacity       = var.postgres_persistent_volume_capacity
   persistent_volume_claim_capacity = var.postgres_persistent_volume_claim_capacity
@@ -87,8 +82,6 @@ module "redis" {
 
   namespace = local.namespace
 
-  resources_prefix = local.env_resources_prefix
-
   redis_image = var.redis_image
 }
 
@@ -98,8 +91,6 @@ module "routing" {
   source = "../modules/kubernetes/routing"
 
   namespace = local.namespace
-
-  resources_prefix = local.env_resources_prefix
 
   project_host = local.project_host
 
@@ -145,8 +136,6 @@ module "database_dump_cronjob" {
   source = "../modules/kubernetes/database-dump-cronjob"
 
   namespace = local.namespace
-
-  resources_prefix = local.project_slug
 
   media_storage = local.media_storage
 

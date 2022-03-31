@@ -3,8 +3,7 @@ locals {
 
   media_storage = "{{ cookiecutter.media_storage }}"
 
-  stack_resources_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
-  env_resources_prefix   = "${local.project_slug}-${var.env_slug}"
+  core_resource_name_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
 
   namespace = kubernetes_namespace_v1.main.metadata[0].name
 
@@ -15,7 +14,7 @@ locals {
   use_s3 = length(regexall("s3", local.media_storage)) > 0
 
   s3_host        = local.media_storage == "digitalocean-s3" ? "digitaloceanspaces.com" : var.s3_host
-  s3_bucket_name = local.media_storage == "digitalocean-s3" ? "${local.stack_resources_prefix}-s3-bucket" : var.s3_bucket_name
+  s3_bucket_name = local.media_storage == "digitalocean-s3" ? "${local.core_resource_name_prefix}-s3-bucket" : var.s3_bucket_name
 
   postgres_dump_enabled = alltrue(
     [
@@ -66,23 +65,23 @@ provider "kubernetes" {
 /* Data Sources */
 
 data "digitalocean_kubernetes_cluster" "main" {
-  name = "${local.stack_resources_prefix}-k8s-cluster"
+  name = "${local.core_resource_name_prefix}-k8s-cluster"
 }
 
 data "digitalocean_database_cluster" "postgres" {
-  name = "${local.stack_resources_prefix}-database-cluster"
+  name = "${local.core_resource_name_prefix}-database-cluster"
 }
 
 data "digitalocean_database_cluster" "redis" {
   count = var.use_redis == "true" ? 1 : 0
 
-  name = "${local.stack_resources_prefix}-redis-cluster"
+  name = "${local.core_resource_name_prefix}-redis-cluster"
 }
 
 data "digitalocean_spaces_bucket" "postgres_dump" {
   count = local.postgres_dump_enabled ? 1 : 0
 
-  name   = "${local.stack_resources_prefix}-s3-bucket"
+  name   = "${local.core_resource_name_prefix}-s3-bucket"
   region = var.s3_region
 }
 
@@ -111,7 +110,7 @@ resource "digitalocean_database_connection_pool" "postgres" {
 
 resource "kubernetes_namespace_v1" "main" {
   metadata {
-    name = local.env_resources_prefix
+    name = "${local.project_slug}-${var.env_slug}"
   }
 }
 
@@ -121,8 +120,6 @@ module "routing" {
   source = "../modules/kubernetes/routing"
 
   namespace = local.namespace
-
-  resources_prefix = local.env_resources_prefix
 
   project_host = local.project_host
 
@@ -162,7 +159,7 @@ resource "kubernetes_secret_v1" "regcred" {
 
 resource "kubernetes_secret_v1" "database_url" {
   metadata {
-    name      = "${local.env_resources_prefix}-database-url"
+    name      = "database-url"
     namespace = local.namespace
   }
   data = {
@@ -174,7 +171,7 @@ resource "kubernetes_secret_v1" "cache_url" {
   count = var.use_redis == "true" ? 1 : 0
 
   metadata {
-    name      = "${local.env_resources_prefix}-cache-url"
+    name      = "cache-url"
     namespace = local.namespace
   }
   data = {
@@ -190,8 +187,6 @@ module "database_dump_cronjob" {
   source = "../modules/kubernetes/database-dump-cronjob"
 
   namespace = local.namespace
-
-  resources_prefix = local.project_slug
 
   media_storage = local.media_storage
 

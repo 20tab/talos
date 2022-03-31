@@ -8,11 +8,6 @@ variable "namespace" {
   type        = string
 }
 
-variable "resources_prefix" {
-  description = "The prefix for Kubernetes resources names."
-  type        = string
-}
-
 variable "s3_access_id" {
   description = "The S3 bucket access key ID."
   type        = string

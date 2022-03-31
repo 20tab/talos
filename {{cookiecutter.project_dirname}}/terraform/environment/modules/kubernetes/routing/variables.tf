@@ -67,8 +67,3 @@ variable "project_host" {
   description = "The project host."
   type        = string
 }
-
-variable "resources_prefix" {
-  description = "The prefix for Kubernetes resources names."
-  type        = string
-}

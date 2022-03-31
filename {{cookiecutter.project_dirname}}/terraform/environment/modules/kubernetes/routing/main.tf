@@ -9,7 +9,13 @@ locals {
   )
   frontend_paths = toset(var.frontend_service_slug != "" ? ["/"] : [])
 
-  basic_auth_enabled = var.basic_auth_enabled == "true" && var.basic_auth_username != "" && var.basic_auth_password != ""
+  basic_auth_enabled = alltrue(
+    [
+      var.basic_auth_enabled == "true",
+      var.basic_auth_username != "",
+      var.basic_auth_password != ""
+    ]
+  )
 
   base_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
 }
@@ -67,7 +73,7 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
-      name      = "${var.resources_prefix}-ingress-route"
+      name      = "main"
       namespace = var.namespace
     }
     spec = merge(

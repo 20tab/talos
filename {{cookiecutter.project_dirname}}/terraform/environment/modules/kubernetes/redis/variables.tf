@@ -8,8 +8,3 @@ variable "redis_image" {
   type        = string
   default     = "redis:6"
 }
-
-variable "resources_prefix" {
-  description = "The prefix for Kubernetes resources names."
-  type        = string
-}

@@ -15,7 +15,7 @@ terraform {
 
 resource "kubernetes_persistent_volume_v1" "main" {
   metadata {
-    name = "${var.resources_prefix}-postgres"
+    name = "${var.namespace}-postgres"
   }
   spec {
     capacity = {
@@ -32,7 +32,7 @@ resource "kubernetes_persistent_volume_v1" "main" {
 
 resource "kubernetes_persistent_volume_claim_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-postgres"
+    name      = "postgres"
     namespace = var.namespace
   }
   spec {
@@ -58,7 +58,7 @@ resource "random_password" "main" {
 
 resource "kubernetes_secret_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-postgres"
+    name      = "postgres"
     namespace = var.namespace
   }
   data = {
@@ -69,7 +69,7 @@ resource "kubernetes_secret_v1" "main" {
 
 resource "kubernetes_config_map_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-postgres"
+    name      = "postgres"
     namespace = var.namespace
   }
   data = {
@@ -81,25 +81,25 @@ resource "kubernetes_config_map_v1" "main" {
 
 resource "kubernetes_deployment_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-postgres"
+    name      = "postgres"
     namespace = var.namespace
   }
   spec {
     replicas = 1
     selector {
       match_labels = {
-        component = "${var.resources_prefix}-postgres"
+        component = "postgres"
       }
     }
     template {
       metadata {
         labels = {
-          component = "${var.resources_prefix}-postgres"
+          component = "postgres"
         }
       }
       spec {
         volume {
-          name = "${var.resources_prefix}-postgres"
+          name = "postgres"
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim_v1.main.metadata[0].name
           }
@@ -111,7 +111,7 @@ resource "kubernetes_deployment_v1" "main" {
             container_port = 5432
           }
           volume_mount {
-            name       = "${var.resources_prefix}-postgres"
+            name       = "postgres"
             mount_path = "/var/lib/postgresql/data"
             sub_path   = "postgres"
           }
@@ -141,7 +141,7 @@ resource "kubernetes_service_v1" "main" {
   spec {
     type = "ClusterIP"
     selector = {
-      component = "${var.resources_prefix}-postgres"
+      component = "postgres"
     }
     port {
       port        = 5432
@@ -155,10 +155,10 @@ resource "kubernetes_service_v1" "main" {
 
 resource "kubernetes_secret_v1" "database_url" {
   metadata {
-    name      = "${var.resources_prefix}-database-url"
+    name      = "database-url"
     namespace = var.namespace
   }
   data = {
-    DATABASE_URL = "postgres://${var.database_user}:${random_password.main.result}@postgres:5432/${var.database_name}"
+    DATABASE_URL = "postgres://${var.database_user}:${random_password.main.result}@${kubernetes_service_v1.main.metadata[0].name}:5432/${var.database_name}"
   }
 }

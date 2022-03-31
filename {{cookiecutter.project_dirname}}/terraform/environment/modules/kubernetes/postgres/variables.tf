@@ -35,8 +35,3 @@ variable "postgres_image" {
   type        = string
   default     = "postgres:14"
 }
-
-variable "resources_prefix" {
-  description = "The prefix for Kubernetes resources names."
-  type        = string
-}

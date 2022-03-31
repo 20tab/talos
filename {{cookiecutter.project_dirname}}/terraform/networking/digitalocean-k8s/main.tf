@@ -1,7 +1,7 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
-  resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+  resource_name_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
 
   stacks = jsondecode(<<EOF
 {{ cookiecutter.stacks|tojson(2) }}
@@ -60,7 +60,7 @@ provider "kubernetes" {
 /* Data Sources */
 
 data "digitalocean_kubernetes_cluster" "main" {
-  name = "${local.resource_name}-k8s-cluster"
+  name = "${local.resource_name_prefix}-k8s-cluster"
 }
 
 data "digitalocean_domain" "main" {
@@ -90,7 +90,7 @@ module "traefik" {
   letsencrypt_certificate_email = var.letsencrypt_certificate_email
   load_balancer_annotations = merge(
     {
-      "service.beta.kubernetes.io/do-loadbalancer-name" = "${local.resource_name}-load-balancer"
+      "service.beta.kubernetes.io/do-loadbalancer-name" = "${local.resource_name_prefix}-load-balancer"
     },
     var.project_domain != "" ? {
       "service.beta.kubernetes.io/do-loadbalancer-protocol"                         = "http"

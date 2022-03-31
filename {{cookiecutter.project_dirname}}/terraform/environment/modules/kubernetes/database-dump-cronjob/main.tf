@@ -9,7 +9,7 @@ terraform {
 
 resource "kubernetes_secret_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-postgres-dump"
+    name      = "postgres-dump"
     namespace = var.namespace
   }
 
@@ -21,7 +21,7 @@ resource "kubernetes_secret_v1" "main" {
 
 resource "kubernetes_config_map_v1" "main" {
   metadata {
-    name      = "${var.resources_prefix}-postgres-dump"
+    name      = "postgres-dump"
     namespace = var.namespace
   }
 
@@ -62,7 +62,7 @@ resource "kubernetes_cron_job_v1" "main" {
               }
               env_from {
                 secret_ref {
-                  name = "${var.resources_prefix}-database-url"
+                  name = "database-url"
                 }
               }
             }

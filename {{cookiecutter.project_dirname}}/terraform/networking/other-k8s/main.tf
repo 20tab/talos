@@ -1,8 +1,6 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
-  resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
-
   stacks = jsondecode(<<EOF
 {{ cookiecutter.stacks|tojson(2) }}
 EOF
