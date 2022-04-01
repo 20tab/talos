@@ -16,7 +16,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: 20tab/talos-django
+          images: 20tab/talos
       -
         name: Login to DockerHub
         if: github.event_name != 'pull_request'
