@@ -1,10 +1,14 @@
 FROM python:3.10-slim-bullseye AS base
 
+HEALTHCHECK NONE
 ARG DEBIAN_FRONTEND=noninteractive
 ARG OUTPUT_BASE_DIR=/data
 ENV OUTPUT_BASE_DIR=${OUTPUT_BASE_DIR}
+ARG USER=appuser
+ENV APPUSER=$USER OUTPUT_BASE_DIR=${OUTPUT_BASE_DIR}
+RUN useradd --skel /dev/null --create-home $APPUSER
 WORKDIR /app
-COPY ./requirements/common.txt requirements/common.txt
+COPY --chown=$APPUSER ./requirements/common.txt requirements/common.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         git \
@@ -14,16 +18,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - \
     && apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
     && apt-get update && apt-get install -y --no-install-recommends terraform \
-    && python3 -m pip install --no-cache-dir -r requirements/common.txt
+    && su $APPUSER -c "python3 -m pip install --no-cache-dir -r requirements/common.txt"
+USER APPUSER
 COPY . .
 RUN mkdir ${OUTPUT_BASE_DIR}
 ENTRYPOINT [ "python", "/app/setup.py" ]
 
 FROM base AS local
 
-COPY ./requirements/local.txt requirements/local.txt
+USER root
+COPY --chown=$APPUSER ./requirements/local.txt requirements/local.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
         make \
         openssh-client \
-    && python3 -m pip install --no-cache-dir -r requirements/local.txt
+    && su $APPUSER -c "python3 -m pip install --no-cache-dir -r requirements/local.txt"
+USER APPUSER
 RUN python3 -m pip install --no-cache-dir -r requirements/local.txt

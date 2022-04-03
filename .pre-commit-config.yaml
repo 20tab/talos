@@ -51,3 +51,8 @@ repos:
           - flake8-bugbear~=22.1.11
           - flake8-docstrings~=1.6.0
           - flake8-isort~=4.1.0
+  - repo: https://github.com/bridgecrewio/checkov.git
+    rev: "2.0.1027"
+    hooks:
+    - id: checkov
+      args: [--config-file, '.checkov.yaml']
