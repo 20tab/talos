@@ -39,7 +39,8 @@ resource "kubernetes_cron_job_v1" "main" {
   }
 
   spec {
-    schedule = "0 0 * * *"
+    schedule                      = "0 0 * * *"
+    successful_jobs_history_limit = 31
     job_template {
       metadata {}
       spec {
