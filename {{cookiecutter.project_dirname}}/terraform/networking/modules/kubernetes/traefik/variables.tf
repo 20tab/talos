@@ -11,7 +11,7 @@ variable "load_balancer_annotations" {
 }
 
 variable "ssl_enabled" {
-  description = "Tell if SSL certificates should be issued."
-  type        = bool
-  default     = false
+  description = "If 'true', enable SSL."
+  type        = string
+  default     = "false"
 }

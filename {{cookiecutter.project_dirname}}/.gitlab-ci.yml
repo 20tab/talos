@@ -120,6 +120,7 @@ stack_{{ stack_slug }}_core_apply:
     TF_VAR_letsencrypt_certificate_email: "${LETSENCRYPT_CERTIFICATE_EMAIL}"
     TF_VAR_monitoring_domain_prefix: "${MONITORING_DOMAIN_PREFIX}"
     TF_VAR_monitoring_url: "${MONITORING_URL}"
+    TF_VAR_ssl_enabled: "${SSL_ENABLED}"
     TF_VAR_stack_slug: {{ stack_slug }}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-networking
@@ -187,6 +188,8 @@ stack_{{ stack_slug }}_networking_apply:
     TF_VAR_s3_host: "${S3_HOST}"{% elif cookiecutter.media_storage == "aws-s3" %}
     TF_VAR_s3_bucket_name: "${S3_BUCKET_NAME}"{% endif %}{% endif %}
     TF_VAR_stack_slug: {{ stack_slug }}
+    TF_VAR_tls_certificate_crt: "${TLS_CERTIFICATE_CRT}"
+    TF_VAR_tls_certificate_key: "${TLS_CERTIFICATE_KEY}"
     TF_VAR_use_redis: "${USE_REDIS}"{% for env_slug, env_conf in stack_envs.items() %}
 
 # ENVIRONMENT STACK - {{ env_conf.name }} #

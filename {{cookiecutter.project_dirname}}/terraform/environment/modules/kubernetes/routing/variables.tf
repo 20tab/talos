@@ -67,3 +67,17 @@ variable "project_host" {
   description = "The project host."
   type        = string
 }
+
+variable "tls_certificate_crt" {
+  description = "The TLS certificate .crt file content."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "tls_certificate_key" {
+  description = "The TLS certificate .key file content."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

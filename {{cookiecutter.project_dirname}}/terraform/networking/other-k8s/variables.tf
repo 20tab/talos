@@ -58,6 +58,13 @@ variable "project_domain" {
   default     = ""
 }
 
+variable "ssl_enabled" {
+  description = "If 'true', enable SSL."
+  type        = string
+  default     = "false"
+}
+
+
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string

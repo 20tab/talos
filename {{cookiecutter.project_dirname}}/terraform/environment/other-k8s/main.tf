@@ -107,6 +107,9 @@ module "routing" {
   frontend_service_slug = var.frontend_service_slug
 
   media_storage = local.media_storage
+
+  tls_certificate_crt = var.tls_certificate_crt
+  tls_certificate_key = var.tls_certificate_key
 }
 
 /* Secrets */

@@ -7,8 +7,6 @@ EOF
   )
   envs = local.stacks[var.stack_slug]
 
-  traefik_ssl_enabled = var.project_domain == "" && var.letsencrypt_certificate_email != ""
-
   monitoring_enabled = var.monitoring_url != "" && var.stack_slug == "main"
   monitoring_host    = local.monitoring_enabled ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
 }
@@ -51,7 +49,7 @@ module "traefik" {
   source = "../modules/kubernetes/traefik"
 
   letsencrypt_certificate_email = var.letsencrypt_certificate_email
-  ssl_enabled                   = local.traefik_ssl_enabled
+  ssl_enabled                   = var.ssl_enabled
 }
 
 /* Reloader */

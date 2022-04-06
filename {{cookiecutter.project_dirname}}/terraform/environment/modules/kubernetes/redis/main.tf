@@ -36,6 +36,9 @@ resource "kubernetes_deployment_v1" "main" {
   metadata {
     name      = "redis"
     namespace = var.namespace
+    annotations = {
+      "reloader.stakater.com/auto" = "true"
+    }
   }
   spec {
     replicas = 1

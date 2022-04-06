@@ -18,6 +18,8 @@ locals {
   )
 
   base_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
+
+  tls_enabled = var.tls_certificate_crt != "" && var.tls_certificate_key != ""
 }
 
 terraform {
@@ -66,6 +68,24 @@ resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
   }
 }
 
+/* TLS Secret */
+
+resource "kubernetes_secret_v1" "tls" {
+  count = local.tls_enabled ? 1 : 0
+
+  metadata {
+    name      = "tls-certificate"
+    namespace = var.namespace
+  }
+
+  data = {
+    "tls.crt" = base64decode(var.tls_certificate_crt)
+    "tls.key" = base64decode(var.tls_certificate_key)
+  }
+
+  type = "kubernetes.io/tls"
+}
+
 /* Traefik Ingress Route */
 
 resource "kubernetes_manifest" "traefik_ingress_route" {
@@ -109,7 +129,12 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
             }
           ]
         )
-      }
+      },
+      local.tls_enabled ? {
+        tls = {
+          secretName = kubernetes_secret_v1.tls[0].metadata[0].name
+        }
+      } : {}
     )
   }
 }

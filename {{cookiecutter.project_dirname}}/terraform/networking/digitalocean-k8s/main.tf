@@ -100,7 +100,7 @@ module "traefik" {
       "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https"           = "true"
     } : {}
   )
-  ssl_enabled = var.project_domain == "" && var.letsencrypt_certificate_email != ""
+  ssl_enabled = var.ssl_enabled
 }
 
 /* Reloader */

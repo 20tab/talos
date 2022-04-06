@@ -161,7 +161,8 @@ def run(
         letsencrypt_certificate_email and gitlab_project_variables.update(
             LETSENCRYPT_CERTIFICATE_EMAIL=(
                 f'{{value = "{letsencrypt_certificate_email}"}}'
-            )
+            ),
+            SSL_ENABLED='{{value = "true"}}',
         )
         sentry_org and gitlab_group_variables.update(
             SENTRY_ORG='{value = "%s"}' % sentry_org,

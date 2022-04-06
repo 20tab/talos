@@ -30,15 +30,19 @@ resource "helm_release" "traefik" {
             annotations = var.load_balancer_annotations
           }
         },
-        var.ssl_enabled ? {
-          additionalArguments = [
-            "--certificatesresolvers.default.acme.tlschallenge",
-            "--certificatesresolvers.default.acme.email=${var.letsencrypt_certificate_email}",
-            "--certificatesresolvers.default.acme.storage=/data/acme.json",
-            "--entrypoints.web.http.redirections.entryPoint.to=websecure",
-            "--entrypoints.websecure.http.tls=true",
-            "--entrypoints.websecure.http.tls.certResolver=default",
-          ]
+        var.ssl_enabled == "true" ? {
+          additionalArguments = concat(
+            [
+              "--entrypoints.web.http.redirections.entryPoint.to=websecure",
+              "--entrypoints.websecure.http.tls=true",
+            ],
+            var.letsencrypt_certificate_email != "" ? [
+              "--certificatesresolvers.default.acme.tlschallenge",
+              "--certificatesresolvers.default.acme.email=${var.letsencrypt_certificate_email}",
+              "--certificatesresolvers.default.acme.storage=/data/acme.json",
+              "--entrypoints.websecure.http.tls.certResolver=default",
+            ] : [],
+          )
         } : {}
       )
     )
