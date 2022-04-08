@@ -1,26 +1,48 @@
 """Web project initialization CLI constants."""
 
-EMPTY_SERVICE_TYPE = "none"
+# Env vars
+
+GITLAB_TOKEN_ENV_VAR = "GITLAB_PRIVATE_TOKEN"
+
+# Subrepos
 
 BACKEND_TEMPLATE_URLS = {
     "django": "https://github.com/20tab/django-continuous-delivery"
 }
 
-BACKEND_TYPE_CHOICES = ["django", EMPTY_SERVICE_TYPE]
+FRONTEND_TEMPLATE_URLS = {
+    "nextjs": "https://github.com/20tab/react-ts-continuous-delivery"
+}
+
+SUBREPOS_DIR = ".subrepos"
+
+# Services type
+
+ORCHESTRATOR_SERVICE_SLUG = "orchestrator"
+
+EMPTY_SERVICE_TYPE = "none"
 
 BACKEND_TYPE_DEFAULT = "django"
 
-DEPLOYMENT_TYPE_CHOICES = ["k8s-digitalocean", "k8s-other"]
+BACKEND_TYPE_CHOICES = [BACKEND_TYPE_DEFAULT, EMPTY_SERVICE_TYPE]
 
-DEPLOYMENT_TYPE_DEFAULT = "k8s-digitalocean"
+FRONTEND_TYPE_DEFAULT = "nextjs"
 
-DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT = "db-s-1vcpu-2gb"
+FRONTEND_TYPE_CHOICES = [FRONTEND_TYPE_DEFAULT, EMPTY_SERVICE_TYPE]
 
-DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT = "db-s-1vcpu-2gb"
+# Deployment type
 
-DIGITALOCEAN_SPACES_REGION_DEFAULT = "fra1"
+DEPLOYMENT_TYPE_DIGITALOCEAN = "digitalocean-k8s"
 
-ENVIRONMENT_DISTRIBUTION_CHOICES = ["1", "2", "3"]
+DEPLOYMENT_TYPE_OTHER = "other-k8s"
+
+DEPLOYMENT_TYPE_CHOICES = [DEPLOYMENT_TYPE_DIGITALOCEAN, DEPLOYMENT_TYPE_OTHER]
+
+# Environments distribution
+
+ENVIRONMENT_DISTRIBUTION_DEFAULT = "1"
+
+ENVIRONMENT_DISTRIBUTION_CHOICES = [ENVIRONMENT_DISTRIBUTION_DEFAULT, "2", "3"]
 
 ENVIRONMENT_DISTRIBUTION_PROMPT = """Choose the environments distribution:
   1 - All environments share the same stack (Default)
@@ -28,25 +50,32 @@ ENVIRONMENT_DISTRIBUTION_PROMPT = """Choose the environments distribution:
   3 - Each environment has its own stack
 """
 
-ENVIRONMENT_DISTRIBUTION_DEFAULT = "1"
+# DigitalOcean services
 
-FRONTEND_TEMPLATE_URLS = {
-    "nextjs": "https://github.com/20tab/react-ts-continuous-delivery"
-}
+DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT = "db-s-1vcpu-2gb"
 
-FRONTEND_TYPE_CHOICES = ["nextjs", EMPTY_SERVICE_TYPE]
+DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT = "db-s-1vcpu-2gb"
 
-FRONTEND_TYPE_DEFAULT = "nextjs"
+DIGITALOCEAN_SPACES_REGION_DEFAULT = "fra1"
 
-GITLAB_TOKEN_ENV_VAR = "GITLAB_PRIVATE_TOKEN"
+# AWS services
 
-MEDIA_STORAGE_CHOICES = ["local", "s3-digitalocean", "none"]
+AWS_S3_REGION_DEFAULT = "eu-central-1"
 
-MEDIA_STORAGE_DEFAULT = "s3-digitalocean"
+# Media storage
 
-SERVICE_SLUG_DEFAULT = "orchestrator"
+MEDIA_STORAGE_DIGITALOCEAN_S3 = "digitalocean-s3"
 
-SUBREPOS_DIR = ".subrepos"
+MEDIA_STORAGE_AWS_S3 = "aws-s3"
+
+MEDIA_STORAGE_CHOICES = [
+    MEDIA_STORAGE_DIGITALOCEAN_S3,
+    MEDIA_STORAGE_AWS_S3,
+    "local",
+    "none",
+]
+
+# Terraform backend
 
 TERRAFORM_BACKEND_DEFAULT = "gitlab"
 

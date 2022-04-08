@@ -29,7 +29,7 @@ Then, install the following requirements
 
 ### 🌊 DigitalOcean
 If DigitalOcean is chosen for deployment, a Personal Access Token with _write_ permission is required.<br/>
-Additionally if DigitalOcean Spaces is the chosen media storage backend, a pair of S3 access keys is required.
+Additionally, if DigitalOcean Spaces is the chosen media storage backend, a pair of S3 access keys is required.
 [DigitalOcean API Slugs](https://slugs.do-api.dev/)
 
 **Note:** all credentials can be generated in the DigitalOcean API configuration section.<br/>
@@ -74,7 +74,7 @@ Choose the environments distribution:
   2 - Dev and Stage environments share the same stack, Prod has its own
   3 - Each environment has its own stack
  (1, 2, 3) [1]:
-Deploy type (k8s-digitalocean, k8s-other) [k8s-digitalocean]:
+Deploy type (digitalocean-k8s, other-k8s) [digitalocean-k8s]:
 DigitalOcean token:
 Project domain (e.g. 20tab.com, if you prefer to skip DigitalOcean DNS configuration, leave blank) []:
 Development environment complete URL [https://dev.my-project-name.com]:
@@ -87,7 +87,7 @@ Do you want to configure Redis? [y/N]:
 Sentry organization (e.g. "20tab", leave blank if unused) []:
 Do you want to enable the monitoring stack? [y/N]:
 Do you want to configure Pact? [Y/n]: n
-Media storage (local, s3-digitalocean, none) [s3-digitalocean]:
+Media storage (digitalocean-s3, aws-s3, local, none) [digitalocean-s3]:
 Do you want to configure GitLab? [Y/n]:
 GitLab group slug [my-project-name]:
 Make sure the GitLab "my-project-name" group exists before proceeding. Continue? [y/N]: y
@@ -180,8 +180,8 @@ Value  | Description | Argument
 #### Deploy type
 Value  | Description | Argument
 ------------- | ------------- | -------------
-k8s-digitalocean  | It will use the DigitalOcean | `--deployment-type=k8s-digitalocean`
-k8s-other  | The configuration is custom and must be done manually | `--deployment-type=k8s-other`
+digitalocean-k8s  | It will use the DigitalOcean | `--deployment-type=digitalocean-k8s`
+other-k8s  | The configuration is custom and must be done manually | `--deployment-type=other-k8s`
 
 #### Project Domain
 If you don't want DigitalOcean DNS configuration the following args are required
@@ -194,8 +194,9 @@ If you don't want DigitalOcean DNS configuration the following args are required
 
 Value  | Description | Argument
 ------------- | ------------- | -------------
-local  | Docker Volume are used for store media | `--media-storage=local`
-s3-digitalocean  | DigitalOcean Spaces are used for store media | [DigitalOcean Media storage](#media-storage)
+digitalocean-s3  | DigitalOcean Spaces are used to store media | [DigitalOcean Media storage](#media-storage)
+aws-s3  | AWS S3 are used to store media | `--media-storage=aws-s3`
+local  | Docker Volume are used to store media | `--media-storage=local`
 none  | Project have no media | `--media-storage=none`
 
 ### 🌊 DigitalOcean
@@ -204,10 +205,10 @@ none  | Project have no media | `--media-storage=none`
 `--digitalocean-token={{digitalocean-token}}`
 
 #### Media storage
-`--media-storage=s3-digitalocean`<br/>
-`--digitalocean-spaces-bucket-region=fra1`<br/>
-`--digitalocean-spaces-access-id`<br/>
-`--digitalocean-spaces-secret-key`
+`--media-storage=digitalocean-s3`<br/>
+`--spaces-bucket-region=fra1`<br/>
+`--spaces-access-id`<br/>
+`--spaces-secret-key`
 
 #### Project Domain
 If you want DigitalOcean DNS configuration the following args are required
@@ -227,9 +228,7 @@ If you want DigitalOcean DNS configuration the following args are required
 `"--digitalocean-database-cluster-node-size=db-s-1vcpu-2gb`
 
 #### Monitoring
-For enable monitoring the following arguments are needed:
-
-`--use-monitoring`<br/>
+For enabling monitoring the following arguments are needed:
 
 if project domain is managed use
 
@@ -239,11 +238,8 @@ else use
 
 `--project-url-monitoring=https://logs.example.org/`
 
-Disabled args
-`--no-monitoring`
-
 #### Redis
-For enable redis integration the following arguments are needed:
+For enabling redis integration the following arguments are needed:
 
 `--use-redis`<br/>
 `--digitalocean-redis-cluster-region=fra1`<br/>
@@ -253,17 +249,13 @@ Disabled args
 `--no-redis`
 
 ### 🦊 GitLab
-> **⚠️ Important:  Make sure the GitLab group exists before create.**
+> **⚠️ Important:  Make sure the GitLab group exists before creating.**
 > https://gitlab.com/gitlab-org/gitlab/-/issues/244345
 
-For enable gitlab integration the following arguments are needed:
+For enabling gitlab integration the following arguments are needed:
 
-`--use-gitlab`<br/>
 `--gitlab-private-token={{gitlab-private-token}}`<br/>
 `--gitlab-group-slug={{gitlab-group-slug}}`
-
-Disabled args
-`--no-gitlab`
 
 Add user to repository using comma separeted arguments
 
@@ -272,28 +264,28 @@ Add user to repository using comma separeted arguments
 `--gitlab-group-developers=user1, user@example.org`
 
 #### 👨‍⚖️ Pact
-For enable pact the following arguments are needed:
+For enabling pact the following arguments are needed:
 
 `--pact-broker-url={{pact-broker-url}}`<br/>
 `--pact-broker-username={{pact-broker-username}}`<br/>
 `--pact-broker-password={{pact-broker-password}}`
 
 #### 🪖 Sentry
-For enable sentry integration the following arguments are needed:
+For enabling sentry integration the following arguments are needed:
 
 `--sentry-url=https://sentry.io/`<br/>
 `--sentry-org={{sentry-org}}`<br/>
 `--sentry-auth-token={{sentry-auth-token}}`
 
-If the project have backend service is needed:
+If the project has a backend service, the following argument is needed:
 
 `--backend-sentry-dsn={{backend-sentry-dsn}}`
 
-If the project have frontend service is needed:
+If the project has a frontend service, the following argument is needed:
 
 `--frontend-sentry-dsn={{frontend-sentry-dsn}}`
 
-#### 🔇 Silent
-Is command for use default if no args are provided
+#### 🔇 Quiet
+No confirmations shown.
 
-`--silent`
+`--quiet`

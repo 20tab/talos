@@ -87,12 +87,6 @@ variable "k8s_cluster_version" {
   default     = ""
 }
 
-variable "media_storage" {
-  description = "The media storage solution."
-  type        = string
-  default     = "{{ cookiecutter.media_storage }}"
-}
-
 variable "project_domain" {
   description = "The project domain."
   type        = string
@@ -121,19 +115,19 @@ variable "redis_cluster_version" {
   default     = "6"
 }
 
-variable "s3_bucket_access_id" {
+variable "s3_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
   sensitive   = true
 }
 
-variable "s3_bucket_region" {
-  description = "The DigitalOcean S3 Spaces region."
+variable "s3_region" {
+  description = "The S3 bucket region."
   type        = string
   default     = ""
 }
 
-variable "s3_bucket_secret_key" {
+variable "s3_secret_key" {
   description = "The S3 bucket secret access key."
   type        = string
   sensitive   = true
@@ -145,7 +139,7 @@ variable "stack_slug" {
 }
 
 variable "use_redis" {
-  description = "If 'true', a DigitalOcean Redis database is created."
+  description = "If 'true', a Redis database is created."
   type        = string
   default     = "false"
 }

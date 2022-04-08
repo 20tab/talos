@@ -1,0 +1,9 @@
+logs:
+  general:
+    level: "DEBUG"
+
+providers:
+  kubernetesIngress:
+    enabled: true
+  kubernetesIngressRoute:
+    enabled: true

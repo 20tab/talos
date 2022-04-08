@@ -1,6 +1,8 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
+  media_storage = "{{ cookiecutter.media_storage }}"
+
   digitalocean_default_region = "fra1"
   digitalocean_regions        = data.digitalocean_regions.main.regions[*].slug
 
@@ -19,7 +21,7 @@ locals {
     var.k8s_cluster_region
   ) ? var.k8s_cluster_region : local.digitalocean_default_region
 
-  resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+  resource_name_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
 }
 
 terraform {
@@ -39,8 +41,8 @@ terraform {
 provider "digitalocean" {
   token = var.digitalocean_token
 
-  spaces_access_id  = var.s3_bucket_access_id
-  spaces_secret_key = var.s3_bucket_secret_key
+  spaces_access_id  = var.s3_access_id
+  spaces_secret_key = var.s3_secret_key
 }
 
 /* Data Sources */
@@ -79,7 +81,7 @@ data "digitalocean_regions" "main" {
 /* Kubernetes Cluster */
 
 resource "digitalocean_kubernetes_cluster" "main" {
-  name   = "${local.resource_name}-k8s-cluster"
+  name   = "${local.resource_name_prefix}-k8s-cluster"
   region = local.k8s_cluster_region
   version = coalesce(
     var.k8s_cluster_version,
@@ -88,7 +90,7 @@ resource "digitalocean_kubernetes_cluster" "main" {
   auto_upgrade = true
 
   node_pool {
-    name       = "${local.resource_name}-k8s-node"
+    name       = "${local.resource_name_prefix}-k8s-node"
     node_count = var.k8s_cluster_node_count
     size = contains(
       data.digitalocean_sizes.k8s.sizes[*].slug,
@@ -109,19 +111,19 @@ resource "digitalocean_kubernetes_cluster" "main" {
 /* Spaces Bucket */
 
 resource "digitalocean_spaces_bucket" "main" {
-  count = var.media_storage == "s3-digitalocean" ? 1 : 0
+  count = local.media_storage == "digitalocean-s3" ? 1 : 0
 
-  name = "${local.resource_name}-s3-bucket"
+  name = "${local.resource_name_prefix}-s3-bucket"
   region = contains(
     local.digitalocean_regions,
-    var.s3_bucket_region
-  ) ? var.s3_bucket_region : local.digitalocean_default_region
+    var.s3_region
+  ) ? var.s3_region : local.digitalocean_default_region
 }
 
 /* Postgres Cluster */
 
 resource "digitalocean_database_cluster" "postgres" {
-  name       = "${local.resource_name}-database-cluster"
+  name       = "${local.resource_name_prefix}-database-cluster"
   region     = local.database_cluster_region
   engine     = var.database_cluster_engine
   version    = var.database_cluster_version
@@ -151,7 +153,7 @@ resource "digitalocean_database_firewall" "postgres" {
 resource "digitalocean_database_cluster" "redis" {
   count = var.use_redis == "true" ? 1 : 0
 
-  name       = "${local.resource_name}-redis-cluster"
+  name       = "${local.resource_name_prefix}-redis-cluster"
   region     = local.redis_cluster_region
   engine     = "redis"
   version    = var.redis_cluster_version

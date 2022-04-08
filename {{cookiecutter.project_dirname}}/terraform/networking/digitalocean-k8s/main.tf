@@ -1,7 +1,7 @@
 locals {
   project_slug = "{{ cookiecutter.project_slug }}"
 
-  resource_name = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+  resource_name_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
 
   stacks = jsondecode(<<EOF
 {{ cookiecutter.stacks|tojson(2) }}
@@ -9,8 +9,8 @@ EOF
   )
   envs = local.stacks[var.stack_slug]
 
-  monitoring_enabled = var.use_monitoring == "true" && var.stack_slug == "main"
-  monitoring_host    = var.monitoring_url != "" ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
+  monitoring_enabled = var.monitoring_url != "" && var.stack_slug == "main"
+  monitoring_host    = local.monitoring_enabled ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
 }
 
 terraform {
@@ -24,11 +24,11 @@ terraform {
     }
     helm = {
       source  = "hashicorp/helm"
-      version = "2.4.1"
+      version = "2.5.0"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "2.8.0"
+      version = "2.9.0"
     }
   }
 }
@@ -60,7 +60,7 @@ provider "kubernetes" {
 /* Data Sources */
 
 data "digitalocean_kubernetes_cluster" "main" {
-  name = "${local.resource_name}-k8s-cluster"
+  name = "${local.resource_name_prefix}-k8s-cluster"
 }
 
 data "digitalocean_domain" "main" {
@@ -84,56 +84,23 @@ resource "digitalocean_certificate" "ssl_cert" {
 
 /* Traefik */
 
-resource "helm_release" "traefik" {
-  name             = "traefik"
-  chart            = "traefik"
-  namespace        = "traefik"
-  create_namespace = true
-  repository       = "https://helm.traefik.io/traefik"
-  timeout          = 900
+module "traefik" {
+  source = "../modules/kubernetes/traefik"
 
-  values = [
-    yamlencode(
-      {
-        service = {
-          enabled = "true"
-          type    = "LoadBalancer"
-          annotations = merge(
-            {
-              "service.beta.kubernetes.io/do-loadbalancer-name" = "${local.resource_name}-load-balancer"
-            },
-            var.project_domain != "" ? {
-              "service.beta.kubernetes.io/do-loadbalancer-protocol"                         = "http"
-              "service.beta.kubernetes.io/do-loadbalancer-tls-ports"                        = "443"
-              "service.beta.kubernetes.io/do-loadbalancer-certificate-id"                   = digitalocean_certificate.ssl_cert[0].uuid
-              "service.beta.kubernetes.io/do-loadbalancer-disable-lets-encrypt-dns-records" = "false"
-              "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https"           = "true"
-            } : {}
-          )
-        }
-        api = {}
-        entryPoints = {
-          web = {
-            address = ":80"
-          }
-          websecure = {
-            address = ":443"
-          }
-        }
-        log = {
-          level = "DEBUG"
-        }
-        providers = {
-          kubernetesIngress = {
-            enabled = "true"
-          }
-          kubernetesIngressRoute = {
-            enabled = "true"
-          }
-        }
-      }
-    )
-  ]
+  letsencrypt_certificate_email = var.letsencrypt_certificate_email
+  load_balancer_annotations = merge(
+    {
+      "service.beta.kubernetes.io/do-loadbalancer-name" = "${local.resource_name_prefix}-load-balancer"
+    },
+    var.project_domain != "" ? {
+      "service.beta.kubernetes.io/do-loadbalancer-protocol"                         = "http"
+      "service.beta.kubernetes.io/do-loadbalancer-tls-ports"                        = "443"
+      "service.beta.kubernetes.io/do-loadbalancer-certificate-id"                   = digitalocean_certificate.ssl_cert[0].uuid
+      "service.beta.kubernetes.io/do-loadbalancer-disable-lets-encrypt-dns-records" = "false"
+      "service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https"           = "true"
+    } : {}
+  )
+  ssl_enabled = var.ssl_enabled
 }
 
 /* Reloader */
@@ -149,7 +116,7 @@ resource "helm_release" "reloader" {
 module "monitoring" {
   count = local.monitoring_enabled ? 1 : 0
 
-  source = "./monitoring"
+  source = "../modules/kubernetes/monitoring"
 
   grafana_user     = var.grafana_user
   grafana_password = var.grafana_password
@@ -158,6 +125,6 @@ module "monitoring" {
   host = local.monitoring_host
 
   depends_on = [
-    helm_release.traefik
+    module.traefik
   ]
 }

@@ -27,7 +27,7 @@ This is the "{{ cookiecutter.project_name }}" orchestrator.
 
 ## Provisioning
 
-The first run is manual made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/orchestrator/-/pipelines/new).
+The first run is manual, made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/orchestrator/-/pipelines/new).
 
 To create all the terraform resources, run the pipeline with the following variable:
 
@@ -37,17 +37,17 @@ If you want to choose what to activate to limit any costs, read below.
 
 ### Stages
 
-Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster.
-Networking stage will create Ingress, Certificate and Monitoring if enabled.
-Environment stage will create the other resourse for each of it.
+{% if cookiecutter.deployment_type == "digitalocean-k8s" %}Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster.
+{% endif %}Networking stage will create Ingress, Certificate and Monitoring if enabled.
+Environment stage will create the other resource for each of it.
 
 Value  | Description
 ------------- | -------------
-`core` | Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "s3-digitalocean" %}, S3 Spaces{% endif %} and Databases Cluster
-`networking` | Networking stage will create Ingress, Certificate and Monitoring if enabled.
-`environment`  | Environment stage will create the other resourse for each of it.
+{% if cookiecutter.deployment_type == "digitalocean-k8s" %}C`core` | Core stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster
+{% endif %}`networking` | Networking stage will create Ingress, Certificate and Monitoring if enabled.
+`environment`  | Environment stage will create the other resource for each of it.
 
-`ENABLED_STAGE` = `core, networking, environment`
+`ENABLED_STAGE` = `{% if cookiecutter.deployment_type == "digitalocean-k8s" %}core, {% endif %}networking, environment`
 
 ### Stacks
 
@@ -71,7 +71,7 @@ Value  | Description
 
 ## Quickstart
 
-This section explains the steps you need to clone and work wityh this project.
+This section explains the steps you need to clone and work with this project.
 
 1. [clone](#clone) the project code
 2. set all the required [environment variables](#environment-variables)
@@ -87,11 +87,11 @@ This section explains the steps you need to clone and work wityh this project.
 Clone the orchestrator and services repositories:
 
 ```console
-$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/orchestrator.git {{ cookiecutter.project_dirname }}
-$ cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-$ git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
-$ cd ..
+git clone git@gitlab.com:{{ cookiecutter.project_slug }}/orchestrator.git {{ cookiecutter.project_dirname }}
+cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
+git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
+cd ..
 ```
 
 **NOTE** : We're cloning the `develop` branch for all repo.
@@ -103,7 +103,7 @@ In order for the project to run correctly, a number of environment variables mus
 Enter the newly created **project** directory and create the `.env` file copying from `.env_template`:
 
 ```console
-$ cd ~/projects/{{ cookiecutter.project_slug }}
+$ cd ~/projects/{{ cookiecutter.project_dirname }}
 $ cp .env_template .env
 ```
 
@@ -131,7 +131,7 @@ $ docker-compose up
 
 To show the Makefile self documentation help:
 
-```shell
+```console
 $ make
 ```
 
