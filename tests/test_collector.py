@@ -27,8 +27,6 @@ from bootstrap.collector import (
     clean_sentry_org,
     clean_service_dir,
     clean_terraform_backend,
-    clean_use_gitlab,
-    clean_use_pact,
 )
 
 

@@ -164,6 +164,7 @@ def run(
         )
         terraform_backend == TERRAFORM_BACKEND_TFC and gitlab_group_variables.update(
             TFC_TOKEN='{value = "%s", masked = true}' % terraform_cloud_token,
+        )
         letsencrypt_certificate_email and gitlab_project_variables.update(
             LETSENCRYPT_CERTIFICATE_EMAIL=(
                 f'{{value = "{letsencrypt_certificate_email}"}}'
