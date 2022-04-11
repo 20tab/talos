@@ -14,7 +14,7 @@ from bootstrap.constants import (
 )
 from bootstrap.exceptions import BootstrapError
 from bootstrap.helpers import slugify_option
-from bootstrap.runner import run
+from bootstrap.runner import Runner
 
 OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 
@@ -37,6 +37,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
     type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
 )
 @click.option("--terraform-backend")
+@click.option("--terraform-cloud-hostname")
 @click.option("--terraform-cloud-token")
 @click.option("--digitalocean-token")
 @click.option(
@@ -98,7 +99,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 def main(**options):
     """Run the setup."""
     try:
-        run(**collect(**options))
+        Runner(**collect(**options)).run()
     except BootstrapError as e:
         raise click.Abort() from e
 

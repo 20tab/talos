@@ -104,24 +104,27 @@ class TestBootstrapCollector(TestCase):
 
     def test_clean_terraform_backend(self):
         """Test cleaning the Terraform ."""
-        self.assertEqual(clean_terraform_backend("gitlab", None), ("gitlab", None))
+        self.assertEqual(
+            clean_terraform_backend("gitlab", None, None), ("gitlab", "", "")
+        )
         with input("gitlab"):
             self.assertEqual(
-                clean_terraform_backend("wrong-backend", None),
-                ("gitlab", None),
+                clean_terraform_backend("wrong-backend", None, None),
+                ("gitlab", "", ""),
             )
-        with input("terraform-cloud"):
+        with input("terraform-cloud", ""):
             self.assertEqual(
-                clean_terraform_backend("wrong-backend", "tfc-token"),
-                ("terraform-cloud", "tfc-token"),
+                clean_terraform_backend("wrong-backend", None, "tfc-token"),
+                ("terraform-cloud", "app.terraform.io", "tfc-token"),
             )
         with input(
             "terraform-cloud",
+            "tfc.20tab.com",
             {"hidden": "tfc-token"},
         ):
             self.assertEqual(
-                clean_terraform_backend("wrong-backend", None),
-                ("terraform-cloud", "tfc-token"),
+                clean_terraform_backend("wrong-backend", None, None),
+                ("terraform-cloud", "tfc.20tab.com", "tfc-token"),
             )
 
     def test_clean_environment_distribution(self):

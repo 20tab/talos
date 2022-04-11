@@ -28,7 +28,7 @@ from bootstrap.constants import (
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
     TERRAFORM_BACKEND_CHOICES,
-    TERRAFORM_BACKEND_DEFAULT,
+    TERRAFORM_BACKEND_GITLAB,
     TERRAFORM_BACKEND_TFC,
 )
 
@@ -52,6 +52,7 @@ def collect(
     frontend_service_port,
     deployment_type,
     terraform_backend,
+    terraform_cloud_hostname,
     terraform_cloud_token,
     digitalocean_token,
     kubernetes_cluster_ca_certificate,
@@ -112,8 +113,12 @@ def collect(
     if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
     deployment_type = clean_deployment_type(deployment_type)
-    terraform_backend, terraform_cloud_token = clean_terraform_backend(
-        terraform_backend, terraform_cloud_token
+    (
+        terraform_backend,
+        terraform_cloud_hostname,
+        terraform_cloud_token,
+    ) = clean_terraform_backend(
+        terraform_backend, terraform_cloud_hostname, terraform_cloud_token
     )
     environment_distribution = clean_environment_distribution(
         environment_distribution, deployment_type
@@ -267,6 +272,7 @@ def collect(
         "frontend_service_port": frontend_service_port,
         "deployment_type": deployment_type,
         "terraform_backend": terraform_backend,
+        "terraform_cloud_hostname": terraform_cloud_hostname,
         "terraform_cloud_token": terraform_cloud_token,
         "digitalocean_token": digitalocean_token,
         "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
@@ -452,27 +458,35 @@ def clean_deployment_type(deployment_type):
     ).lower()
 
 
-def clean_terraform_backend(terraform_backend, terraform_cloud_token):
-    """Return the terraform backend and Terraform Cloud token, if applicable."""
+def clean_terraform_backend(
+    terraform_backend, terraform_cloud_hostname, terraform_cloud_token
+):
+    """Return the terraform backend and the Terraform Cloud data, if applicable."""
     terraform_backend = (
         terraform_backend
         if terraform_backend in TERRAFORM_BACKEND_CHOICES
         else click.prompt(
             "Terraform backend",
-            default=TERRAFORM_BACKEND_DEFAULT,
+            default=TERRAFORM_BACKEND_GITLAB,
             type=click.Choice(TERRAFORM_BACKEND_CHOICES, case_sensitive=False),
         )
     ).lower()
-    terraform_cloud_token = (
-        validate_or_prompt_password(
+    if terraform_backend == TERRAFORM_BACKEND_TFC:
+        terraform_cloud_hostname = validate_or_prompt_domain(
+            "Terraform host name",
+            terraform_cloud_hostname,
+            default="app.terraform.io",
+            required=True,
+        )
+        terraform_cloud_token = validate_or_prompt_password(
             "Terraform Cloud token",
             terraform_cloud_token,
             required=True,
         )
-        if terraform_backend == TERRAFORM_BACKEND_TFC
-        else None
-    )
-    return terraform_backend, terraform_cloud_token
+    else:
+        terraform_cloud_hostname = ""
+        terraform_cloud_token = ""
+    return terraform_backend, terraform_cloud_hostname, terraform_cloud_token
 
 
 def clean_environment_distribution(environment_distribution, deployment_type):

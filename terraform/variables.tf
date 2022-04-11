@@ -57,3 +57,16 @@ variable "service_slug" {
   description = "The service slug."
   type        = string
 }
+
+variable "terraform_cloud_hostname" {
+  description = "The Terraform Cloud hostname."
+  type        = string
+  default     = "app.terraform.io"
+}
+
+variable "terraform_cloud_token" {
+  description = "The Terraform Cloud token."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
