@@ -465,8 +465,8 @@ def clean_terraform_backend(terraform_backend, terraform_cloud_token):
     ).lower()
     terraform_cloud_token = (
         validate_or_prompt_password(
-            terraform_cloud_token,
             "Terraform Cloud token",
+            terraform_cloud_token,
             required=True,
         )
         if terraform_backend == TERRAFORM_BACKEND_TFC
