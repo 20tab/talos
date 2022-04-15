@@ -1,6 +1,6 @@
 logs:
   general:
-    level: "ERROR"
+    level: "DEBUG"
 
 providers:
   kubernetesIngress:
