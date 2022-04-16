@@ -198,4 +198,8 @@ module "database_dump_cronjob" {
   s3_secret_key  = var.s3_secret_key
   s3_host        = local.s3_host
   s3_bucket_name = local.s3_bucket_name
+  db_host        = digitalocean_database_db.postgres.private_host
+  db_user        = digitalocean_database_db.postgres.user
+  db_password    = digitalocean_database_db.postgres.password
+  db_port        = digitalocean_database_db.postgres.port
 }
