@@ -68,6 +68,11 @@ variable "project_host" {
   type        = string
 }
 
+variable "stack_slug" {
+  description = "The stack slug (e.g. 'main')."
+  type        = string
+}
+
 variable "tls_certificate_crt" {
   description = "The TLS certificate .crt file content."
   type        = string

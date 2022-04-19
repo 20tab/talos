@@ -9,15 +9,14 @@ locals {
   )
   frontend_paths = toset(var.frontend_service_slug != "" ? ["/"] : [])
 
-  basic_auth_enabled = alltrue(
+  basic_auth_ready = alltrue(
     [
-      var.basic_auth_enabled == "true",
       var.basic_auth_username != "",
       var.basic_auth_password != ""
     ]
   )
 
-  base_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
+  base_middlewares = var.basic_auth_enabled == "true" && local.basic_auth_ready ? [{ "name" : "traefik-basic-auth-middleware" }] : []
 
   tls_enabled = var.tls_certificate_crt != "" && var.tls_certificate_key != ""
 }
@@ -34,7 +33,7 @@ terraform {
 /* Basic Auth */
 
 resource "kubernetes_secret_v1" "traefik_basic_auth" {
-  count = local.basic_auth_enabled ? 1 : 0
+  count = var.basic_auth_enabled ? 1 : 0
 
   metadata {
     name      = "basic-auth"
@@ -50,7 +49,7 @@ resource "kubernetes_secret_v1" "traefik_basic_auth" {
 }
 
 resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
-  count = local.basic_auth_enabled ? 1 : 0
+  count = var.basic_auth_enabled ? 1 : 0
 
   manifest = {
     "apiVersion" = "traefik.containo.us/v1alpha1"
@@ -136,5 +135,83 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
         }
       } : {}
     )
+  }
+}
+
+/* Metrics Ingress Route */
+
+resource "kubernetes_secret_v1" "metrics_basic_auth" {
+  count = var.stack_slug == "main" && local.basic_auth_ready ? 1 : 0
+
+  metadata {
+    name      = "metrics-basic-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    username = var.basic_auth_username
+    password = var.basic_auth_password
+  }
+
+  type = "kubernetes.io/basic-auth"
+}
+
+resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
+  count = var.stack_slug == "main" && local.basic_auth_ready ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "Middleware"
+    metadata = {
+      name      = "metrics-basic-auth-middleware"
+      namespace = "kube-system"
+    }
+    spec = {
+      basicAuth = {
+        removeHeader = true
+        secret       = kubernetes_secret_v1.metrics_basic_auth[0].metadata[0].name
+      }
+    }
+  }
+}
+
+resource "kubernetes_manifest" "metrics_ingress_route" {
+  count = var.stack_slug == "main" && local.basic_auth_ready ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "metrics-ingress-route"
+      namespace = "kube-system"
+    }
+    spec = {
+      entryPoints = ["web", "websecure"]
+      routes = concat(
+        local.basic_auth_ready ? [
+          {
+            kind        = "Rule"
+            match       = "Host(`${var.project_host}`) && PathPrefix(`/metrics`)"
+            middlewares = [{ "name" : "metrics-basic-auth-middleware" }]
+            services = [
+              {
+                name = "kube-state-metrics"
+                port = 8080
+              }
+            ]
+        }] : [],
+        [{
+          kind        = "Rule"
+          match       = "Host(`${var.project_host}`) && PathPrefix(`/healthz`)"
+          middlewares = []
+          services = [
+            {
+              name = "kube-state-metrics"
+              port = 8080
+            }
+          ]
+          }
+      ])
+    }
   }
 }
