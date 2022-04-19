@@ -3,6 +3,7 @@ locals {
 
   stacks = jsondecode(<<EOF
 {{ cookiecutter.stacks|tojson(2) }}
+${var.stacks}
 EOF
   )
   envs = local.stacks[var.stack_slug]

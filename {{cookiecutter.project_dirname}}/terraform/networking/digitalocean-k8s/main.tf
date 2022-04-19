@@ -4,7 +4,7 @@ locals {
   resource_name_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
 
   stacks = jsondecode(<<EOF
-{{ cookiecutter.stacks|tojson(2) }}
+${var.stacks}
 EOF
   )
   envs = local.stacks[var.stack_slug]

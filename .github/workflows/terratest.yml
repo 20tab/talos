@@ -1,0 +1,20 @@
+name: Terratest
+on: push
+jobs:
+  go-tests:
+    name: Run Terratest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - uses: autero1/action-terraform@v1.0.3
+        with:
+          terraform_version: 1.1.7
+      - name: Download Modules
+        working-directory: tests
+        run: go mod download
+      - name: Run Tests
+        working-directory: tests
+        run: go test -v -tags=unit

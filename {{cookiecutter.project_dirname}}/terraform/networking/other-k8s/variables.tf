@@ -64,8 +64,13 @@ variable "ssl_enabled" {
   default     = "false"
 }
 
-
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
+}
+
+variable "stacks" {
+  description = "The json stacks mapping."
+  type        = string
+  default     = "{{ cookiecutter.stacks }}"
 }

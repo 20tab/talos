@@ -45,9 +45,13 @@ ifeq (simpletest,$(firstword $(MAKECMDGOALS)))
   $(eval $(simpletestargs):;@true)
 endif
 
-.PHONY: simpletest # Run debug tests
-simpletest:
+.PHONY: simpletest
+simpletest:  ## Run debug tests
 	python3 -m unittest $(simpletestargs)
+
+.PHONY: test_terraform
+test_terraform:  ## Run terraform tests
+	go test tests/terraform_test.go -v -tags=unit
 
 .PHONY: update
 update: pip precommit_update ## Run update
