@@ -10,7 +10,7 @@ def format_tfvar(value, value_type=None):
     elif value_type == "bool":
         return value and "true" or "false"
     elif value_type == "num":
-        return value
+        return str(value)
     else:
         return f'"{value}"'
 

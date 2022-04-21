@@ -141,7 +141,9 @@ class Runner:
             "prefix": self.domain_prefix_prod,
         }
         if self.environment_distribution == "1":
-            self.stacks_environments = {"main": {"dev": dev_env, "stage": stage_env, "prod": prod_env}}
+            self.stacks_environments = {
+                "main": {"dev": dev_env, "stage": stage_env, "prod": prod_env}
+            }
         elif self.environment_distribution == "2":
             self.stacks_environments = {
                 "dev": {"dev": dev_env, "stage": stage_env},
@@ -159,7 +161,7 @@ class Runner:
         vars_list = self.tfvars.setdefault(tf_stage, [])
         if var_value is None:
             var_value = getattr(self, var_name)
-        vars_list.append("=".join(var_name, format_tfvar(var_value, var_type)))
+        vars_list.append("=".join((var_name, format_tfvar(var_value, var_type))))
 
     def add_tfvars(self, tf_stage, *vars):
         """Add one or more Terraform variables to the given stage."""
@@ -208,14 +210,14 @@ class Runner:
             self.add_base_tfvars(("use_redis", True, "bool"))
             self.add_environment_tfvars(("use_redis", True, "bool"))
         if self.project_url_monitoring:
-            self.add_cluster_tfvars.append(
+            self.add_cluster_tfvars(
                 ("monitoring_url", self.project_url_monitoring),
             )
             self.domain_prefix_monitoring and self.add_cluster_tfvars(
                 ("monitoring_domain_prefix", self.domain_prefix_monitoring),
             )
         if "digitalocean" in self.deployment_type:
-            self.add_cluster_tfvars(
+            self.project_domain and self.add_cluster_tfvars(
                 ("create_domain", self.digitalocean_create_domain, "bool")
             )
             self.add_base_tfvars(
@@ -224,16 +226,11 @@ class Runner:
                 (
                     "database_cluster_node_size",
                     self.digitalocean_database_cluster_node_size,
-                    "num",
                 ),
             )
             self.use_redis and self.add_base_tfvars(
                 ("redis_cluster_region", self.digitalocean_redis_cluster_region),
-                (
-                    "redis_cluster_node_size",
-                    self.digitalocean_redis_cluster_node_size,
-                    "num",
-                ),
+                ("redis_cluster_node_size", self.digitalocean_redis_cluster_node_size),
             )
         elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
             self.add_environment_tfvars(
@@ -262,7 +259,9 @@ class Runner:
                     self.add_environment_tfvars(
                         ("domain_prefix", env_prefix), env_slug=env_slug
                     )
-            self.add_cluster_tfvars(("domain_prefixes", domain_prefixes, "list"))
+            domain_prefixes and self.add_cluster_tfvars(
+                ("domain_prefixes", domain_prefixes, "list"), stack_slug=stack_slug
+            )
 
     def init_service(self):
         """Initialize the service."""

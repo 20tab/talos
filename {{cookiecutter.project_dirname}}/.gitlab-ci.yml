@@ -168,7 +168,7 @@ stack_{{ stack_slug }}_cluster_apply:
   variables:
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}
     TF_VAR_basic_auth_password: "${BASIC_AUTH_PASSWORD}"
-    TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+    TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
     TF_VAR_registry_password: "${REGISTRY_PASSWORD}"
     TF_VAR_registry_server: "${REGISTRY_SERVER:-registry.gitlab.com}"
     TF_VAR_registry_username: "${REGISTRY_USERNAME}"{% if "s3" in cookiecutter.media_storage %}
