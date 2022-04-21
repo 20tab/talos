@@ -4,6 +4,12 @@ variable "backend_middlewares" {
   default     = []
 }
 
+variable "backend_service_paths" {
+  description = "The backend service paths."
+  type        = list(string)
+  default     = []
+}
+
 variable "backend_service_port" {
   description = "The backend service port."
   type        = number
@@ -35,6 +41,12 @@ variable "basic_auth_username" {
   default     = ""
 }
 
+variable "database_dumps_enabled" {
+  description = "Enable database dumps."
+  type        = bool
+  default     = false
+}
+
 variable "domain_prefix" {
   description = "The environment domain prefix (e.g. 'www')."
   type        = string
@@ -48,6 +60,12 @@ variable "env_slug" {
 
 variable "frontend_middlewares" {
   description = "The frontend middlewares list."
+  type        = list(string)
+  default     = []
+}
+
+variable "frontend_service_paths" {
+  description = "The frontend service paths."
   type        = list(string)
   default     = []
 }
@@ -96,7 +114,7 @@ variable "postgres_persistent_volume_capacity" {
 variable "postgres_persistent_volume_claim_capacity" {
   description = "The persistent volume claim capacity (e.g. 1Gi)."
   type        = string
-  default     = ""
+  default     = "10Gi"
 }
 
 variable "postgres_persistent_volume_host_path" {
@@ -108,6 +126,11 @@ variable "project_domain" {
   description = "The project domain."
   type        = string
   default     = ""
+}
+
+variable "project_slug" {
+  description = "The project slug."
+  type        = string
 }
 
 variable "project_url" {

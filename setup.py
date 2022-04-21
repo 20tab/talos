@@ -2,6 +2,7 @@
 """Initialize a template based web project."""
 
 import os
+from pathlib import Path
 
 import click
 
@@ -22,7 +23,13 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.command()
 @click.option("--uid", type=int)
 @click.option("--gid", type=int)
-@click.option("--output-dir", default=OUTPUT_DIR)
+@click.option(
+    "--output-dir",
+    default=OUTPUT_DIR,
+    type=click.Path(
+        exists=True, path_type=Path, file_okay=False, readable=True, writable=True
+    ),
+)
 @click.option("--project-name", prompt=True)
 @click.option("--project-slug", callback=slugify_option)
 @click.option("--project-dirname")
@@ -39,6 +46,13 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--terraform-backend")
 @click.option("--terraform-cloud-hostname")
 @click.option("--terraform-cloud-token")
+@click.option("--terraform-cloud-organization")
+@click.option(
+    "--terraform-cloud-organization-create/--terraform-cloud-organization-create-skip",
+    is_flag=True,
+    default=None,
+)
+@click.option("--terraform-cloud-admin-email")
 @click.option("--digitalocean-token")
 @click.option(
     "--kubernetes-cluster-ca-certificate",
@@ -93,8 +107,8 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gitlab-group-owners")
 @click.option("--gitlab-group-maintainers")
 @click.option("--gitlab-group-developers")
-@click.option("--terraform-dir")
-@click.option("--logs-dir")
+@click.option("--terraform-dir", type=click.Path(path_type=Path))
+@click.option("--logs-dir", type=click.Path(path_type=Path))
 @click.option("--quiet", is_flag=True)
 def main(**options):
     """Run the setup."""

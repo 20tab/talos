@@ -1,16 +1,13 @@
 locals {
-  project_slug = "{{ cookiecutter.project_slug }}"
-
-  resource_name_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
-
-  stacks = jsondecode(<<EOF
-{{ cookiecutter.stacks|tojson(2) }}
-EOF
-  )
-  envs = local.stacks[var.stack_slug]
+  resource_name_prefix = var.stack_slug == "main" ? var.project_slug : "${var.project_slug}-${var.stack_slug}"
 
   monitoring_enabled = var.monitoring_url != "" && var.stack_slug == "main"
   monitoring_host    = local.monitoring_enabled ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
+
+  domain_prefixes = concat(
+    var.domain_prefixes,
+    local.monitoring_enabled && var.monitoring_domain_prefix != "" ? [var.monitoring_domain_prefix] : []
+  )
 }
 
 terraform {
@@ -63,8 +60,10 @@ data "digitalocean_kubernetes_cluster" "main" {
   name = "${local.resource_name_prefix}-k8s-cluster"
 }
 
-data "digitalocean_domain" "main" {
-  count = var.project_domain != "" ? 1 : 0
+/* Domain */
+
+resource "digitalocean_domain" "default" {
+  count = var.create_domain && var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
 
   name = var.project_domain
 }
@@ -74,12 +73,9 @@ data "digitalocean_domain" "main" {
 resource "digitalocean_certificate" "ssl_cert" {
   count = var.project_domain != "" ? 1 : 0
 
-  name = "${local.project_slug}-${var.stack_slug}-lets-encrypt-certificate"
-  type = "lets_encrypt"
-  domains = concat(
-    [for k, v in local.envs : "${v.prefix}.${var.project_domain}"],
-    local.monitoring_enabled && var.monitoring_domain_prefix != "" ? [var.monitoring_domain_prefix] : []
-  )
+  name    = "${local.resource_name_prefix}-lets-encrypt-certificate"
+  type    = "lets_encrypt"
+  domains = [for i in local.domain_prefixes : "${i}.${var.project_domain}"]
 }
 
 /* Traefik */

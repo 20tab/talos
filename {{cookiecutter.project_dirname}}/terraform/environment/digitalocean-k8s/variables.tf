@@ -4,6 +4,12 @@ variable "backend_middlewares" {
   default     = []
 }
 
+variable "backend_service_paths" {
+  description = "The backend service paths."
+  type        = list(string)
+  default     = []
+}
+
 variable "backend_service_port" {
   description = "The backend service port."
   type        = number
@@ -41,6 +47,18 @@ variable "database_connection_pool_size" {
   default     = 1
 }
 
+variable "database_dumps_enabled" {
+  description = "Enable database dumps."
+  type        = bool
+  default     = false
+}
+
+variable "digitalocean_spaces_bucket_available" {
+  description = "Tell if a DigitalOcean Spaces bucket is available."
+  type        = bool
+  default     = false
+}
+
 variable "digitalocean_token" {
   description = "The DigitalOcean access token."
   type        = string
@@ -64,6 +82,12 @@ variable "frontend_middlewares" {
   default     = []
 }
 
+variable "frontend_service_paths" {
+  description = "The frontend service paths."
+  type        = list(string)
+  default     = []
+}
+
 variable "frontend_service_port" {
   description = "The frontend service port."
   type        = number
@@ -74,6 +98,11 @@ variable "frontend_service_slug" {
   description = "The frontend service slug."
   type        = string
   default     = ""
+}
+
+variable "project_slug" {
+  description = "The project slug."
+  type        = string
 }
 
 variable "project_url" {

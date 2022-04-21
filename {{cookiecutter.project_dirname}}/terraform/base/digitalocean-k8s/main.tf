@@ -1,8 +1,4 @@
 locals {
-  project_slug = "{{ cookiecutter.project_slug }}"
-
-  media_storage = "{{ cookiecutter.media_storage }}"
-
   digitalocean_default_region = "fra1"
   digitalocean_regions        = data.digitalocean_regions.main.regions[*].slug
 
@@ -21,7 +17,7 @@ locals {
     var.k8s_cluster_region
   ) ? var.k8s_cluster_region : local.digitalocean_default_region
 
-  resource_name_prefix = var.stack_slug == "main" ? local.project_slug : "${local.project_slug}-${var.stack_slug}"
+  resource_name_prefix = var.stack_slug == "main" ? var.project_slug : "${var.project_slug}-${var.stack_slug}"
 }
 
 terraform {
@@ -111,7 +107,7 @@ resource "digitalocean_kubernetes_cluster" "main" {
 /* Spaces Bucket */
 
 resource "digitalocean_spaces_bucket" "main" {
-  count = local.media_storage == "digitalocean-s3" ? 1 : 0
+  count = var.create_s3_bucket ? 1 : 0
 
   name = "${local.resource_name_prefix}-s3-bucket"
   region = contains(
@@ -150,6 +146,7 @@ resource "digitalocean_database_firewall" "postgres" {
 }
 
 /* Redis Cluster */
+
 resource "digitalocean_database_cluster" "redis" {
   count = var.use_redis == "true" ? 1 : 0
 
@@ -170,12 +167,4 @@ resource "digitalocean_database_firewall" "redis" {
     type  = "k8s"
     value = digitalocean_kubernetes_cluster.main.id
   }
-}
-
-/* Domain */
-
-resource "digitalocean_domain" "default" {
-  count = var.create_domain && var.stack_slug == "main" && var.project_domain != "" ? 1 : 0
-
-  name = var.project_domain
 }

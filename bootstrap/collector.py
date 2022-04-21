@@ -1,8 +1,8 @@
 """Collect options to initialize a template based web project."""
 
-import shutil
 from functools import partial
 from pathlib import Path
+from shutil import rmtree
 
 import click
 import validators
@@ -28,7 +28,6 @@ from bootstrap.constants import (
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
     TERRAFORM_BACKEND_CHOICES,
-    TERRAFORM_BACKEND_GITLAB,
     TERRAFORM_BACKEND_TFC,
 )
 
@@ -54,6 +53,9 @@ def collect(
     terraform_backend,
     terraform_cloud_hostname,
     terraform_cloud_token,
+    terraform_cloud_organization,
+    terraform_cloud_organization_create,
+    terraform_cloud_admin_email,
     digitalocean_token,
     kubernetes_cluster_ca_certificate,
     kubernetes_host,
@@ -117,8 +119,16 @@ def collect(
         terraform_backend,
         terraform_cloud_hostname,
         terraform_cloud_token,
+        terraform_cloud_organization,
+        terraform_cloud_organization_create,
+        terraform_cloud_admin_email,
     ) = clean_terraform_backend(
-        terraform_backend, terraform_cloud_hostname, terraform_cloud_token
+        terraform_backend,
+        terraform_cloud_hostname,
+        terraform_cloud_token,
+        terraform_cloud_organization,
+        terraform_cloud_organization_create,
+        terraform_cloud_admin_email,
     )
     environment_distribution = clean_environment_distribution(
         environment_distribution, deployment_type
@@ -274,6 +284,9 @@ def collect(
         "terraform_backend": terraform_backend,
         "terraform_cloud_hostname": terraform_cloud_hostname,
         "terraform_cloud_token": terraform_cloud_token,
+        "terraform_cloud_organization": terraform_cloud_organization,
+        "terraform_cloud_organization_create": terraform_cloud_organization_create,
+        "terraform_cloud_admin_email": terraform_cloud_admin_email,
         "digitalocean_token": digitalocean_token,
         "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
         "kubernetes_host": kubernetes_host,
@@ -390,15 +403,15 @@ def clean_project_slug(project_name, project_slug):
 
 def clean_service_dir(output_dir, project_dirname):
     """Return the service directory."""
-    service_dir = str((Path(output_dir) / project_dirname).resolve())
-    if Path(service_dir).is_dir() and click.confirm(
+    service_dir = output_dir / project_dirname
+    if service_dir.is_dir() and click.confirm(
         warning(
-            f'A directory "{service_dir}" already exists and '
+            f'A directory "{service_dir.resolve()}" already exists and '
             "must be deleted. Continue?",
         ),
         abort=True,
     ):
-        shutil.rmtree(service_dir)
+        rmtree(service_dir)
     return service_dir
 
 
@@ -459,7 +472,12 @@ def clean_deployment_type(deployment_type):
 
 
 def clean_terraform_backend(
-    terraform_backend, terraform_cloud_hostname, terraform_cloud_token
+    terraform_backend,
+    terraform_cloud_hostname,
+    terraform_cloud_token,
+    terraform_cloud_organization,
+    terraform_cloud_organization_create,
+    terraform_cloud_admin_email,
 ):
     """Return the terraform backend and the Terraform Cloud data, if applicable."""
     terraform_backend = (
@@ -467,7 +485,7 @@ def clean_terraform_backend(
         if terraform_backend in TERRAFORM_BACKEND_CHOICES
         else click.prompt(
             "Terraform backend",
-            default=TERRAFORM_BACKEND_GITLAB,
+            default=TERRAFORM_BACKEND_TFC,
             type=click.Choice(TERRAFORM_BACKEND_CHOICES, case_sensitive=False),
         )
     ).lower()
@@ -479,14 +497,43 @@ def clean_terraform_backend(
             required=True,
         )
         terraform_cloud_token = validate_or_prompt_password(
-            "Terraform Cloud token",
+            "Terraform Cloud User token",
             terraform_cloud_token,
             required=True,
         )
+        terraform_cloud_organization = terraform_cloud_organization or click.prompt(
+            "Terraform Organization"
+        )
+        terraform_cloud_organization_create = (
+            terraform_cloud_organization_create
+            if terraform_cloud_organization_create is not None
+            else click.confirm(
+                "Do you want to create Terraform Cloud Organization "
+                f"'{terraform_cloud_organization}'?",
+            )
+        )
+        if terraform_cloud_organization_create:
+            terraform_cloud_admin_email = validate_or_prompt_email(
+                "Terraform Cloud Organization admin email (e.g. tech@20tab.com)",
+                terraform_cloud_admin_email,
+                required=True,
+            )
+        else:
+            terraform_cloud_admin_email = ""
     else:
+        terraform_cloud_organization = ""
         terraform_cloud_hostname = ""
         terraform_cloud_token = ""
-    return terraform_backend, terraform_cloud_hostname, terraform_cloud_token
+        terraform_cloud_organization_create = None
+        terraform_cloud_admin_email = ""
+    return (
+        terraform_backend,
+        terraform_cloud_hostname,
+        terraform_cloud_token,
+        terraform_cloud_organization,
+        terraform_cloud_organization_create,
+        terraform_cloud_admin_email,
+    )
 
 
 def clean_environment_distribution(environment_distribution, deployment_type):

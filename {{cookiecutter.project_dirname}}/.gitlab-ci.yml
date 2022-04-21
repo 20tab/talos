@@ -4,13 +4,13 @@ workflow:
       when: never
     - if: $ENABLED_ALL
       when: always
-    - if: $ENABLED_STAGES =~ /(?:^|,)\s*{% if cookiecutter.deployment_type == "digitalocean-k8s" %}(?:core|networking){% else %}networking{% endif %}\s*(?:,|$)/i && $ENABLED_STACKS
+    - if: $ENABLED_STAGES =~ /(?:^|,)\s*{% if cookiecutter.deployment_type == "digitalocean-k8s" %}(?:base|cluster){% else %}cluster{% endif %}\s*(?:,|$)/i && $ENABLED_STACKS
       when: always
     - if: $ENABLED_STAGES =~ /(?:^|,)\s*environment\s*(?:,|$)/i && $ENABLED_ENVS
       when: always
 
 stages:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
-  - Core{% endif %}
+  - Base{% endif %}
   - Networking
   - Environment
 
@@ -61,15 +61,15 @@ before_script:
   script:
     -  ${TERRAFORM_CMD} apply -auto-approve
 
-{% if cookiecutter.deployment_type == "digitalocean-k8s" %}### CORE STACK ###{% for stack_slug in cookiecutter.stacks %}
+{% if cookiecutter.deployment_type == "digitalocean-k8s" %}### BASE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
-# CORE STACK - {{ stack_slug|title }} #
+# BASE STAGE - {{ stack_slug|title }} Stack #
 
-.stack_{{ stack_slug }}_core:
-  stage: Core
+.stack_{{ stack_slug }}_base:
+  stage: Base
   variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_core
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/core/{{ cookiecutter.deployment_type }}
+    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_base
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}
     TF_VAR_create_domain: "${CREATE_DOMAIN}"
     TF_VAR_database_cluster_node_size: "${DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE}"
     TF_VAR_database_cluster_region: "${DIGITALOCEAN_DATABASE_CLUSTER_REGION}"
@@ -82,50 +82,50 @@ before_script:
     TF_VAR_stack_slug: {{ stack_slug }}
     TF_VAR_use_redis: "${USE_REDIS}"
   cache:
-    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-core
+    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-base
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: Stack_{{ stack_slug|title }}/Stage_Core
+    name: Stack_{{ stack_slug|title }}/Stage_Base
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES =~ /(?:^|,)\s*core\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
+    - if: $ENABLED_STAGES =~ /(?:^|,)\s*base\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
       when: always
     - when: never
 
-stack_{{ stack_slug }}_core_init:
+stack_{{ stack_slug }}_base_init:
   extends:
     - .init
-    - .stack_{{ stack_slug }}_core
+    - .stack_{{ stack_slug }}_base
 
-stack_{{ stack_slug }}_core_validate:
+stack_{{ stack_slug }}_base_validate:
   extends:
     - .validate
-    - .stack_{{ stack_slug }}_core
-  needs: ["stack_{{ stack_slug }}_core_init"]
+    - .stack_{{ stack_slug }}_base
+  needs: ["stack_{{ stack_slug }}_base_init"]
 
-stack_{{ stack_slug }}_core_plan:
+stack_{{ stack_slug }}_base_plan:
   extends:
     - .plan
-    - .stack_{{ stack_slug }}_core
-  needs: ["stack_{{ stack_slug }}_core_validate"]
+    - .stack_{{ stack_slug }}_base
+  needs: ["stack_{{ stack_slug }}_base_validate"]
 
-stack_{{ stack_slug }}_core_apply:
+stack_{{ stack_slug }}_base_apply:
   extends:
     - .apply
-    - .stack_{{ stack_slug }}_core
-  needs: ["stack_{{ stack_slug }}_core_plan"]{% endfor %}
+    - .stack_{{ stack_slug }}_base
+  needs: ["stack_{{ stack_slug }}_base_plan"]{% endfor %}
 
 {% endif %}### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
-# NETWORKING STACK - {{ stack_slug|title }} #
+# NETWORKING STAGE - {{ stack_slug|title }} Stack #
 
-.stack_{{ stack_slug }}_networking:
+.stack_{{ stack_slug }}_cluster:
   stage: Networking
   variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_networking
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/networking/{{ cookiecutter.deployment_type }}
+    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_cluster
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
     TF_VAR_letsencrypt_certificate_email: "${LETSENCRYPT_CERTIFICATE_EMAIL}"
     TF_VAR_monitoring_domain_prefix: "${MONITORING_DOMAIN_PREFIX}"
@@ -133,7 +133,7 @@ stack_{{ stack_slug }}_core_apply:
     TF_VAR_ssl_enabled: "${SSL_ENABLED}"
     TF_VAR_stack_slug: {{ stack_slug }}
   cache:
-    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-networking
+    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-cluster
     paths:
       - ${TF_ROOT}/.terraform
   environment:
@@ -141,37 +141,37 @@ stack_{{ stack_slug }}_core_apply:
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES =~ /(?:^|,)\s*networking\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
+    - if: $ENABLED_STAGES =~ /(?:^|,)\s*cluster\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
       when: always
     - when: never
 
-stack_{{ stack_slug }}_networking_init:
+stack_{{ stack_slug }}_cluster_init:
   extends:
     - .init
-    - .stack_{{ stack_slug }}_networking
+    - .stack_{{ stack_slug }}_cluster
 
-stack_{{ stack_slug }}_networking_validate:
+stack_{{ stack_slug }}_cluster_validate:
   extends:
     - .validate
-    - .stack_{{ stack_slug }}_networking
-  needs: ["stack_{{ stack_slug }}_networking_init"]
+    - .stack_{{ stack_slug }}_cluster
+  needs: ["stack_{{ stack_slug }}_cluster_init"]
 
-stack_{{ stack_slug }}_networking_plan:
+stack_{{ stack_slug }}_cluster_plan:
   extends:
     - .plan
-    - .stack_{{ stack_slug }}_networking
+    - .stack_{{ stack_slug }}_cluster
   needs:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
-    - job: stack_{{ stack_slug }}_core_apply
+    - job: stack_{{ stack_slug }}_base_apply
       optional: true{% endif %}
-    - job: stack_{{ stack_slug }}_networking_validate
+    - job: stack_{{ stack_slug }}_cluster_validate
 
-stack_{{ stack_slug }}_networking_apply:
+stack_{{ stack_slug }}_cluster_apply:
   extends:
     - .apply
-    - .stack_{{ stack_slug }}_networking
-  needs: ["stack_{{ stack_slug }}_networking_plan"]{% endfor %}
-
-### ENVIRONMENT STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+    - .stack_{{ stack_slug }}_cluster
+  needs: ["stack_{{ stack_slug }}_cluster_plan"]{% endfor %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+  
+### ENVIRONMENT STAGE - {{ stack_slug|title }} Stack ###
 
 .{{ stack_slug }}_env:
   stage: Environment
@@ -202,7 +202,7 @@ stack_{{ stack_slug }}_networking_apply:
     TF_VAR_tls_certificate_key: "${TLS_CERTIFICATE_KEY}"
     TF_VAR_use_redis: "${USE_REDIS}"{% for env_slug, env_conf in stack_envs.items() %}
 
-# ENVIRONMENT STACK - {{ env_conf.name }} #
+# {{ env_conf.name }} Environment #
 
 .env_{{ env_slug }}:
   extends:
@@ -241,7 +241,7 @@ env_{{ env_slug }}_plan:
     - .plan
     - .env_{{ env_slug }}
   needs:
-    - job: stack_{{ stack_slug }}_networking_apply
+    - job: stack_{{ stack_slug }}_cluster_apply
       optional: true
     - job: env_{{ env_slug }}_validate
 

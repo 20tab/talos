@@ -4,6 +4,12 @@ variable "backend_middlewares" {
   default     = []
 }
 
+variable "backend_service_paths" {
+  description = "The backend service paths."
+  type        = list(string)
+  default     = []
+}
+
 variable "backend_service_port" {
   description = "The backend service port."
   type        = number
@@ -41,6 +47,12 @@ variable "frontend_middlewares" {
   default     = []
 }
 
+variable "frontend_service_paths" {
+  description = "The frontend service paths."
+  type        = list(string)
+  default     = []
+}
+
 variable "frontend_service_port" {
   description = "The frontend service port."
   type        = number
@@ -51,11 +63,6 @@ variable "frontend_service_slug" {
   description = "The frontend service slug."
   type        = string
   default     = ""
-}
-
-variable "media_storage" {
-  description = "The media storage solution."
-  type        = string
 }
 
 variable "namespace" {

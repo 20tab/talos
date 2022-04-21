@@ -22,7 +22,7 @@ variable "persistent_volume_capacity" {
 variable "persistent_volume_claim_capacity" {
   description = "The persistent volume claim capacity (e.g. 1Gi)."
   type        = string
-  default     = ""
+  default     = "10Gi"
 }
 
 variable "persistent_volume_host_path" {

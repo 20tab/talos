@@ -1,3 +1,9 @@
+variable "domain_prefixes" {
+  description = "The list of domain prefixes."
+  type        = list(string)
+  default     = []
+}
+
 variable "grafana_password" {
   description = "The Grafana admin password."
   type        = string
@@ -56,6 +62,11 @@ variable "project_domain" {
   description = "The project domain."
   type        = string
   default     = ""
+}
+
+variable "project_slug" {
+  description = "The project slug."
+  type        = string
 }
 
 variable "ssl_enabled" {

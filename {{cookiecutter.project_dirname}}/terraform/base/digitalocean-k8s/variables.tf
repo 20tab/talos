@@ -1,7 +1,6 @@
-variable "create_domain" {
-  description = "If true, a DigitalOcean domain is created."
+variable "create_s3_bucket" {
+  description = "Tell if a DigitalOcean Spaces bucket should be created."
   type        = bool
-  default     = true
 }
 
 variable "database_cluster_engine" {
@@ -87,10 +86,9 @@ variable "k8s_cluster_version" {
   default     = ""
 }
 
-variable "project_domain" {
-  description = "The project domain."
+variable "project_slug" {
+  description = "The project slug."
   type        = string
-  default     = ""
 }
 
 variable "redis_cluster_node_count" {
