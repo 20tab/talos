@@ -70,9 +70,9 @@ variable "project_slug" {
 }
 
 variable "ssl_enabled" {
-  description = "If 'true', enable SSL."
-  type        = string
-  default     = "false"
+  description = "Tell if SSL should be enabled."
+  type        = bool
+  default     = false
 }
 
 

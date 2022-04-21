@@ -45,12 +45,22 @@ module "gitlab" {
   project_variables   = var.gitlab_project_variables
 }
 
-resource "gitlab_group_variable" "regcred" {
+resource "gitlab_group_variable" "registry_password" {
   count = var.terraform_cloud_token == "" ? 1 : 0
 
   group     = module.gitlab.gitlab_group_id
-  key       = "K8S_REGCRED"
-  value     = module.gitlab.registry_deploy_token
+  key       = "REGISTRY_PASSWORD"
+  value     = module.gitlab.registry_deploy_token_value
+  protected = true
+  masked    = true
+}
+
+resource "gitlab_group_variable" "registry_username" {
+  count = var.terraform_cloud_token == "" ? 1 : 0
+
+  group     = module.gitlab.gitlab_group_id
+  key       = "REGISTRY_USERNAME"
+  value     = module.gitlab.registry_deploy_token_username
   protected = true
   masked    = true
 }

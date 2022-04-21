@@ -1,5 +1,5 @@
-variable "backend_middlewares" {
-  description = "The backend middlewares list."
+variable "backend_service_extra_middlewares" {
+  description = "The backend service additional middlewares."
   type        = list(string)
   default     = []
 }
@@ -41,8 +41,8 @@ variable "basic_auth_username" {
   default     = ""
 }
 
-variable "frontend_middlewares" {
-  description = "The frontend middlewares list."
+variable "frontend_service_extra_middlewares" {
+  description = "The frontend service additional middlewares."
   type        = list(string)
   default     = []
 }

@@ -111,7 +111,8 @@ class Runner:
     logs_dir: Path
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
-    stacks_environments: dict = field(init=False)
+    stacks_environments: dict = field(init=False, default_factory=dict)
+    tfvars: dict = field(init=False, default_factory=dict)
 
     def __post_init__(self):
         """Finalize initialization."""
@@ -119,10 +120,11 @@ class Runner:
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
-        self.stacks_environments = self.get_stacks_environments()
+        self.set_stacks_environments()
+        self.set_tfvars()
 
-    def get_stacks_environments(self):
-        """Return a dict with the environments distribution per stack."""
+    def set_stacks_environments(self):
+        """Set the environments distribution per stack."""
         dev_env = {
             "name": "Development",
             "url": self.project_url_dev,
@@ -139,19 +141,128 @@ class Runner:
             "prefix": self.domain_prefix_prod,
         }
         if self.environment_distribution == "1":
-            return {"main": {"dev": dev_env, "stage": stage_env, "prod": prod_env}}
+            self.stacks_environments = {"main": {"dev": dev_env, "stage": stage_env, "prod": prod_env}}
         elif self.environment_distribution == "2":
-            return {
+            self.stacks_environments = {
                 "dev": {"dev": dev_env, "stage": stage_env},
                 "main": {"prod": prod_env},
             }
         elif self.environment_distribution == "3":
-            return {
+            self.stacks_environments = {
                 "dev": {"dev": dev_env},
                 "stage": {"stage": stage_env},
                 "main": {"prod": prod_env},
             }
-        return {}
+
+    def add_tfvar(self, tf_stage, var_name, var_value=None, var_type=None):
+        """Add a Terraform value to the given .tfvars file."""
+        vars_list = self.tfvars.setdefault(tf_stage, [])
+        if var_value is None:
+            var_value = getattr(self, var_name)
+        vars_list.append("=".join(var_name, format_tfvar(var_value, var_type)))
+
+    def add_tfvars(self, tf_stage, *vars):
+        """Add one or more Terraform variables to the given stage."""
+        [self.add_tfvar(tf_stage, *((i,) if isinstance(i, str) else i)) for i in vars]
+
+    def add_base_tfvars(self, *vars, stack_slug=None):
+        """Add one or more base Terraform variables."""
+        tf_stage = "base" + (stack_slug and f"_{stack_slug}" or "")
+        self.add_tfvars(tf_stage, *vars)
+
+    def add_cluster_tfvars(self, *vars, stack_slug=None):
+        """Add one or more cluster Terraform variables."""
+        tf_stage = "cluster" + (stack_slug and f"_{stack_slug}" or "")
+        self.add_tfvars(tf_stage, *vars)
+
+    def add_environment_tfvars(self, *vars, env_slug=None):
+        """Add one or more environment Terraform variables."""
+        tf_stage = "environment" + (env_slug and f"_{env_slug}" or "")
+        self.add_tfvars(tf_stage, *vars)
+
+    def set_tfvars(self):
+        """Set base, cluster and environment Terraform variables lists."""
+        backend_service_paths = ["/"]
+        frontend_service_paths = ["/"]
+        if self.frontend_service_slug:
+            self.add_environment_tfvars(
+                ("frontend_service_paths", "list", frontend_service_paths),
+                ("frontend_service_port", None, "num"),
+                "frontend_service_slug",
+            )
+            backend_service_paths = ["/admin", "/api", "/static"] + (
+                ["/media"] if self.media_storage == "local" else []
+            )
+        if self.backend_service_slug:
+            self.add_environment_tfvars(
+                ("backend_service_paths", "list", backend_service_paths),
+                ("backend_service_port", None, "num"),
+                "backend_service_slug",
+            )
+        self.project_domain and self.add_cluster_tfvars("project_domain")
+        self.letsencrypt_certificate_email and self.add_cluster_tfvars(
+            "letsencrypt_certificate_email",
+            ("ssl_enabled", True, "bool"),
+        )
+        if self.use_redis:
+            self.add_base_tfvars(("use_redis", True, "bool"))
+            self.add_environment_tfvars(("use_redis", True, "bool"))
+        if self.project_url_monitoring:
+            self.add_cluster_tfvars.append(
+                ("monitoring_url", self.project_url_monitoring),
+            )
+            self.domain_prefix_monitoring and self.add_cluster_tfvars(
+                ("monitoring_domain_prefix", self.domain_prefix_monitoring),
+            )
+        if "digitalocean" in self.deployment_type:
+            self.add_cluster_tfvars(
+                ("create_domain", self.digitalocean_create_domain, "bool")
+            )
+            self.add_base_tfvars(
+                ("k8s_cluster_region", self.digitalocean_k8s_cluster_region),
+                ("database_cluster_region", self.digitalocean_database_cluster_region),
+                (
+                    "database_cluster_node_size",
+                    self.digitalocean_database_cluster_node_size,
+                    "num",
+                ),
+            )
+            self.use_redis and self.add_base_tfvars(
+                ("redis_cluster_region", self.digitalocean_redis_cluster_region),
+                (
+                    "redis_cluster_node_size",
+                    self.digitalocean_redis_cluster_node_size,
+                    "num",
+                ),
+            )
+        elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
+            self.add_environment_tfvars(
+                "postgres_image",
+                "postgres_persistent_volume_capacity",
+                "postgres_persistent_volume_claim_capacity",
+                "postgres_persistent_volume_host_path",
+            )
+            self.use_redis and self.add_environment_tfvars("redis_image")
+        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
+            self.add_base_tfvars(("create_s3_bucket", True, "bool"))
+            self.add_environment_tfvars(
+                ("digitalocean_spaces_bucket_available", True, "bool")
+            )
+        for stack_slug, stack_envs in self.stacks_environments.items():
+            domain_prefixes = []
+            for env_slug, env_data in stack_envs.items():
+                self.add_environment_tfvars(
+                    ("basic_auth_enabled", env_slug != "prod", "bool"),
+                    ("project_url", env_data["url"]),
+                    ("stack_slug", stack_slug),
+                    env_slug=env_slug,
+                )
+                if env_prefix := env_data["prefix"]:
+                    domain_prefixes.append(env_prefix)
+                    self.add_environment_tfvars(
+                        ("domain_prefix", env_prefix), env_slug=env_slug
+                    )
+            self.add_cluster_tfvars(("domain_prefixes", domain_prefixes, "list"))
 
     def init_service(self):
         """Initialize the service."""
@@ -163,6 +274,7 @@ class Runner:
                 "backend_service_slug": self.backend_service_slug,
                 "backend_type": self.backend_type,
                 "deployment_type": self.deployment_type,
+                "environment_distribution": self.environment_distribution,
                 "frontend_service_port": self.frontend_service_port,
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
@@ -173,7 +285,7 @@ class Runner:
                 "project_slug": self.project_slug,
                 "stacks": self.stacks_environments,
                 "terraform_backend": self.terraform_backend,
-                "environment_distribution": self.environment_distribution,
+                "tfvars": self.tfvars,
             },
             output_dir=self.output_dir,
             no_input=True,
@@ -207,6 +319,7 @@ class Runner:
         )
         options = {
             "deployment_type": self.deployment_type,
+            "environment_distribution": self.environment_distribution,
             "gid": self.gid,
             "gitlab_group_slug": self.gitlab_group_slug,
             "gitlab_private_token": self.gitlab_private_token,
@@ -247,136 +360,14 @@ class Runner:
                 ]
             )
 
-    def get_terraform_vars(self):
-        """Return base, cluster and environment Terraform variables lists."""
-        base_tfvars = []
-        cluster_tfvars = []
-        environment_tfvars = []
-        backend_service_paths = ["/"]
-        if self.frontend_service_slug:
-            environment_tfvars.extend(
-                (
-                    "frontend_service_paths",
-                    '["/"]',
-                    "frontend_service_port",
-                    self.frontend_service_port,
-                    "frontend_service_slug",
-                    format_tfvar(self.frontend_service_slug),
-                )
-            )
-            backend_service_paths = ["/admin", "/api", "/static"] + (
-                ["/media"] if self.media_storage == "local" else []
-            )
-        if self.backend_service_slug:
-            environment_tfvars.extend(
-                (
-                    "backend_service_paths",
-                    format_tfvar(backend_service_paths, "list"),
-                    "backend_service_port",
-                    self.backend_service_port,
-                    "backend_service_slug",
-                    format_tfvar(self.backend_service_slug),
-                )
-            )
-        gitlab_group_variables = {
-            f"STACK_SLUG_{i.upper()}": f'{{value = "{k}"}}'
-            for k, v in self.stacks_environments.items()
-            for i in v
-        }
-        self.backend_service_slug and gitlab_project_variables.update(
-            BACKEND_SERVICE_PORT=f'{{value = "{self.backend_service_port}"}}'
-        )
-        self.frontend_service_slug and gitlab_project_variables.update(
-            FRONTEND_SERVICE_PORT=f'{{value = "{self.frontend_service_port}"}}'
-        )
-        self.project_domain and gitlab_group_variables.update(
-            DOMAIN='{value = "%s"}' % self.project_domain
-        )
-        self.backend_service_slug and self.frontend_service_slug and (
-            gitlab_group_variables.update(
-                INTERNAL_BACKEND_URL='{value = "http://%s:%s"}'
-                % (self.backend_service_slug, self.backend_service_port)
-            )
-        )
-        self.letsencrypt_certificate_email and gitlab_project_variables.update(
-            LETSENCRYPT_CERTIFICATE_EMAIL=(
-                f'{{value = "{self.letsencrypt_certificate_email}"}}'
-            ),
-            SSL_ENABLED='{{value = "true"}}',
-        )
-
-        self.use_redis and gitlab_project_variables.update(USE_REDIS='{value = "true"}')
-        if self.project_url_monitoring:
-            gitlab_project_variables.update(
-                MONITORING_URL='{value = "%s"}' % self.project_url_monitoring,
-                GRAFANA_PASSWORD='{value = "%s", masked = true}'
-                % secrets.token_urlsafe(12),
-            )
-            self.domain_prefix_monitoring and gitlab_project_variables.update(
-                MONITORING_DOMAIN_PREFIX='{value = "%s"}'
-                % self.domain_prefix_monitoring
-            )
-        self.digitalocean_token and gitlab_group_variables.update(
-            DIGITALOCEAN_TOKEN='{value = "%s", masked = true}' % self.digitalocean_token
-        )
-        if "digitalocean" in self.deployment_type:
-            gitlab_project_variables.update(
-                CREATE_DOMAIN='{value = "%s"}'
-                % (self.digitalocean_create_domain and "true" or "false"),
-                DIGITALOCEAN_K8S_CLUSTER_REGION='{value = "%s"}'
-                % self.digitalocean_k8s_cluster_region,
-                DIGITALOCEAN_DATABASE_CLUSTER_REGION='{value = "%s"}'
-                % self.digitalocean_database_cluster_region,
-                DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE='{value = "%s"}'
-                % self.digitalocean_database_cluster_node_size,
-            )
-            self.use_redis and gitlab_project_variables.update(
-                DIGITALOCEAN_REDIS_CLUSTER_REGION='{value = "%s"}'
-                % self.digitalocean_redis_cluster_region,
-                DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE='{value = "%s"}'
-                % self.digitalocean_redis_cluster_node_size,
-            )
-        elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            gitlab_group_variables.update(
-                KUBERNETES_CLUSTER_CA_CERTIFICATE='{value = "%s", masked = true}'
-                % base64.b64encode(
-                    Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                ).decode(),
-                KUBERNETES_HOST='{value = "%s"}' % self.kubernetes_host,
-                KUBERNETES_TOKEN='{value = "%s", masked = true}'
-                % self.kubernetes_token,
-            )
-            gitlab_project_variables.update(
-                POSTGRES_IMAGE='{value = "%s"}' % self.postgres_image,
-                POSTGRES_PERSISTENT_VOLUME_CAPACITY='{value = "%s"}'
-                % self.postgres_persistent_volume_capacity,
-                POSTGRES_PERSISTENT_VOLUME_CLAIM_CAPACITY='{value = "%s"}'
-                % self.postgres_persistent_volume_claim_capacity,
-                POSTGRES_PERSISTENT_VOLUME_HOST_PATH='{value = "%s"}'
-                % self.postgres_persistent_volume_host_path,
-            )
-            self.use_redis and gitlab_project_variables.update(
-                REDIS_IMAGE='{value = "%s"}' % self.redis_image,
-            )
-        "s3" in self.media_storage and gitlab_group_variables.update(
-            S3_ACCESS_ID='{value = "%s", masked = true}' % self.s3_access_id,
-            S3_SECRET_KEY='{value = "%s", masked = true}' % self.s3_secret_key,
-            S3_REGION='{value = "%s"}' % self.s3_region,
-            S3_HOST='{value = "%s"}' % self.s3_host,
-        )
-        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-            gitlab_group_variables.update(
-                S3_HOST='{value = "%s"}' % self.s3_host,
-            )
-        elif self.media_storage == MEDIA_STORAGE_AWS_S3:
-            gitlab_group_variables.update(
-                S3_BUCKET_NAME='{value = "%s"}' % self.s3_bucket_name,
-            )
-        return gitlab_group_variables, gitlab_project_variables
-
     def get_gitlab_variables(self):
         """Return the GitLab group and project variables."""
-        gitlab_group_variables = {}
+        gitlab_group_variables = dict(
+            BASIC_AUTH_USERNAME=('{value = "%s"}' % self.project_slug),
+            BASIC_AUTH_PASSWORD=(
+                '{value = "%s", masked = true}' % secrets.token_urlsafe(12)
+            ),
+        )
         gitlab_project_variables = {}
         # Sentry and Pact env vars are used by the GitLab CI/CD
         self.sentry_org and gitlab_group_variables.update(
@@ -416,74 +407,16 @@ class Runner:
                 TFC_TOKEN='{value = "%s", masked = true}' % self.terraform_cloud_token,
             )
         elif self.terraform_backend == TERRAFORM_BACKEND_GITLAB:
-            self.backend_service_slug and gitlab_project_variables.update(
-                BACKEND_SERVICE_SLUG=f'{{value = "{self.backend_service_slug}"}}'
-            )
-            self.frontend_service_slug and gitlab_project_variables.update(
-                FRONTEND_SERVICE_SLUG=f'{{value = "{self.frontend_service_slug}"}}'
-            )
-            gitlab_group_variables = {
-                f"STACK_SLUG_{i.upper()}": f'{{value = "{k}"}}'
-                for k, v in self.stacks_environments.items()
-                for i in v
-            }
-            self.backend_service_slug and gitlab_project_variables.update(
-                BACKEND_SERVICE_PORT=f'{{value = "{self.backend_service_port}"}}'
-            )
-            self.frontend_service_slug and gitlab_project_variables.update(
-                FRONTEND_SERVICE_PORT=f'{{value = "{self.frontend_service_port}"}}'
-            )
-            self.project_domain and gitlab_group_variables.update(
-                DOMAIN='{value = "%s"}' % self.project_domain
-            )
-            self.backend_service_slug and self.frontend_service_slug and (
-                gitlab_group_variables.update(
-                    INTERNAL_BACKEND_URL='{value = "http://%s:%s"}'
-                    % (self.backend_service_slug, self.backend_service_port)
-                )
-            )
-            self.letsencrypt_certificate_email and gitlab_project_variables.update(
-                LETSENCRYPT_CERTIFICATE_EMAIL=(
-                    f'{{value = "{self.letsencrypt_certificate_email}"}}'
-                ),
-                SSL_ENABLED='{{value = "true"}}',
-            )
-
-            self.use_redis and gitlab_project_variables.update(
-                USE_REDIS='{value = "true"}'
-            )
             if self.project_url_monitoring:
                 gitlab_project_variables.update(
-                    MONITORING_URL='{value = "%s"}' % self.project_url_monitoring,
                     GRAFANA_PASSWORD='{value = "%s", masked = true}'
                     % secrets.token_urlsafe(12),
-                )
-                self.domain_prefix_monitoring and gitlab_project_variables.update(
-                    MONITORING_DOMAIN_PREFIX='{value = "%s"}'
-                    % self.domain_prefix_monitoring
                 )
             self.digitalocean_token and gitlab_group_variables.update(
                 DIGITALOCEAN_TOKEN='{value = "%s", masked = true}'
                 % self.digitalocean_token
             )
-            if "digitalocean" in self.deployment_type:
-                gitlab_project_variables.update(
-                    CREATE_DOMAIN='{value = "%s"}'
-                    % (self.digitalocean_create_domain and "true" or "false"),
-                    DIGITALOCEAN_K8S_CLUSTER_REGION='{value = "%s"}'
-                    % self.digitalocean_k8s_cluster_region,
-                    DIGITALOCEAN_DATABASE_CLUSTER_REGION='{value = "%s"}'
-                    % self.digitalocean_database_cluster_region,
-                    DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE='{value = "%s"}'
-                    % self.digitalocean_database_cluster_node_size,
-                )
-                self.use_redis and gitlab_project_variables.update(
-                    DIGITALOCEAN_REDIS_CLUSTER_REGION='{value = "%s"}'
-                    % self.digitalocean_redis_cluster_region,
-                    DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE='{value = "%s"}'
-                    % self.digitalocean_redis_cluster_node_size,
-                )
-            elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
+            if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
                 gitlab_group_variables.update(
                     KUBERNETES_CLUSTER_CA_CERTIFICATE='{value = "%s", masked = true}'
                     % base64.b64encode(
@@ -492,18 +425,6 @@ class Runner:
                     KUBERNETES_HOST='{value = "%s"}' % self.kubernetes_host,
                     KUBERNETES_TOKEN='{value = "%s", masked = true}'
                     % self.kubernetes_token,
-                )
-                gitlab_project_variables.update(
-                    POSTGRES_IMAGE='{value = "%s"}' % self.postgres_image,
-                    POSTGRES_PERSISTENT_VOLUME_CAPACITY='{value = "%s"}'
-                    % self.postgres_persistent_volume_capacity,
-                    POSTGRES_PERSISTENT_VOLUME_CLAIM_CAPACITY='{value = "%s"}'
-                    % self.postgres_persistent_volume_claim_capacity,
-                    POSTGRES_PERSISTENT_VOLUME_HOST_PATH='{value = "%s"}'
-                    % self.postgres_persistent_volume_host_path,
-                )
-                self.use_redis and gitlab_project_variables.update(
-                    REDIS_IMAGE='{value = "%s"}' % self.redis_image,
                 )
             "s3" in self.media_storage and gitlab_group_variables.update(
                 S3_ACCESS_ID='{value = "%s", masked = true}' % self.s3_access_id,
@@ -651,6 +572,9 @@ class Runner:
             self.init_subrepo(
                 self.frontend_service_slug,
                 frontend_template_url,
+                internal_backend_url=(
+                    f"http://{self.backend_service_slug}:{self.backend_service_port}"
+                ),
                 internal_service_port=self.frontend_service_port,
                 sentry_dsn=self.frontend_sentry_dsn,
             )

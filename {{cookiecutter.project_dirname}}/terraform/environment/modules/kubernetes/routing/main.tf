@@ -93,9 +93,12 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
           # frontend routes
           [
             for path in toset(var.frontend_service_paths) : {
-              kind        = "Rule"
-              match       = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
-              middlewares = concat(local.base_middlewares, var.frontend_middlewares)
+              kind  = "Rule"
+              match = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = concat(
+                local.base_middlewares,
+                var.frontend_service_extra_middlewares,
+              )
               services = [
                 {
                   name = var.frontend_service_slug
@@ -107,9 +110,12 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
           # backend routes
           [
             for path in toset(var.backend_service_paths) : {
-              kind        = "Rule"
-              match       = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
-              middlewares = concat(local.base_middlewares, var.backend_middlewares)
+              kind  = "Rule"
+              match = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = concat(
+                local.base_middlewares,
+                var.backend_service_extra_middlewares,
+              )
               services = [
                 {
                   name = var.backend_service_slug

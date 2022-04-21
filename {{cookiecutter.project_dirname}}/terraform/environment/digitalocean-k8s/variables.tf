@@ -1,5 +1,5 @@
-variable "backend_middlewares" {
-  description = "The backend middlewares list."
+variable "backend_service_extra_traefik_middlewares" {
+  description = "The backend service additional Traefik middlewares."
   type        = list(string)
   default     = []
 }
@@ -76,8 +76,8 @@ variable "env_slug" {
   type        = string
 }
 
-variable "frontend_middlewares" {
-  description = "The frontend middlewares list."
+variable "frontend_service_extra_traefik_middlewares" {
+  description = "The frontend service additional Traefik middlewares."
   type        = list(string)
   default     = []
 }
@@ -112,21 +112,20 @@ variable "project_url" {
 }
 
 variable "registry_password" {
-  description = "The image registry password."
+  description = "The Docker image registry password."
   type        = string
   sensitive   = true
 }
 
-variable "registry_username" {
-  description = "The image registry username."
+variable "registry_server" {
+  description = "The Docker image registry server."
   type        = string
-  default     = ""
 }
 
-variable "registry_server" {
-  description = "The image registry server."
+variable "registry_username" {
+  description = "The Docker image registry username."
   type        = string
-  default     = "registry.gitlab.com"
+  sensitive   = true
 }
 
 variable "s3_access_id" {
@@ -181,7 +180,7 @@ variable "tls_certificate_key" {
 }
 
 variable "use_redis" {
-  description = "If 'true', a DigitalOcean Redis database is created."
-  type        = string
-  default     = "false"
+  description = "Tell if a Redis service is used."
+  type        = bool
+  default     = false
 }

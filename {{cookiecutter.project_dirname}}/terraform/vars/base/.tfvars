@@ -1,4 +1,4 @@
-{% for name, value in cookiecutter.base_tfvars %}{{ name }}={{ value }}
+{% for item in cookiecutter.tfvars.base %}{{ item }}
 {% endfor %}# database_cluster_engine="pg"
 # database_cluster_node_count=1
 # database_cluster_version="14"

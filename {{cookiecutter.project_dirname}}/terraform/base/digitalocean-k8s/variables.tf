@@ -136,8 +136,8 @@ variable "stack_slug" {
   type        = string
 }
 
-variable "use_redis" {
-  description = "If 'true', a Redis database is created."
-  type        = string
-  default     = "false"
+variable "ssl_enabled" {
+  description = "Tell if SSL should be enabled."
+  type        = bool
+  default     = false
 }

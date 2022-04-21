@@ -3,8 +3,6 @@ locals {
 
   project_host = regexall("https?://([^/]+)", var.project_url)[0][0]
 
-  registry_username = coalesce(var.registry_username, "${var.project_slug}-k8s-regcred")
-
   postgres_dump_enabled = alltrue(
     [
       var.database_dumps_enabled,
@@ -90,15 +88,15 @@ module "routing" {
   basic_auth_username = var.basic_auth_username
   basic_auth_password = var.basic_auth_password
 
-  backend_middlewares   = var.backend_middlewares
-  backend_service_slug  = var.backend_service_slug
-  backend_service_paths = var.backend_service_paths
-  backend_service_port  = var.backend_service_port
+  backend_service_extra_middlewares = var.backend_service_extra_traefik_middlewares
+  backend_service_slug              = var.backend_service_slug
+  backend_service_paths             = var.backend_service_paths
+  backend_service_port              = var.backend_service_port
 
-  frontend_middlewares   = var.frontend_middlewares
-  frontend_service_slug  = var.frontend_service_slug
-  frontend_service_paths = var.frontend_service_paths
-  frontend_service_port  = var.frontend_service_port
+  frontend_service_extra_middlewares = var.frontend_service_extra_traefik_middlewares
+  frontend_service_slug              = var.frontend_service_slug
+  frontend_service_paths             = var.frontend_service_paths
+  frontend_service_port              = var.frontend_service_port
 
   tls_certificate_crt = var.tls_certificate_crt
   tls_certificate_key = var.tls_certificate_key
@@ -115,7 +113,7 @@ resource "kubernetes_secret_v1" "regcred" {
     ".dockerconfigjson" = jsonencode({
       auths = {
         "${var.registry_server}" = {
-          auth = "${base64encode("${local.registry_username}:${var.registry_password}")}"
+          auth = "${base64encode("${var.registry_username}:${var.registry_password}")}"
         }
       }
     })

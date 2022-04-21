@@ -23,7 +23,6 @@ variables:
   TF_VAR_kubernetes_cluster_ca_certificate: "${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
   TF_VAR_kubernetes_host: "${KUBERNETES_HOST}"
   TF_VAR_kubernetes_token: "${KUBERNETES_TOKEN}"{% endif %}
-  TF_VAR_project_domain: "${DOMAIN}"
 
 before_script:
   - cd ${TF_ROOT}{% if cookiecutter.terraform_backend == "terraform-cloud" %}
@@ -48,8 +47,8 @@ before_script:
 
 .plan:
   script:
-    - ${TERRAFORM_CMD} plan
-    - ${TERRAFORM_CMD} plan-json
+    - ${TERRAFORM_CMD} plan ${VAR_FILES_ARGS}
+    - ${TERRAFORM_CMD} plan-json ${VAR_FILES_ARGS}
   artifacts:
     name: plan
     paths:
@@ -59,7 +58,7 @@ before_script:
 
 .apply:
   script:
-    -  ${TERRAFORM_CMD} apply -auto-approve
+    -  ${TERRAFORM_CMD} apply -auto-approve ${VAR_FILES_ARGS}
 
 {% if cookiecutter.deployment_type == "digitalocean-k8s" %}### BASE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
@@ -68,19 +67,13 @@ before_script:
 .stack_{{ stack_slug }}_base:
   stage: Base
   variables:
+    # TF_ADDRESS ONLY FOR GITLAB BACKEND!!!
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_base
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}
-    TF_VAR_create_domain: "${CREATE_DOMAIN}"
-    TF_VAR_database_cluster_node_size: "${DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE}"
-    TF_VAR_database_cluster_region: "${DIGITALOCEAN_DATABASE_CLUSTER_REGION}"
-    TF_VAR_redis_cluster_node_size: "${DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE}"
-    TF_VAR_redis_cluster_region: "${DIGITALOCEAN_REDIS_CLUSTER_REGION}"
-    TF_VAR_k8s_cluster_region: "${DIGITALOCEAN_K8S_CLUSTER_REGION}"{% if "s3" in cookiecutter.media_storage %}
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}{% if "s3" in cookiecutter.media_storage %}
     TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
     TF_VAR_s3_region: "${S3_REGION}"
     TF_VAR_s3_secret_key: "${S3_SECRET_KEY}"{% endif %}
     TF_VAR_stack_slug: {{ stack_slug }}
-    TF_VAR_use_redis: "${USE_REDIS}"
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-base
     paths:
@@ -124,13 +117,10 @@ stack_{{ stack_slug }}_base_apply:
 .stack_{{ stack_slug }}_cluster:
   stage: Networking
   variables:
+    # TF_ADDRESS ONLY FOR GITLAB BACKEND!!!
     TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_cluster
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
-    TF_VAR_letsencrypt_certificate_email: "${LETSENCRYPT_CERTIFICATE_EMAIL}"
-    TF_VAR_monitoring_domain_prefix: "${MONITORING_DOMAIN_PREFIX}"
-    TF_VAR_monitoring_url: "${MONITORING_URL}"
-    TF_VAR_ssl_enabled: "${SSL_ENABLED}"
     TF_VAR_stack_slug: {{ stack_slug }}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-cluster
@@ -177,30 +167,18 @@ stack_{{ stack_slug }}_cluster_apply:
   stage: Environment
   variables:
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}
-    TF_VAR_backend_service_port: "${BACKEND_SERVICE_PORT}"
-    TF_VAR_backend_service_slug: "${BACKEND_SERVICE_SLUG}"
-    TF_VAR_basic_auth_enabled: "${BASIC_AUTH_ENABLED}"
     TF_VAR_basic_auth_password: "${BASIC_AUTH_PASSWORD}"
     TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
-    TF_VAR_database_connection_pool_size: "${DATABASE_CONNECTION_POOL_SIZE}"{% endif %}
-    TF_VAR_frontend_service_port: "${FRONTEND_SERVICE_PORT}"
-    TF_VAR_frontend_service_slug: "${FRONTEND_SERVICE_SLUG}"
-    TF_VAR_project_url: "${CI_ENVIRONMENT_URL}"{% if cookiecutter.deployment_type == "other-k8s" %}
-    TF_VAR_postgres_image: "${POSTGRES_IMAGE}"
-    TF_VAR_postgres_persistent_volume_capacity: "${POSTGRES_PERSISTENT_VOLUME_CAPACITY}"
-    TF_VAR_postgres_persistent_volume_claim_capacity: "${POSTGRES_PERSISTENT_VOLUME_CLAIM_CAPACITY}"
-    TF_VAR_postgres_persistent_volume_host_path: "${POSTGRES_PERSISTENT_VOLUME_HOST_PATH}"
-    TF_VAR_redis_image: "${REDIS_IMAGE}"{% endif %}
-    TF_VAR_registry_password: "${K8S_REGCRED}"{% if "s3" in cookiecutter.media_storage %}
+    TF_VAR_registry_password: "${REGISTRY_PASSWORD}"
+    TF_VAR_registry_server: "${REGISTRY_SERVER:-registry.gitlab.com}"
+    TF_VAR_registry_username: "${REGISTRY_USERNAME}"{% if "s3" in cookiecutter.media_storage %}
     TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
     TF_VAR_s3_secret_key: "${S3_SECRET_KEY}"
     TF_VAR_s3_region: "${S3_REGION}"{% if cookiecutter.media_storage == "digitalocean-s3" %}
     TF_VAR_s3_host: "${S3_HOST}"{% elif cookiecutter.media_storage == "aws-s3" %}
     TF_VAR_s3_bucket_name: "${S3_BUCKET_NAME}"{% endif %}{% endif %}
-    TF_VAR_stack_slug: {{ stack_slug }}
     TF_VAR_tls_certificate_crt: "${TLS_CERTIFICATE_CRT}"
-    TF_VAR_tls_certificate_key: "${TLS_CERTIFICATE_KEY}"
-    TF_VAR_use_redis: "${USE_REDIS}"{% for env_slug, env_conf in stack_envs.items() %}
+    TF_VAR_tls_certificate_key: "${TLS_CERTIFICATE_KEY}"{% for env_slug, env_conf in stack_envs.items() %}
 
 # {{ env_conf.name }} Environment #
 
@@ -208,8 +186,8 @@ stack_{{ stack_slug }}_cluster_apply:
   extends:
     - .{{ stack_slug }}_env
   variables:
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}{% if env_conf.prefix %}
-    TF_VAR_domain_prefix: {{ env_conf.prefix }}{% endif %}
+    # TF_ADDRESS ONLY FOR GITLAB BACKEND!!!
+    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}
     TF_VAR_env_slug: {{ env_slug }}
   cache:
     key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}

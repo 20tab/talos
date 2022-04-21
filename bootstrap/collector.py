@@ -1,7 +1,6 @@
 """Collect options to initialize a template based web project."""
 
 from functools import partial
-from pathlib import Path
 from shutil import rmtree
 
 import click
