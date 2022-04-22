@@ -14,28 +14,19 @@ stages:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
   - Networking
   - Environment
 
-image: {{ {"terraform-cloud": "hashicorp/terraform"}.get(cookiecutter.terraform_backend, "registry.gitlab.com/gitlab-org/terraform-images/stable") }}:latest
+image: "hashicorp/terraform:latest"
 
 variables:
-  TERRAFORM_CMD: {{ {"terraform-cloud": "terraform"}.get(cookiecutter.terraform_backend, "gitlab-terraform") }}
-  TF_IN_AUTOMATION: 1{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+  TERRAFORM_BACKEND: {{ cookiecutter.terraform_backend }}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+  TERRAFORM_CMD: ./scripts/terraform.sh
   TF_VAR_digitalocean_token: "${DIGITALOCEAN_TOKEN}"{% elif cookiecutter.deployment_type == "other-k8s" %}
   TF_VAR_kubernetes_cluster_ca_certificate: "${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
   TF_VAR_kubernetes_host: "${KUBERNETES_HOST}"
   TF_VAR_kubernetes_token: "${KUBERNETES_TOKEN}"{% endif %}
+  TF_VAR_project_slug: {{ cookiecutter.project_slug }}
 
 before_script:
-  - cd ${TF_ROOT}{% if cookiecutter.terraform_backend == "terraform-cloud" %}
-  - export TF_WORKSPACE={{ cookiecutter.project_slug }}-${ENVIRONMENT_SLUG}
-  - |
-    cat > ${TF_CLI_CONFIG_FILE} <<EOF
-    {
-      "credentials": {"app.terraform.io": {
-          "token": "${TFC_TOKEN}"
-        }
-      }
-    }
-    EOF{% endif %}
+  - cd ${TF_ROOT}
 
 .init:
   script:
@@ -47,8 +38,8 @@ before_script:
 
 .plan:
   script:
-    - ${TERRAFORM_CMD} plan ${VAR_FILES_ARGS}
-    - ${TERRAFORM_CMD} plan-json ${VAR_FILES_ARGS}
+    - ${TERRAFORM_CMD} plan
+    - ${TERRAFORM_CMD} plan-json
   artifacts:
     name: plan
     paths:
@@ -58,7 +49,7 @@ before_script:
 
 .apply:
   script:
-    -  ${TERRAFORM_CMD} apply -auto-approve ${VAR_FILES_ARGS}
+    -  ${TERRAFORM_CMD} apply -auto-approve
 
 {% if cookiecutter.deployment_type == "digitalocean-k8s" %}### BASE STACK ###{% for stack_slug in cookiecutter.stacks %}
 
@@ -67,9 +58,8 @@ before_script:
 .stack_{{ stack_slug }}_base:
   stage: Base
   variables:
-    # TF_ADDRESS ONLY FOR GITLAB BACKEND!!!
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_base
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}{% if "s3" in cookiecutter.media_storage %}
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
+    TF_STATE_NAME: stack_{{ stack_slug }}_base{% endif %}{% if "s3" in cookiecutter.media_storage %}
     TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
     TF_VAR_s3_region: "${S3_REGION}"
     TF_VAR_s3_secret_key: "${S3_SECRET_KEY}"{% endif %}
@@ -117,9 +107,8 @@ stack_{{ stack_slug }}_base_apply:
 .stack_{{ stack_slug }}_cluster:
   stage: Networking
   variables:
-    # TF_ADDRESS ONLY FOR GITLAB BACKEND!!!
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/stack_{{ stack_slug }}_cluster
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
+    TF_STATE_NAME: stack_{{ stack_slug }}_cluster{% endif %}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
     TF_VAR_stack_slug: {{ stack_slug }}
   cache:
@@ -185,9 +174,8 @@ stack_{{ stack_slug }}_cluster_apply:
 .env_{{ env_slug }}:
   extends:
     - .{{ stack_slug }}_env
-  variables:
-    # TF_ADDRESS ONLY FOR GITLAB BACKEND!!!
-    TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/env_{{ env_slug }}
+  variables:{% if cookiecutter.terraform_backend == "gitlab" %}
+    TF_STATE_NAME: env_{{ env_slug }}{% endif %}
     TF_VAR_env_slug: {{ env_slug }}
   cache:
     key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}

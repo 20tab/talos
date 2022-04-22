@@ -18,10 +18,10 @@ provider "gitlab" {
   token = var.gitlab_token
 }
 
-provider "tfe" {
-  hostname = var.terraform_cloud_hostname
-  token    = var.terraform_cloud_token
-}
+# provider "tfe" {
+#   hostname = var.terraform_cloud_hostname
+#   token    = var.terraform_cloud_token
+# }
 
 /* GitLab */
 
@@ -68,8 +68,8 @@ resource "gitlab_group_variable" "registry_username" {
 
 /* Terraform Cloud */
 
-module "terraform_cloud" {
-  count = var.terraform_cloud_token != "" ? 1 : 0
+# module "terraform_cloud" {
+#   count = var.terraform_cloud_token != "" ? 1 : 0
 
-  source = "./modules/terraform-cloud"
-}
+#   source = "./modules/terraform-cloud"
+# }

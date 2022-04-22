@@ -188,7 +188,7 @@ class Runner:
         frontend_service_paths = ["/"]
         if self.frontend_service_slug:
             self.add_environment_tfvars(
-                ("frontend_service_paths", "list", frontend_service_paths),
+                ("frontend_service_paths", frontend_service_paths, "list"),
                 ("frontend_service_port", None, "num"),
                 "frontend_service_slug",
             )
@@ -197,7 +197,7 @@ class Runner:
             )
         if self.backend_service_slug:
             self.add_environment_tfvars(
-                ("backend_service_paths", "list", backend_service_paths),
+                ("backend_service_paths", backend_service_paths, "list"),
                 ("backend_service_port", None, "num"),
                 "backend_service_slug",
             )

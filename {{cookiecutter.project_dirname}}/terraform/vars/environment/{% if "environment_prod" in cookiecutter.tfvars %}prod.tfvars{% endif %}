@@ -1,0 +1,2 @@
+{% for item in cookiecutter.tfvars.environment_prod|sort %}{{ item }}
+{% endfor %}
