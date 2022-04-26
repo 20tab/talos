@@ -23,9 +23,9 @@ variable "backend_service_slug" {
 }
 
 variable "basic_auth_enabled" {
-  description = "The basic_auth switch."
-  type        = string
-  default     = ""
+  description = "Tell if the basic auth should be enabled."
+  type        = bool
+  default     = false
 }
 
 variable "basic_auth_password" {

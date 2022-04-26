@@ -65,7 +65,7 @@ module "postgres" {
 }
 
 module "redis" {
-  count = var.use_redis == "true" ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   source = "../modules/kubernetes/redis"
 

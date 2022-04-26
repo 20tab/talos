@@ -64,7 +64,7 @@ data "digitalocean_database_cluster" "postgres" {
 }
 
 data "digitalocean_database_cluster" "redis" {
-  count = var.use_redis == "true" ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   name = "${local.base_resource_name_prefix}-redis-cluster"
 }
@@ -162,7 +162,7 @@ resource "kubernetes_secret_v1" "database_url" {
 }
 
 resource "kubernetes_secret_v1" "cache_url" {
-  count = var.use_redis == "true" ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   metadata {
     name      = "cache-url"

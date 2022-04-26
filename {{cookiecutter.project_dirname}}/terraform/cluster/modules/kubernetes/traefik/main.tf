@@ -30,7 +30,7 @@ resource "helm_release" "traefik" {
             annotations = var.load_balancer_annotations
           }
         },
-        var.ssl_enabled == "true" ? {
+        var.ssl_enabled ? {
           additionalArguments = concat(
             [
               "--entrypoints.web.http.redirections.entryPoint.to=websecure",

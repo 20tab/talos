@@ -14,11 +14,13 @@ stages:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
   - Networking
   - Environment
 
-image: "hashicorp/terraform:latest"
+image:
+  name: hashicorp/terraform:latest
+  entrypoint: [""]
 
 variables:
   TERRAFORM_BACKEND: {{ cookiecutter.terraform_backend }}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
-  TERRAFORM_CMD: ./scripts/terraform.sh
+  TERRAFORM_CMD:  ${CI_PROJECT_DIR}/scripts/terraform.sh
   TF_VAR_digitalocean_token: "${DIGITALOCEAN_TOKEN}"{% elif cookiecutter.deployment_type == "other-k8s" %}
   TF_VAR_kubernetes_cluster_ca_certificate: "${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
   TF_VAR_kubernetes_host: "${KUBERNETES_HOST}"
@@ -149,7 +151,7 @@ stack_{{ stack_slug }}_cluster_apply:
     - .apply
     - .stack_{{ stack_slug }}_cluster
   needs: ["stack_{{ stack_slug }}_cluster_plan"]{% endfor %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
-  
+
 ### ENVIRONMENT STAGE - {{ stack_slug|title }} Stack ###
 
 .{{ stack_slug }}_env:
