@@ -72,7 +72,11 @@ fi
 export TF_IN_AUTOMATION=true
 
 init() {
-  terraform init "${@}" -input=false -reconfigure
+  if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
+    terraform init "${@}" -input=false
+  else
+    terraform init "${@}" -input=false -reconfigure
+  fi
 }
 
 case "${1}" in
