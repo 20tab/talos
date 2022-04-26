@@ -284,6 +284,7 @@ class Runner:
                 "project_slug": self.project_slug,
                 "stacks": self.stacks_environments,
                 "terraform_backend": self.terraform_backend,
+                "terraform_cloud_organization": self.terraform_cloud_organization,
                 "tfvars": self.tfvars,
             },
             output_dir=self.output_dir,

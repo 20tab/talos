@@ -9,6 +9,7 @@
   "frontend_service_slug": "frontend",
   "frontend_service_port": "3000",
   "terraform_backend": "gitlab",
+  "terraform_cloud_organization": "",
   "media_storage": ["digitalocean-s3", "aws-s3", "local", "none"],
   "project_domain": "",
   "stacks": {
