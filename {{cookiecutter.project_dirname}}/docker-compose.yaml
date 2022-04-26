@@ -44,10 +44,10 @@ services:
       - ./{{ cookiecutter.frontend_service_slug }}:/app{% endif %}
 
   traefik:
-    image: traefik:v2.6{% if cookiecutter.backend_type != 'none' or cookiecutter.frontend_type != 'none' %}
+    image: traefik:v2.6
     depends_on:{% if cookiecutter.backend_type != 'none' %}
       - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-      - {{ cookiecutter.frontend_service_slug }}{% endif %}{% endif %}
+      - {{ cookiecutter.frontend_service_slug }}{% endif %}
    volumes:
       - ./traefik/:/traefik/:ro
     command:
