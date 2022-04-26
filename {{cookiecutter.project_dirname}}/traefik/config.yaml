@@ -15,34 +15,34 @@ log:
 
 http:
   routers:
-    backend:
+    {{ cookiecutter.backend_service_slug }}:
       rule: "PathPrefix(`/admin`)" 
-      service: backend
-    backend-static:
+      service: {{ cookiecutter.backend_service_slug }}
+    {{ cookiecutter.backend_service_slug }}-static:
       rule: "PathPrefix(`/static`)" 
-      service: backend
-    backend-api:
+      service: {{ cookiecutter.backend_service_slug }}
+    {{ cookiecutter.backend_service_slug }}-api:
       rule: "PathPrefix(`/api`)" 
-      service: backend
-    backend-debug:
+      service: {{ cookiecutter.backend_service_slug }}
+    {{ cookiecutter.backend_service_slug }}-debug:
       rule: "PathPrefix(`/__debug__`)" 
-      service: backend
-    frontend:
+      service: {{ cookiecutter.backend_service_slug }}
+    {{ cookiecutter.frontend_service_slug }}:
       rule: "PathPrefix(`/`)" 
-      service: frontend
-    frontend-sockjs-node:
+      service: {{ cookiecutter.frontend_service_slug }}
+    {{ cookiecutter.frontend_service_slug }}-sockjs-node:
       rule: "PathPrefix(`/sockjs-node`)" 
-      service: frontend
+      service: {{ cookiecutter.frontend_service_slug }}
 
   services:
-    backend:
+    {{ cookiecutter.backend_service_slug }}:
       loadBalancer:
         servers:
-        - url: "http://backend:8000/"
-    frontend:
+        - url: "http://{{ cookiecutter.backend_service_slug }}:8000/"
+    {{ cookiecutter.frontend_service_slug }}:
       loadBalancer:
         servers:
-        - url: "http://frontend:3000/"
+        - url: "http://{{ cookiecutter.frontend_service_slug }}:3000/"
 
 providers:
   file: 
