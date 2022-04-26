@@ -4,9 +4,6 @@ locals {
 }
 
 terraform {
-  backend "http" {
-  }
-
   required_providers {
     helm = {
       source  = "hashicorp/helm"

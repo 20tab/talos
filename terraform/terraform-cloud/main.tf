@@ -79,8 +79,9 @@ resource "tfe_organization" "main" {
 resource "tfe_workspace" "test" {
   for_each = { for i in local.workspaces : i.name => i }
 
-  name         = each.value.name
-  description  = each.value.description
-  organization = local.organization.name
-  tag_names    = each.value.tags
+  name           = each.value.name
+  description    = each.value.description
+  organization   = local.organization.name
+  execution_mode = "local"
+  tag_names      = each.value.tags
 }

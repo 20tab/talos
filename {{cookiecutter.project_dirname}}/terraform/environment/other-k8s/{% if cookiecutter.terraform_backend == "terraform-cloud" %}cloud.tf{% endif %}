@@ -1,0 +1,7 @@
+terraform {
+  cloud {
+    organization = {{ cookiecutter.terraform_cloud_organization }}
+
+    tags = ["project:{{ cookiecutter.project_slug }}"]
+  }
+}
