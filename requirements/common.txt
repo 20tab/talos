@@ -8,7 +8,7 @@ chardet==4.0.0
     # via binaryornot
 charset-normalizer==2.0.12
     # via requests
-click==8.1.0
+click==8.1.2
     # via
     #   -r requirements/common.in
     #   cookiecutter
