@@ -453,7 +453,7 @@ class Runner:
             TF_VAR_group_variables="{%s}"
             % ", ".join(f"{k} = {v}" for k, v in group_variables.items()),
             TF_VAR_local_repository_dir=self.service_dir,
-            TF_VAR_project_description=f'The "${self.project_name}" project ${self.service_slug} service.',
+            TF_VAR_project_description=f'The "{self.project_name}" project {self.service_slug} service.',
             TF_VAR_project_name=self.service_slug.title(),
             TF_VAR_project_slug=self.service_slug,
             TF_VAR_project_variables="{%s}"
@@ -475,7 +475,7 @@ class Runner:
         }
         env = dict(
             TF_VAR_admin_email=self.terraform_cloud_admin_email,
-            TF_VAR_create_organization=self.terraform_cloud_organization_create,
+            TF_VAR_create_organization=self.terraform_cloud_organization_create and "true" or "false",
             TF_VAR_hostname=self.terraform_cloud_hostname,
             TF_VAR_organization_name=self.terraform_cloud_organization,
             TF_VAR_project_name=self.service_slug.title(),
@@ -497,7 +497,7 @@ class Runner:
             TF_LOG="INFO",
         )
         state_path = terraform_dir / "state.tfstate"
-        logs_dir = self.logs_dir / self.service_slug / "terraform"
+        logs_dir = self.logs_dir / self.service_slug / "terraform" / module_name
         os.makedirs(logs_dir)
         init_log_path = logs_dir / "init.log"
         init_stdout_path = logs_dir / "init-stdout.log"
