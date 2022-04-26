@@ -6,9 +6,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.entryPoints=port443"
-      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/admin`) || Host(`${HOST:-localhost}`) && PathPrefix(`/api`) || Host(`${HOST:-localhost}`) && PathPrefix(`/static`) || || Host(`${HOST:-localhost}`) && PathPrefix(`/__debug__`)"
+      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/admin`) || Host(`${HOST:-localhost}`) && PathPrefix(`/api`) || Host(`${HOST:-localhost}`) && PathPrefix(`/static`) || Host(`${HOST:-localhost}`) && PathPrefix(`/__debug__`)"
       - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.tls=true"
-      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.tls.certResolver=le-ssl"
       - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.service={{ cookiecutter.backend_service_slug }}-ssl"
       - "traefik.http.services.{{ cookiecutter.backend_service_slug }}-ssl.loadBalancer.server.port=${BACKEND_PORT:-8000}"
     build:
@@ -44,7 +43,6 @@ services:
       - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.entryPoints=port443"
       - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/`) || Host(`${HOST:-localhost}`) && PathPrefix(`/sockjs-node`)"
       - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.tls=true"
-      - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.tls.certResolver=le-ssl"
       - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.service={{ cookiecutter.frontend_service_slug }}-ssl"
       - "traefik.http.services.{{ cookiecutter.frontend_service_slug }}-ssl.loadBalancer.server.port=${FRONTEND_PORT:-3000}"
     build:
@@ -65,7 +63,6 @@ services:
       - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
       - {{ cookiecutter.frontend_service_slug }}{% endif %}{% endif %}
     volumes:
-      - traefik_data:/letsencrypt/
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       # - "--log.level=DEBUG"
@@ -76,8 +73,6 @@ services:
       - "--entryPoints.port443.address=:443"
       - "--entryPoints.port80.address=:80"
       - "--entryPoints.port80.http.redirections.entrypoint.to=port443"
-      - "--certificatesResolvers.le-ssl.acme.tlsChallenge=true"
-      - "--certificatesResolvers.le-ssl.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
       - "443:443"
@@ -94,5 +89,4 @@ services:
 
 volumes:
   pg_data: {}
-  traefik_data: {}
 
