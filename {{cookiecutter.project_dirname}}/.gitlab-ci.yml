@@ -15,8 +15,7 @@ stages:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
   - Environment
 
 image:
-  name: hashicorp/terraform:latest
-  entrypoint: [""]
+  name: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
 
 variables:
   TERRAFORM_BACKEND: {{ cookiecutter.terraform_backend }}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
@@ -60,6 +59,7 @@ before_script:
 .stack_{{ stack_slug }}_base:
   stage: Base
   variables:
+    TERRAFORM_EXTRA_VAR_FILE: {{ stack_slug }}.tfvars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: stack_{{ stack_slug }}_base{% endif %}{% if "s3" in cookiecutter.media_storage %}
     TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
@@ -110,6 +110,7 @@ stack_{{ stack_slug }}_base_apply:
 .stack_{{ stack_slug }}_cluster:
   stage: Cluster
   variables:
+    TERRAFORM_EXTRA_VAR_FILE: {{ stack_slug }}.tfvars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: stack_{{ stack_slug }}_cluster{% endif %}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
@@ -178,7 +179,8 @@ stack_{{ stack_slug }}_cluster_apply:
 .env_{{ env_slug }}:
   extends:
     - .{{ stack_slug }}_env
-  variables:{% if cookiecutter.terraform_backend == "gitlab" %}
+  variables:
+    TERRAFORM_EXTRA_VAR_FILE: {{ env_slug }}.tfvars{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: env_{{ env_slug }}{% endif %}
     TF_VAR_env_slug: {{ env_slug }}{% if cookiecutter.terraform_backend != "gitlab" %}
     TF_WORKSPACE: {{ cookiecutter.project_slug }}-environment-{{ env_slug }}{% endif %}

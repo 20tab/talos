@@ -28,12 +28,19 @@ locals {
 }
 
 terraform {
+  backend "local" {
+  }
+
   required_providers {
     gitlab = {
       source  = "gitlabhq/gitlab"
       version = "~> 3.13"
     }
   }
+}
+
+provider "gitlab" {
+  token = var.gitlab_token
 }
 
 /* Data Sources */
@@ -174,6 +181,22 @@ resource "gitlab_group_variable" "vars" {
   value     = each.value.value
   protected = lookup(each.value, "protected", true)
   masked    = lookup(each.value, "masked", false)
+}
+
+resource "gitlab_group_variable" "registry_password" {
+  group     = data.gitlab_group.group.id
+  key       = "REGISTRY_PASSWORD"
+  value     = gitlab_deploy_token.regcred.token
+  protected = true
+  masked    = true
+}
+
+resource "gitlab_group_variable" "registry_username" {
+  group     = data.gitlab_group.group.id
+  key       = "REGISTRY_USERNAME"
+  value     = gitlab_deploy_token.regcred.username
+  protected = true
+  masked    = true
 }
 
 /* Project Variables */

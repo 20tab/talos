@@ -100,6 +100,7 @@ variable "redis_cluster_node_count" {
 variable "redis_cluster_node_size" {
   description = "The DigitalOcean Redis cluster droplet size."
   type        = string
+  default     = ""
 }
 
 variable "redis_cluster_region" {

@@ -1,4 +1,3 @@
-
 variable "gitlab_token" {
   description = "The GitLab token."
   type        = string

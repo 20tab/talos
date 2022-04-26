@@ -6,6 +6,8 @@ fi
 
 plan_cache="plan.cache"
 plan_json="plan.json"
+var_file="${TF_ROOT}/../vars/.tfvars"
+extra_var_file="${TF_ROOT}/../vars/${TERRAFORM_EXTRA_VAR_FILE}"
 
 JQ_PLAN='
   (
@@ -77,6 +79,8 @@ init() {
   else
     terraform init "${@}" -input=false -reconfigure
   fi
+  # prevent non-existing VAR-
+  touch ${extra_var_file}
 }
 
 case "${1}" in
@@ -86,7 +90,7 @@ case "${1}" in
   ;;
   "destroy")
     init
-    terraform "${@}" -auto-approve
+    terraform "${@}" -var-file=${var_file} -var-file=${extra_var_file} -auto-approve
   ;;
   "fmt")
     terraform "${@}" -check -diff -recursive
@@ -98,7 +102,7 @@ case "${1}" in
   ;;
   "plan")
     init
-    terraform "${@}" -input=false -out="${plan_cache}"
+    terraform "${@}" -var-file=${var_file} -var-file=${extra_var_file} -input=false -out="${plan_cache}"
   ;;
   "plan-json")
     terraform show -json "${plan_cache}" | \

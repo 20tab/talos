@@ -59,7 +59,7 @@ class Runner:
     terraform_cloud_hostname: str
     terraform_cloud_token: str
     terraform_cloud_organization: str
-    terraform_cloud_organization_create: str
+    terraform_cloud_organization_create: bool
     terraform_cloud_admin_email: str
     digitalocean_token: str
     kubernetes_cluster_ca_certificate: str
@@ -76,7 +76,7 @@ class Runner:
     project_url_prod: str
     project_url_monitoring: str
     letsencrypt_certificate_email: str
-    digitalocean_create_domain: str
+    digitalocean_domain_create: bool
     digitalocean_k8s_cluster_region: str
     digitalocean_database_cluster_region: str
     digitalocean_database_cluster_node_size: str
@@ -218,7 +218,7 @@ class Runner:
             )
         if "digitalocean" in self.deployment_type:
             self.project_domain and self.add_cluster_tfvars(
-                ("create_domain", self.digitalocean_create_domain, "bool")
+                ("create_domain", self.digitalocean_domain_create, "bool")
             )
             self.add_base_tfvars(
                 ("k8s_cluster_region", self.digitalocean_k8s_cluster_region),
@@ -405,70 +405,96 @@ class Runner:
             gitlab_group_variables.update(
                 TFC_TOKEN='{value = "%s", masked = true}' % self.terraform_cloud_token,
             )
-        elif self.terraform_backend == TERRAFORM_BACKEND_GITLAB:
-            if self.project_url_monitoring:
-                gitlab_project_variables.update(
-                    GRAFANA_PASSWORD='{value = "%s", masked = true}'
-                    % secrets.token_urlsafe(12),
-                )
-            self.digitalocean_token and gitlab_group_variables.update(
-                DIGITALOCEAN_TOKEN='{value = "%s", masked = true}'
-                % self.digitalocean_token
+        if self.project_url_monitoring:
+            gitlab_project_variables.update(
+                GRAFANA_PASSWORD='{value = "%s", masked = true}'
+                % secrets.token_urlsafe(12),
             )
-            if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-                gitlab_group_variables.update(
-                    KUBERNETES_CLUSTER_CA_CERTIFICATE='{value = "%s", masked = true}'
-                    % base64.b64encode(
-                        Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                    ).decode(),
-                    KUBERNETES_HOST='{value = "%s"}' % self.kubernetes_host,
-                    KUBERNETES_TOKEN='{value = "%s", masked = true}'
-                    % self.kubernetes_token,
-                )
-            "s3" in self.media_storage and gitlab_group_variables.update(
-                S3_ACCESS_ID='{value = "%s", masked = true}' % self.s3_access_id,
-                S3_SECRET_KEY='{value = "%s", masked = true}' % self.s3_secret_key,
-                S3_REGION='{value = "%s"}' % self.s3_region,
+        self.digitalocean_token and gitlab_group_variables.update(
+            DIGITALOCEAN_TOKEN='{value = "%s", masked = true}'
+            % self.digitalocean_token
+        )
+        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
+            gitlab_group_variables.update(
+                KUBERNETES_CLUSTER_CA_CERTIFICATE='{value = "%s", masked = true}'
+                % base64.b64encode(
+                    Path(self.kubernetes_cluster_ca_certificate).read_bytes()
+                ).decode(),
+                KUBERNETES_HOST='{value = "%s"}' % self.kubernetes_host,
+                KUBERNETES_TOKEN='{value = "%s", masked = true}'
+                % self.kubernetes_token,
+            )
+        "s3" in self.media_storage and gitlab_group_variables.update(
+            S3_ACCESS_ID='{value = "%s", masked = true}' % self.s3_access_id,
+            S3_SECRET_KEY='{value = "%s", masked = true}' % self.s3_secret_key,
+            S3_REGION='{value = "%s"}' % self.s3_region,
+            S3_HOST='{value = "%s"}' % self.s3_host,
+        )
+        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
+            gitlab_group_variables.update(
                 S3_HOST='{value = "%s"}' % self.s3_host,
             )
-            if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-                gitlab_group_variables.update(
-                    S3_HOST='{value = "%s"}' % self.s3_host,
-                )
-            elif self.media_storage == MEDIA_STORAGE_AWS_S3:
-                gitlab_group_variables.update(
-                    S3_BUCKET_NAME='{value = "%s"}' % self.s3_bucket_name,
-                )
+        elif self.media_storage == MEDIA_STORAGE_AWS_S3:
+            gitlab_group_variables.update(
+                S3_BUCKET_NAME='{value = "%s"}' % self.s3_bucket_name,
+            )
         return gitlab_group_variables, gitlab_project_variables
 
-    def init_terraform_cloud(self):
-        """Initialize Terraform Cloud workspace."""
-
     def init_gitlab(self):
-        """Initialize the GitLab repositories."""
-        click.echo(info("...creating the GitLab repository and associated resources"))
+        """Initialize the GitLab resources."""
+        click.echo(info("...creating the GitLab resources"))
         group_variables, project_variables = self.get_gitlab_variables()
-        terraform_dir = self.terraform_dir / self.service_slug
-        os.makedirs(terraform_dir, exist_ok=True)
         env = dict(
+            TF_VAR_gitlab_token=self.gitlab_private_token,
+            TF_VAR_group_maintainers=self.gitlab_group_maintainers,
+            TF_VAR_group_name=self.project_name,
+            TF_VAR_group_owners=self.gitlab_group_owners,
+            TF_VAR_group_slug=self.gitlab_group_slug,
+            TF_VAR_group_variables="{%s}"
+            % ", ".join(f"{k} = {v}" for k, v in group_variables.items()),
+            TF_VAR_local_repository_dir=self.service_dir,
+            TF_VAR_project_description=f'The "${self.project_name}" project ${self.service_slug} service.',
+            TF_VAR_project_name=self.service_slug.title(),
+            TF_VAR_project_slug=self.service_slug,
+            TF_VAR_project_variables="{%s}"
+            % ", ".join(f"{k} = {v}" for k, v in project_variables.items()),
+        )
+        self.run_terraform("gitlab", env)
+
+    def init_terraform_cloud(self):
+        """Initialize the Terraform Cloud resources."""
+        click.echo(info("...creating the Terraform Cloud resources"))
+        services = list(
+            filter(
+                None,
+                ["orchestrator", self.backend_service_slug, self.frontend_service_slug],
+            )
+        )
+        stacks_environments = {
+            k: list(v.keys()) for k, v in self.stacks_environments.items()
+        }
+        env = dict(
+            TF_VAR_admin_email=self.terraform_cloud_admin_email,
+            TF_VAR_create_organization=self.terraform_cloud_organization_create,
+            TF_VAR_hostname=self.terraform_cloud_hostname,
+            TF_VAR_organization_name=self.terraform_cloud_organization,
+            TF_VAR_project_name=self.service_slug.title(),
+            TF_VAR_project_slug=self.service_slug,
+            TF_VAR_services=services,
+            TF_VAR_stacks_environments=stacks_environments,
+            TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
+        )
+        self.run_terraform("terraform-cloud", env)
+
+    def run_terraform(self, module_name, env):
+        """Initialize the Terraform controlled resources."""
+        cwd = Path(__file__).parent.parent / "terraform" / module_name
+        terraform_dir = self.terraform_dir / self.service_slug / module_name
+        os.makedirs(terraform_dir, exist_ok=True)
+        env.update(
             PATH=os.environ.get("PATH"),
             TF_DATA_DIR=str((terraform_dir / "data").resolve()),
             TF_LOG="INFO",
-            TF_VAR_gitlab_group_developers=self.gitlab_group_developers,
-            TF_VAR_gitlab_group_maintainers=self.gitlab_group_maintainers,
-            TF_VAR_gitlab_group_owners=self.gitlab_group_owners,
-            TF_VAR_gitlab_group_slug=self.gitlab_group_slug,
-            TF_VAR_gitlab_group_variables="{%s}"
-            % ", ".join(f"{k} = {v}" for k, v in group_variables.items()),
-            TF_VAR_project_name=self.project_name,
-            TF_VAR_gitlab_token=self.gitlab_private_token,
-            TF_VAR_gitlab_project_variables="{%s}"
-            % ", ".join(f"{k} = {v}" for k, v in project_variables.items()),
-            TF_VAR_project_slug=self.project_slug,
-            TF_VAR_service_dir=self.service_dir,
-            TF_VAR_service_slug=self.service_slug,
-            TF_VAR_terraform_cloud_hostname=self.terraform_cloud_hostname,
-            TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
         )
         state_path = terraform_dir / "state.tfstate"
         logs_dir = self.logs_dir / self.service_slug / "terraform"
@@ -476,7 +502,6 @@ class Runner:
         init_log_path = logs_dir / "init.log"
         init_stdout_path = logs_dir / "init-stdout.log"
         init_stderr_path = logs_dir / "init-stderr.log"
-        cwd = Path(__file__).parent.parent / "terraform"
         init_process = subprocess.run(
             [
                 "terraform",
@@ -508,7 +533,7 @@ class Runner:
                 apply_stderr_path.write_text(apply_process.stderr)
                 click.echo(
                     error(
-                        "Error applying Terraform GitLab configuration "
+                        f"Error applying {module_name} Terraform configuration "
                         f"(check {apply_stderr_path} and {apply_log_path})"
                     )
                 )
@@ -533,7 +558,7 @@ class Runner:
                     destroy_stderr_path.write_text(destroy_process.stderr)
                     click.echo(
                         error(
-                            "Error performing Terraform destroy "
+                            f"Error performing {module_name} Terraform destroy "
                             f"(check {destroy_stderr_path} and {destroy_log_path})"
                         )
                     )
@@ -542,7 +567,7 @@ class Runner:
             init_stderr_path.write_text(init_process.stderr)
             click.echo(
                 error(
-                    "Error performing Terraform init "
+                    f"Error performing {module_name} Terraform init "
                     f"(check {init_stderr_path} and {init_log_path})"
                 )
             )
@@ -555,8 +580,6 @@ class Runner:
         self.create_env_file()
         if self.gitlab_group_slug:
             self.init_gitlab()
-        if self.terraform_backend == TERRAFORM_BACKEND_TFC:
-            self.init_terraform_cloud()
         backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
         if backend_template_url:
             self.init_subrepo(

@@ -70,7 +70,7 @@ def collect(
     project_url_prod,
     project_url_monitoring,
     letsencrypt_certificate_email,
-    digitalocean_create_domain,
+    digitalocean_domain_create,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -179,7 +179,7 @@ def collect(
     use_redis = click.confirm(warning("Do you want to use Redis?"), default=False)
     if digitalocean_enabled:
         (
-            digitalocean_create_domain,
+            digitalocean_domain_create,
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
@@ -187,7 +187,7 @@ def collect(
             digitalocean_redis_cluster_node_size,
         ) = clean_digitalocean_options(
             project_domain,
-            digitalocean_create_domain,
+            digitalocean_domain_create,
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
@@ -301,7 +301,7 @@ def collect(
         "project_url_prod": project_url_prod,
         "project_url_monitoring": project_url_monitoring,
         "letsencrypt_certificate_email": letsencrypt_certificate_email,
-        "digitalocean_create_domain": digitalocean_create_domain,
+        "digitalocean_domain_create": digitalocean_domain_create,
         "digitalocean_k8s_cluster_region": digitalocean_k8s_cluster_region,
         "digitalocean_database_cluster_region": digitalocean_database_cluster_region,
         "digitalocean_database_cluster_node_size": (
@@ -778,7 +778,7 @@ def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
 
 def clean_digitalocean_options(
     project_domain,
-    digitalocean_create_domain,
+    digitalocean_domain_create,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -789,16 +789,16 @@ def clean_digitalocean_options(
     """Return DigitalOcean configuration options."""
     # TODO: ask these settings for each stack
     if project_domain:
-        digitalocean_create_domain = (
-            digitalocean_create_domain
-            if digitalocean_create_domain is not None
+        digitalocean_domain_create = (
+            digitalocean_domain_create
+            if digitalocean_domain_create is not None
             else click.confirm(
                 f"Do you want to create DigitalOcean domain '{project_domain}'?",
                 default=True,
             )
         )
     else:
-        digitalocean_create_domain = None
+        digitalocean_domain_create = None
     digitalocean_k8s_cluster_region = digitalocean_k8s_cluster_region or click.prompt(
         "Kubernetes cluster DigitalOcean region", default="fra1"
     )
@@ -828,7 +828,7 @@ def clean_digitalocean_options(
             )
         )
     return (
-        digitalocean_create_domain,
+        digitalocean_domain_create,
         digitalocean_k8s_cluster_region,
         digitalocean_database_cluster_region,
         digitalocean_database_cluster_node_size,

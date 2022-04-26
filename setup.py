@@ -73,7 +73,11 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--project-url-prod")
 @click.option("--project-url-monitoring")
 @click.option("--letsencrypt-certificate-email")
-@click.option("--digitalocean-create-domain")
+@click.option(
+    "--digitalocean-domain-create/--digitalocean-domain-create-skip",
+    is_flag=True,
+    default=None,
+)
 @click.option("--digitalocean-k8s-cluster-region")
 @click.option("--digitalocean-database-cluster-region")
 @click.option("--digitalocean-database-cluster-node-size")
