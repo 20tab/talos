@@ -3,6 +3,14 @@ version: "3.4"
 services:
 {% if cookiecutter.backend_type != "none" %}
   {{ cookiecutter.backend_service_slug }}:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.entryPoints=port443"
+      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/admin`) || Host(`${HOST:-localhost}`) && PathPrefix(`/api`) || Host(`${HOST:-localhost}`) && PathPrefix(`/static`) || || Host(`${HOST:-localhost}`) && PathPrefix(`/__debug__`)"
+      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.tls=true"
+      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.tls.certResolver=le-ssl"
+      - "traefik.http.routers.{{ cookiecutter.backend_service_slug }}-ssl.service={{ cookiecutter.backend_service_slug }}-ssl"
+      - "traefik.http.services.{{ cookiecutter.backend_service_slug }}-ssl.loadBalancer.server.port=${BACKEND_PORT:-8000}"
     build:
       args:
         USER: ${USER:-appuser}
@@ -31,6 +39,14 @@ services:
       - ./{{ cookiecutter.backend_service_slug }}:/app{% endif %}
 {% if cookiecutter.frontend_type != "none" %}
   {{ cookiecutter.frontend_service_slug }}:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.entryPoints=port443"
+      - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.rule=Host(`${HOST:-localhost}`) && PathPrefix(`/`) || Host(`${HOST:-localhost}`) && PathPrefix(`/sockjs-node`)"
+      - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.tls=true"
+      - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.tls.certResolver=le-ssl"
+      - "traefik.http.routers.{{ cookiecutter.frontend_service_slug }}-ssl.service={{ cookiecutter.frontend_service_slug }}-ssl"
+      - "traefik.http.services.{{ cookiecutter.frontend_service_slug }}-ssl.loadBalancer.server.port=${FRONTEND_PORT:-3000}"
     build:
       context: ./{{ cookiecutter.frontend_service_slug }}
       dockerfile: docker/local.Dockerfile{% if cookiecutter.backend_type != "none" %}
@@ -43,14 +59,29 @@ services:
     volumes:
       - ./{{ cookiecutter.frontend_service_slug }}:/app{% endif %}
 
-  nginx:
-    build: ./nginx{% if cookiecutter.backend_type != 'none' or cookiecutter.frontend_type != 'none' %}
+  traefik:
+    image: traefik:v2.6
     depends_on:{% if cookiecutter.backend_type != 'none' %}
       - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
       - {{ cookiecutter.frontend_service_slug }}{% endif %}{% endif %}
+    volumes:
+      - traefik_data:/letsencrypt/
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      # - "--log.level=DEBUG"
+      # - "--api=true"
+      # - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.network=default"
+      - "--entryPoints.port443.address=:443"
+      - "--entryPoints.port80.address=:80"
+      - "--entryPoints.port80.http.redirections.entrypoint.to=port443"
+      - "--certificatesResolvers.le-ssl.acme.tlsChallenge=true"
+      - "--certificatesResolvers.le-ssl.acme.storage=/letsencrypt/acme.json"
     ports:
-      - ${LOCAL_HTTP_PORT:-8080}:80
-      - ${LOCAL_HTTPS_PORT:-8443}:443
+      - "80:80"
+      - "443:443"
+      # - "8080:8080"
 
   postgres:
     environment:
@@ -63,3 +94,5 @@ services:
 
 volumes:
   pg_data: {}
+  traefik_data: {}
+
