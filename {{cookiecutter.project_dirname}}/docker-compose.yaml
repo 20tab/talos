@@ -38,7 +38,7 @@ services:
       - {{ cookiecutter.backend_service_slug }}{% endif %}
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
-      - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost}
+      - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
       - REACT_ENVIRONMENT=${REACT_ENVIRONMENT:-Development}
     volumes:
       - ./{{ cookiecutter.frontend_service_slug }}:/app{% endif %}
