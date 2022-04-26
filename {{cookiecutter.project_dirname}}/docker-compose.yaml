@@ -44,7 +44,7 @@ services:
       - ./{{ cookiecutter.frontend_service_slug }}:/app{% endif %}
 
   traefik:
-    image: traefik:v2.6
+    image: traefik:v2.6{% if cookiecutter.backend_type != 'none' or cookiecutter.frontend_type != 'none' %}
     depends_on:{% if cookiecutter.backend_type != 'none' %}
       - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
       - {{ cookiecutter.frontend_service_slug }}{% endif %}{% endif %}
@@ -53,7 +53,7 @@ services:
     command:
       - "--configFile=/traefik/config.yaml"
     ports:
-      - "8443:8443"
+      - "${LOCAL_HTTPS_PORT:-8443}:8443"
       - "8080:8080"
 
   postgres:
