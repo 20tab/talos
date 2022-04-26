@@ -411,8 +411,7 @@ class Runner:
                 % secrets.token_urlsafe(12),
             )
         self.digitalocean_token and gitlab_group_variables.update(
-            DIGITALOCEAN_TOKEN='{value = "%s", masked = true}'
-            % self.digitalocean_token
+            DIGITALOCEAN_TOKEN='{value = "%s", masked = true}' % self.digitalocean_token
         )
         if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
             gitlab_group_variables.update(

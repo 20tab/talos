@@ -66,7 +66,7 @@ before_script:
     TF_VAR_s3_region: "${S3_REGION}"
     TF_VAR_s3_secret_key: "${S3_SECRET_KEY}"{% endif %}
     TF_VAR_stack_slug: {{ stack_slug }}{% if cookiecutter.terraform_backend != "gitlab" %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}-base-{{ stack_slug }}{% endif %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_orchestrator_base_{{ stack_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-base
     paths:
@@ -115,7 +115,7 @@ stack_{{ stack_slug }}_base_apply:
     TF_STATE_NAME: stack_{{ stack_slug }}_cluster{% endif %}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
     TF_VAR_stack_slug: {{ stack_slug }}{% if cookiecutter.terraform_backend != "gitlab" %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}-cluster-{{ stack_slug }}{% endif %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_orchestrator_cluster_{{ stack_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-cluster
     paths:
@@ -183,7 +183,7 @@ stack_{{ stack_slug }}_cluster_apply:
     TERRAFORM_EXTRA_VAR_FILE: {{ env_slug }}.tfvars{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: env_{{ env_slug }}{% endif %}
     TF_VAR_env_slug: {{ env_slug }}{% if cookiecutter.terraform_backend != "gitlab" %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}-environment-{{ env_slug }}{% endif %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_orchestrator_environment_{{ env_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}
     paths:

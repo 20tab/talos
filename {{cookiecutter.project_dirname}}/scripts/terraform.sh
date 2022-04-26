@@ -57,7 +57,6 @@ if [ "${TERRAFORM_BACKEND}" == "gitlab" ]; then
 fi
 
 if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
-    export TF_WORKSPACE={{ cookiecutter.project_slug }}-${ENVIRONMENT_SLUG}
     export TF_CLI_CONFIG_FILE="${TF_ROOT}/cloud.tfc"
     cat << EOF > ${TF_CLI_CONFIG_FILE}
 {
