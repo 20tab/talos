@@ -1,0 +1,54 @@
+api:
+  insecure: true
+  dashboard: true
+  debug: true
+
+entryPoints:
+  websecure:
+    address: ":8443"
+    http:
+      tls:
+        options: 
+
+log:
+  level: ERROR
+
+http:
+  routers:
+    backend:
+      rule: "PathPrefix(`/admin`)" 
+      service: backend
+    backend-static:
+      rule: "PathPrefix(`/static`)" 
+      service: backend
+    backend-api:
+      rule: "PathPrefix(`/api`)" 
+      service: backend
+    backend-debug:
+      rule: "PathPrefix(`/__debug__`)" 
+      service: backend
+    frontend:
+      rule: "PathPrefix(`/`)" 
+      service: frontend
+    frontend-sockjs-node:
+      rule: "PathPrefix(`/sockjs-node`)" 
+      service: frontend
+
+  services:
+    backend:
+      loadBalancer:
+        servers:
+        - url: "http://backend:8000/"
+    frontend:
+      loadBalancer:
+        servers:
+        - url: "http://frontend:3000/"
+
+providers:
+  file: 
+    filename: /traefik/config.yaml
+
+tls:
+  certificates:
+    - certFile: /traefik/localhost/cert.pem
+      keyFile: /traefik/localhost/key.pem
