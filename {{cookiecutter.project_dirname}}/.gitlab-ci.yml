@@ -11,7 +11,7 @@ workflow:
 
 stages:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
   - Base{% endif %}
-  - Networking
+  - Cluster
   - Environment
 
 image:
@@ -65,7 +65,8 @@ before_script:
     TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
     TF_VAR_s3_region: "${S3_REGION}"
     TF_VAR_s3_secret_key: "${S3_SECRET_KEY}"{% endif %}
-    TF_VAR_stack_slug: {{ stack_slug }}
+    TF_VAR_stack_slug: {{ stack_slug }}{% if cookiecutter.terraform_backend != "gitlab" %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}-base-{{ stack_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-base
     paths:
@@ -102,23 +103,24 @@ stack_{{ stack_slug }}_base_apply:
     - .stack_{{ stack_slug }}_base
   needs: ["stack_{{ stack_slug }}_base_plan"]{% endfor %}
 
-{% endif %}### NETWORKING STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+{% endif %}### CLUSTER STACK ###{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
-# NETWORKING STAGE - {{ stack_slug|title }} Stack #
+# CLUSTER STAGE - {{ stack_slug|title }} Stack #
 
 .stack_{{ stack_slug }}_cluster:
-  stage: Networking
+  stage: Cluster
   variables:
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: stack_{{ stack_slug }}_cluster{% endif %}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
-    TF_VAR_stack_slug: {{ stack_slug }}
+    TF_VAR_stack_slug: {{ stack_slug }}{% if cookiecutter.terraform_backend != "gitlab" %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}-cluster-{{ stack_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-cluster
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: Stack_{{ stack_slug|title }}/Stage_Networking
+    name: Stack_{{ stack_slug|title }}/Stage_Cluster
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
@@ -178,7 +180,8 @@ stack_{{ stack_slug }}_cluster_apply:
     - .{{ stack_slug }}_env
   variables:{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: env_{{ env_slug }}{% endif %}
-    TF_VAR_env_slug: {{ env_slug }}
+    TF_VAR_env_slug: {{ env_slug }}{% if cookiecutter.terraform_backend != "gitlab" %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}-environment-{{ env_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}
     paths:
