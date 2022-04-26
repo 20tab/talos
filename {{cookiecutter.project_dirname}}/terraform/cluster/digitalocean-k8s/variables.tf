@@ -1,5 +1,5 @@
 variable "create_domain" {
-  description = "If true, create a DigitalOcean domain for project domain."
+  description = "Tell if a DigitalOcean domain should be created."
   type        = bool
   default     = true
 }

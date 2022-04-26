@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Initialize a template based web project."""
 
+# import json
 import os
 from pathlib import Path
 
@@ -116,6 +117,11 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--quiet", is_flag=True)
 def main(**options):
     """Run the setup."""
+    # dump_path = Path(__file__).parent / "dump.json"
+    # if dump_path.is_file():
+    #     options = json.load(dump_path)
+    # else:
+    #     json.dump(options, dump_path.open("w"))
     try:
         Runner(**collect(**options)).run()
     except BootstrapError as e:
