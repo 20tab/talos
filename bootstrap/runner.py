@@ -481,7 +481,7 @@ class Runner:
             TF_VAR_project_name=self.service_slug.title(),
             TF_VAR_project_slug=self.service_slug,
             TF_VAR_services=services,
-            TF_VAR_stacks_environments=stacks_environments,
+            TF_VAR_stacks=list(stacks_environments.keys()),
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
         )
         self.run_terraform("terraform-cloud", env)
@@ -580,6 +580,8 @@ class Runner:
         self.create_env_file()
         if self.gitlab_group_slug:
             self.init_gitlab()
+        if self.terraform_backend == TERRAFORM_BACKEND_TFC:
+            self.init_terraform_cloud()
         backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
         if backend_template_url:
             self.init_subrepo(
