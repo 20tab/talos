@@ -58,7 +58,7 @@ docker run --interactive --tty --rm --volume $PWD:/data 20tab/talos:latest
 ### 👨‍💻 Shell command
 
 ```console
-./talos/setup.py
+./talos/start.py
 ```
 
 ### Example

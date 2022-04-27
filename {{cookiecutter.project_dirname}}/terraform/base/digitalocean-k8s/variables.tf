@@ -1,6 +1,7 @@
 variable "create_s3_bucket" {
   description = "Tell if a DigitalOcean Spaces bucket should be created."
   type        = bool
+  default     = false
 }
 
 variable "database_cluster_engine" {
@@ -118,6 +119,7 @@ variable "s3_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "s3_region" {
@@ -130,6 +132,7 @@ variable "s3_secret_key" {
   description = "The S3 bucket secret access key."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "stack_slug" {

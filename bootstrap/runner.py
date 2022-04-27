@@ -11,13 +11,16 @@ from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from time import time
+from typing import Optional
 
 import click
 from cookiecutter.main import cookiecutter
+from pydantic import validate_arguments
 
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
     DEPLOYMENT_TYPE_OTHER,
+    DUMPS_DIR,
     FRONTEND_TEMPLATE_URLS,
     MEDIA_STORAGE_AWS_S3,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
@@ -37,78 +40,79 @@ info = partial(click.style, dim=True)
 warning = partial(click.style, fg="yellow")
 
 
+@validate_arguments
 @dataclass(kw_only=True)
 class Runner:
     """The bootstrap runner."""
 
-    uid: int
-    gid: int
     output_dir: Path
     project_name: str
     project_slug: str
     project_dirname: str
     service_dir: Path
     backend_type: str
-    backend_service_slug: str
-    backend_service_port: int
+    backend_service_slug: Optional[str] = None
+    backend_service_port: Optional[int] = None
     frontend_type: str
-    frontend_service_slug: str
-    frontend_service_port: int
+    frontend_service_slug: Optional[str] = None
+    frontend_service_port: Optional[int] = None
     deployment_type: str
     terraform_backend: str
-    terraform_cloud_hostname: str
-    terraform_cloud_token: str
-    terraform_cloud_organization: str
-    terraform_cloud_organization_create: bool
-    terraform_cloud_admin_email: str
-    digitalocean_token: str
-    kubernetes_cluster_ca_certificate: str
-    kubernetes_host: str
-    kubernetes_token: str
+    terraform_cloud_hostname: Optional[str] = None
+    terraform_cloud_token: Optional[str] = None
+    terraform_cloud_organization: Optional[str] = None
+    terraform_cloud_organization_create: Optional[bool] = None
+    terraform_cloud_admin_email: Optional[str] = None
+    digitalocean_token: Optional[str] = None
+    kubernetes_cluster_ca_certificate: Optional[str] = None
+    kubernetes_host: Optional[str] = None
+    kubernetes_token: Optional[str] = None
     environment_distribution: str
-    project_domain: str
-    domain_prefix_dev: str
-    domain_prefix_stage: str
-    domain_prefix_prod: str
-    domain_prefix_monitoring: str
-    project_url_dev: str
-    project_url_stage: str
-    project_url_prod: str
-    project_url_monitoring: str
-    letsencrypt_certificate_email: str
-    digitalocean_domain_create: bool
-    digitalocean_k8s_cluster_region: str
-    digitalocean_database_cluster_region: str
-    digitalocean_database_cluster_node_size: str
-    postgres_image: str
-    postgres_persistent_volume_capacity: str
-    postgres_persistent_volume_claim_capacity: str
-    postgres_persistent_volume_host_path: str
-    use_redis: str
-    redis_image: str
-    digitalocean_redis_cluster_region: str
-    digitalocean_redis_cluster_node_size: str
-    sentry_org: str
-    sentry_url: str
-    backend_sentry_dsn: str
-    frontend_sentry_dsn: str
-    sentry_auth_token: str
-    pact_broker_url: str
-    pact_broker_username: str
-    pact_broker_password: str
+    project_domain: Optional[str] = None
+    domain_prefix_dev: Optional[str] = None
+    domain_prefix_stage: Optional[str] = None
+    domain_prefix_prod: Optional[str] = None
+    domain_prefix_monitoring: Optional[str] = None
+    project_url_dev: str = ""
+    project_url_stage: str = ""
+    project_url_prod: str = ""
+    project_url_monitoring: Optional[str] = None
+    letsencrypt_certificate_email: Optional[str] = None
+    digitalocean_domain_create: Optional[bool] = None
+    digitalocean_k8s_cluster_region: Optional[str] = None
+    digitalocean_database_cluster_region: Optional[str] = None
+    digitalocean_database_cluster_node_size: Optional[str] = None
+    postgres_image: Optional[str] = None
+    postgres_persistent_volume_capacity: Optional[str] = None
+    postgres_persistent_volume_claim_capacity: Optional[str] = None
+    postgres_persistent_volume_host_path: Optional[str] = None
+    use_redis: bool = False
+    redis_image: Optional[str] = None
+    digitalocean_redis_cluster_region: Optional[str] = None
+    digitalocean_redis_cluster_node_size: Optional[str] = None
+    sentry_org: Optional[str] = None
+    sentry_url: Optional[str] = None
+    sentry_auth_token: Optional[str] = None
+    backend_sentry_dsn: Optional[str] = None
+    frontend_sentry_dsn: Optional[str] = None
+    pact_broker_url: Optional[str] = None
+    pact_broker_username: Optional[str] = None
+    pact_broker_password: Optional[str] = None
     media_storage: str
-    s3_region: str
-    s3_host: str
-    s3_access_id: str
-    s3_secret_key: str
-    s3_bucket_name: str
-    gitlab_private_token: str
-    gitlab_group_slug: str
-    gitlab_group_owners: str
-    gitlab_group_maintainers: str
-    gitlab_group_developers: str
-    terraform_dir: Path
-    logs_dir: Path
+    s3_region: Optional[str] = None
+    s3_host: Optional[str] = None
+    s3_access_id: Optional[str] = None
+    s3_secret_key: Optional[str] = None
+    s3_bucket_name: Optional[str] = None
+    gitlab_private_token: Optional[str] = None
+    gitlab_group_slug: Optional[str] = None
+    gitlab_group_owners: Optional[str] = None
+    gitlab_group_maintainers: Optional[str] = None
+    gitlab_group_developers: Optional[str] = None
+    uid: Optional[int] = None
+    gid: Optional[int] = None
+    terraform_dir: Optional[Path] = None
+    logs_dir: Optional[Path] = None
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
     stacks_environments: dict = field(init=False, default_factory=dict)
@@ -582,6 +586,10 @@ class Runner:
             )
             raise BootstrapError
 
+    def cleanup(self):
+        """CLean up after a successful execution."""
+        shutil.rmtree(DUMPS_DIR)
+
     def run(self):
         """Run the bootstrap."""
         click.echo(highlight(f"Initializing the {self.service_slug} service:"))
@@ -612,3 +620,4 @@ class Runner:
                 sentry_dsn=self.frontend_sentry_dsn,
             )
         self.change_output_owner()
+        self.cleanup()

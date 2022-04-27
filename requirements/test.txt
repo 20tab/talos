@@ -56,6 +56,8 @@ poyo==0.5.0
     # via cookiecutter
 pycodestyle==2.8.0
     # via flake8
+pydantic==1.9.0
+    # via -r requirements/common.in
 pydocstyle==6.1.1
     # via flake8-docstrings
 pyflakes==2.4.0
@@ -84,7 +86,9 @@ tomli==2.0.1
     #   coverage
     #   mypy
 typing-extensions==4.2.0
-    # via mypy
+    # via
+    #   mypy
+    #   pydantic
 urllib3==1.26.9
     # via requests
 validators==0.18.2

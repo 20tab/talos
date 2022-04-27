@@ -170,3 +170,4 @@ terraform.tfvars
 # Other
 *.bak
 .subrepos
+.dumps/

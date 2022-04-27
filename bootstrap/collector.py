@@ -1,7 +1,10 @@
 """Collect options to initialize a template based web project."""
 
+import json
 from functools import partial
+from pathlib import Path
 from shutil import rmtree
+from time import time
 
 import click
 import validators
@@ -17,6 +20,7 @@ from bootstrap.constants import (
     DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
+    DUMPS_DIR,
     EMPTY_SERVICE_TYPE,
     ENVIRONMENT_DISTRIBUTION_CHOICES,
     ENVIRONMENT_DISTRIBUTION_DEFAULT,
@@ -106,6 +110,13 @@ def collect(
     quiet,
 ):
     """Collect options and run the bootstrap."""
+    try:
+        dump_path = sorted(DUMPS_DIR.glob("*.json"))[-1]
+    except IndexError:
+        pass
+    else:
+        return json.load(dump_path.open())
+    project_name = project_name or click.prompt("Project name")
     project_slug = clean_project_slug(project_name, project_slug)
     project_dirname = slugify(project_slug, separator="")
     service_dir = clean_service_dir(output_dir, project_dirname)
@@ -138,7 +149,7 @@ def collect(
     # The "digitalocean-k8s" deployment type includes Postgres by default
     if digitalocean_enabled := ("digitalocean" in deployment_type):
         digitalocean_token = validate_or_prompt_password(
-            "DigitalOcean token", digitalocean_token, required=True
+            "DigitalOcean token", digitalocean_token
         )
     if other_kubernetes_enabled := (deployment_type == DEPLOYMENT_TYPE_OTHER):
         (
@@ -248,6 +259,7 @@ def collect(
         gitlab_group_developers,
         quiet,
     )
+    # TODO: change when moving secrets to Vault
     if gitlab_group_slug and "s3" in media_storage:
         (
             digitalocean_token,
@@ -265,14 +277,14 @@ def collect(
             s3_secret_key,
             s3_bucket_name,
         )
-    return {
+    options = {
         "uid": uid,
         "gid": gid,
-        "output_dir": output_dir,
+        "output_dir": str(output_dir.resolve()),
         "project_name": project_name,
         "project_slug": project_slug,
         "project_dirname": project_dirname,
-        "service_dir": service_dir,
+        "service_dir": str(service_dir.resolve()),
         "backend_type": backend_type,
         "backend_service_slug": backend_service_slug,
         "backend_service_port": backend_service_port,
@@ -339,9 +351,13 @@ def collect(
         "terraform_dir": terraform_dir,
         "logs_dir": logs_dir,
     }
+    dumps_dir.mkdir(exist_ok=True)
+    dump_path = dumps_dir / f"{time():.0f}.json"
+    dump_path.write_text(json.dumps(options))
+    return options
 
 
-def validate_or_prompt_domain(message, value=None, default=None, required=False):
+def validate_or_prompt_domain(message, value=None, default=None, required=True):
     """Validate the given domain or prompt until a valid value is provided."""
     if value is None:
         value = click.prompt(message, default=default)
@@ -354,7 +370,7 @@ def validate_or_prompt_domain(message, value=None, default=None, required=False)
     return validate_or_prompt_domain(message, None, default, required)
 
 
-def validate_or_prompt_email(message, value=None, default=None, required=False):
+def validate_or_prompt_email(message, value=None, default=None, required=True):
     """Validate the given email address or prompt until a valid value is provided."""
     if value is None:
         value = click.prompt(message, default=default)
@@ -367,7 +383,7 @@ def validate_or_prompt_email(message, value=None, default=None, required=False):
     return validate_or_prompt_email(message, None, default, required)
 
 
-def validate_or_prompt_url(message, value=None, default=None, required=False):
+def validate_or_prompt_url(message, value=None, default=None, required=True):
     """Validate the given URL or prompt until a valid value is provided."""
     if value is None:
         value = click.prompt(message, default=default)
@@ -380,7 +396,7 @@ def validate_or_prompt_url(message, value=None, default=None, required=False):
     return validate_or_prompt_url(message, None, default, required)
 
 
-def validate_or_prompt_password(message, value=None, default=None, required=False):
+def validate_or_prompt_password(message, value=None, default=None, required=True):
     """Validate the given password or prompt until a valid value is provided."""
     if value is None:
         value = click.prompt(message, default=default, hide_input=True)
@@ -493,12 +509,10 @@ def clean_terraform_backend(
             "Terraform host name",
             terraform_cloud_hostname,
             default="app.terraform.io",
-            required=True,
         )
         terraform_cloud_token = validate_or_prompt_password(
             "Terraform Cloud User token",
             terraform_cloud_token,
-            required=True,
         )
         terraform_cloud_organization = terraform_cloud_organization or click.prompt(
             "Terraform Organization"
@@ -515,16 +529,15 @@ def clean_terraform_backend(
             terraform_cloud_admin_email = validate_or_prompt_email(
                 "Terraform Cloud Organization admin email (e.g. tech@20tab.com)",
                 terraform_cloud_admin_email,
-                required=True,
             )
         else:
             terraform_cloud_admin_email = ""
     else:
-        terraform_cloud_organization = ""
-        terraform_cloud_hostname = ""
-        terraform_cloud_token = ""
+        terraform_cloud_organization = None
+        terraform_cloud_hostname = None
+        terraform_cloud_token = None
         terraform_cloud_organization_create = None
-        terraform_cloud_admin_email = ""
+        terraform_cloud_admin_email = None
     return (
         terraform_backend,
         terraform_cloud_hostname,
@@ -569,7 +582,6 @@ def clean_kubernetes_credentials(
     kubernetes_token = kubernetes_token or validate_or_prompt_password(
         "Kubernetes token", kubernetes_token
     )
-
     return kubernetes_cluster_ca_certificate, kubernetes_host, kubernetes_token
 
 
@@ -585,11 +597,9 @@ def clean_project_domain(project_domain):
                     "(BEWARE: NS must be set accordingly)"
                 )
             )
-            and validate_or_prompt_domain(
-                "Project domain", project_domain, required=True
-            )
+            and validate_or_prompt_domain("Project domain", project_domain)
         )
-        or ""
+        or None
     )
 
 
@@ -632,38 +642,42 @@ def clean_project_urls(
                 f"https://{domain_prefix_monitoring}.{project_domain}"
             )
         else:
-            domain_prefix_monitoring = ""
-            project_url_monitoring = ""
-        letsencrypt_certificate_email = ""
+            domain_prefix_monitoring = None
+            project_url_monitoring = None
+        letsencrypt_certificate_email = None
     else:
-        project_domain = ""
-        domain_prefix_dev = ""
-        domain_prefix_stage = ""
-        domain_prefix_prod = ""
-        domain_prefix_monitoring = ""
+        project_domain = None
+        domain_prefix_dev = None
+        domain_prefix_stage = None
+        domain_prefix_prod = None
+        domain_prefix_monitoring = None
         project_url_dev = validate_or_prompt_url(
             "Development environment complete URL",
             project_url_dev or None,
             default=f"https://dev.{project_slug}.com",
+            required=False,
         )
         project_url_stage = validate_or_prompt_url(
             "Staging environment complete URL",
             project_url_stage or None,
             default=f"https://stage.{project_slug}.com",
+            required=False,
         )
         project_url_prod = validate_or_prompt_url(
             "Production environment complete URL",
             project_url_prod or None,
             default=f"https://www.{project_slug}.com",
+            required=False,
         )
         if use_monitoring:
             project_url_monitoring = validate_or_prompt_url(
                 "Monitoring complete URL",
                 project_url_monitoring or None,
                 default=f"https://logs.{project_slug}.com",
+                required=False,
             )
         else:
-            project_url_monitoring = ""
+            project_url_monitoring = None
         letsencrypt_certificate_email = clean_letsencrypt_certificate_email(
             letsencrypt_certificate_email
         )
@@ -692,12 +706,10 @@ def clean_letsencrypt_certificate_email(letsencrypt_certificate_email):
                 default=True,
             )
             and validate_or_prompt_email(
-                "Let's Encrypt certificates email",
-                letsencrypt_certificate_email,
-                required=True,
+                "Let's Encrypt certificates email", letsencrypt_certificate_email
             )
         )
-        or ""
+        or None
     )
 
 
@@ -717,21 +729,21 @@ def clean_sentry_data(
     ):
         sentry_org = clean_sentry_org(sentry_org)
         sentry_url = validate_or_prompt_url(
-            "Sentry URL", sentry_url, default="https://sentry.io/", required=True
+            "Sentry URL", sentry_url, default="https://sentry.io/"
         )
         sentry_auth_token = validate_or_prompt_password(
-            "Sentry auth token", sentry_auth_token, required=True
+            "Sentry auth token", sentry_auth_token
         )
         backend_sentry_dsn = clean_backend_sentry_dsn(backend_type, backend_sentry_dsn)
         frontend_sentry_dsn = clean_frontend_sentry_dsn(
             frontend_type, frontend_sentry_dsn
         )
     else:
-        sentry_org = ""
-        sentry_url = ""
-        sentry_auth_token = ""
-        backend_sentry_dsn = ""
-        frontend_sentry_dsn = ""
+        sentry_org = None
+        sentry_url = None
+        sentry_auth_token = None
+        backend_sentry_dsn = None
+        frontend_sentry_dsn = None
     return (
         sentry_org,
         sentry_url,
@@ -743,11 +755,7 @@ def clean_sentry_data(
 
 def clean_sentry_org(sentry_org):
     """Return the Sentry organization."""
-    return (
-        sentry_org
-        if sentry_org is not None
-        else click.prompt("Sentry organization", default="")
-    )
+    return sentry_org if sentry_org is not None else click.prompt("Sentry organization")
 
 
 def clean_backend_sentry_dsn(backend_type, backend_sentry_dsn):
@@ -883,22 +891,18 @@ def clean_pact_broker_data(pact_broker_url, pact_broker_username, pact_broker_pa
         and click.confirm(warning("Do you want to use Pact?"), default=False)
     ):
         pact_broker_url = validate_or_prompt_url(
-            "Pact broker URL (e.g. https://broker.20tab.com/)",
-            pact_broker_url,
-            required=True,
+            "Pact broker URL (e.g. https://broker.20tab.com/)", pact_broker_url
         )
         pact_broker_username = pact_broker_username or click.prompt(
             "Pact broker username",
         )
         pact_broker_password = validate_or_prompt_password(
-            "Pact broker password",
-            pact_broker_password,
-            required=True,
+            "Pact broker password", pact_broker_password
         )
     else:
-        pact_broker_url = ""
-        pact_broker_username = ""
-        pact_broker_password = ""
+        pact_broker_url = None
+        pact_broker_username = None
+        pact_broker_password = None
     return pact_broker_url, pact_broker_username, pact_broker_password
 
 
@@ -957,11 +961,11 @@ def clean_gitlab_group_data(
             else click.prompt("Comma-separated GitLab group developers", default="")
         )
     else:
-        gitlab_group_slug = ""
-        gitlab_private_token = ""
-        gitlab_group_owners = ""
-        gitlab_group_maintainers = ""
-        gitlab_group_developers = ""
+        gitlab_group_slug = None
+        gitlab_private_token = None
+        gitlab_group_owners = None
+        gitlab_group_maintainers = None
+        gitlab_group_developers = None
     return (
         gitlab_group_slug,
         gitlab_private_token,
@@ -983,9 +987,7 @@ def clean_s3_media_storage_data(
     """Return S3 media storage data."""
     if media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
         digitalocean_token = validate_or_prompt_password(
-            "DigitalOcean token",
-            digitalocean_token,
-            required=True,
+            "DigitalOcean token", digitalocean_token
         )
         s3_region = s3_region or click.prompt(
             "DigitalOcean Spaces region",
@@ -1003,16 +1005,8 @@ def clean_s3_media_storage_data(
         s3_bucket_name = s3_bucket_name or click.prompt(
             "AWS S3 bucket name",
         )
-    s3_access_id = validate_or_prompt_password(
-        "S3 Access Key ID",
-        s3_access_id,
-        required=True,
-    )
-    s3_secret_key = validate_or_prompt_password(
-        "S3 Secret Access Key",
-        s3_secret_key,
-        required=True,
-    )
+    s3_access_id = validate_or_prompt_password("S3 Access Key ID", s3_access_id)
+    s3_secret_key = validate_or_prompt_password("S3 Secret Access Key", s3_secret_key)
     return (
         digitalocean_token,
         s3_region,

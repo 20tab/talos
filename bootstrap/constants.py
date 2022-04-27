@@ -1,5 +1,9 @@
 """Web project initialization CLI constants."""
 
+from pathlib import Path
+
+DUMPS_DIR = Path(__file__).parent.parent / ".dumps"
+
 # Env vars
 
 GITLAB_TOKEN_ENV_VAR = "GITLAB_PRIVATE_TOKEN"
