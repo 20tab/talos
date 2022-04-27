@@ -48,7 +48,7 @@ services:
     depends_on:{% if cookiecutter.backend_type != 'none' %}
       - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
       - {{ cookiecutter.frontend_service_slug }}{% endif %}
-   volumes:
+    volumes:
       - ./traefik/:/traefik/:ro
     command:
       - "--configFile=/traefik/config.yaml"
