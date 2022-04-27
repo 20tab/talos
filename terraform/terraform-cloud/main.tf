@@ -8,11 +8,11 @@ locals {
         [
           for stack in var.stacks :
           {
-            name        = "${var.project_slug}_orchestrator_${stage}_${stack}"
-            description = "${var.project_name} project, orchestrator service, ${stack} stack, ${stage} stage"
+            name        = "${var.project_slug}_${var.service_slug}_${stage}_${stack}"
+            description = "${var.project_name} project, ${var.service_slug} service, ${stack} stack, ${stage} stage"
             tags = [
               "project:${var.project_slug}",
-              "service:orchestrator",
+              "service:${var.service_slug}",
               "stage:${stage}",
               "stack:${stack}",
             ]
@@ -20,24 +20,19 @@ locals {
         ]
       ]
     ),
-    flatten(
-      [
-        for service in var.services :
-        [
-          for env in var.environments :
-          {
-            name        = "${var.project_slug}_${service}_environment_${env}"
-            description = "${var.project_name} project, ${service} service, ${env} environment"
-            tags = [
-              "project:${var.project_slug}",
-              "service:${service}",
-              "stage:environment",
-              "env:${env}",
-            ]
-          }
+    [
+      for env in var.environments :
+      {
+        name        = "${var.project_slug}_${var.service_slug}_environment_${env}"
+        description = "${var.project_name} project, ${var.service_slug} service, ${env} environment"
+        tags = [
+          "project:${var.project_slug}",
+          "service:${var.service_slug}",
+          "stage:environment",
+          "env:${env}",
         ]
-      ]
-    )
+      }
+    ]
   )
 }
 

@@ -466,12 +466,6 @@ class Runner:
     def init_terraform_cloud(self):
         """Initialize the Terraform Cloud resources."""
         click.echo(info("...creating the Terraform Cloud resources"))
-        services = list(
-            filter(
-                None,
-                ["orchestrator", self.backend_service_slug, self.frontend_service_slug],
-            )
-        )
         stacks_environments = {
             k: list(v.keys()) for k, v in self.stacks_environments.items()
         }
@@ -484,7 +478,7 @@ class Runner:
             TF_VAR_organization_name=self.terraform_cloud_organization,
             TF_VAR_project_name=self.project_name,
             TF_VAR_project_slug=self.project_slug,
-            TF_VAR_services=json.dumps(services),
+            TF_VAR_service_slug="orchestrator",
             TF_VAR_stacks=json.dumps(list(stacks_environments.keys())),
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
         )

@@ -37,9 +37,9 @@ variable "project_slug" {
   type        = string
 }
 
-variable "services" {
-  description = "The services slugs."
-  type        = list(string)
+variable "service_slug" {
+  description = "The service slug."
+  type        = string
 }
 
 variable "stacks" {
