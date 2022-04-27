@@ -294,13 +294,13 @@ class Runner:
     def create_env_file(self):
         """Create the final env file from its template."""
         click.echo(info("...generating the .env file"))
-        env_path = Path(self.service_dir) / ".env_template"
+        env_path = self.service_dir / ".env_template"
         env_text = (
             env_path.read_text()
             .replace("__SECRETKEY__", secrets.token_urlsafe(40))
             .replace("__PASSWORD__", secrets.token_urlsafe(8))
         )
-        (Path(self.service_dir) / ".env").write_text(env_text)
+        (self.service_dir / ".env").write_text(env_text)
 
     def init_subrepo(self, service_slug, template_url, **kwargs):
         """Initialize a subrepo using the given template and options."""
@@ -323,18 +323,25 @@ class Runner:
             "gid": self.gid,
             "gitlab_group_slug": self.gitlab_group_slug,
             "gitlab_private_token": self.gitlab_private_token,
-            "logs_dir": self.logs_dir,
-            "output_dir": self.service_dir,
+            "logs_dir": str(self.logs_dir.resolve()),
+            "output_dir": str(self.service_dir.resolve()),
             "project_dirname": service_slug,
             "project_name": self.project_name,
             "project_slug": self.project_slug,
             "project_url_dev": self.project_url_dev,
             "project_url_prod": self.project_url_prod,
             "project_url_stage": self.project_url_stage,
-            "service_dir": str((Path(self.service_dir) / service_slug).resolve()),
+            "service_dir": str((self.service_dir / service_slug).resolve()),
             "service_slug": service_slug,
             "terraform_backend": self.terraform_backend,
-            "terraform_dir": self.terraform_dir,
+            "terraform_cloud_admin_email": self.terraform_cloud_admin_email,
+            "terraform_cloud_hostname": self.terraform_cloud_hostname,
+            "terraform_cloud_organization": self.terraform_cloud_organization,
+            "terraform_cloud_organization_create": (
+                self.terraform_cloud_organization_create
+            ),
+            "terraform_cloud_token": self.terraform_cloud_token,
+            "terraform_dir": str(self.terraform_dir.resolve()),
             "uid": self.uid,
             "use_redis": self.use_redis,
             **kwargs,
@@ -344,7 +351,11 @@ class Runner:
             cwd=subrepo_dir,
         )
         subprocess.run(
-            ["python", "-c", f"from setup import run; run(**{options})"],
+            [
+                "python",
+                "-c",
+                f"from bootstrap.runner import Runner; Runner(**{options}).run()",
+            ],
             cwd=subrepo_dir,
         )
 
