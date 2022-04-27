@@ -613,9 +613,9 @@ class Runner:
             self.init_subrepo(
                 self.frontend_service_slug,
                 frontend_template_url,
-                internal_backend_url=(
+                internal_backend_url=self.backend_service_slug and (
                     f"http://{self.backend_service_slug}:{self.backend_service_port}"
-                ),
+                ) or None,
                 internal_service_port=self.frontend_service_port,
                 sentry_dsn=self.frontend_sentry_dsn,
             )
