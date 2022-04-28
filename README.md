@@ -32,8 +32,8 @@ Then, install the following requirements
 ### 🌊 DigitalOcean
 
 If DigitalOcean is chosen for deployment, a Personal Access Token with _write_ permission is required.<br/>
-Additionally, if DigitalOcean Spaces is the chosen media storage backend, a pair of S3 access keys is required.
-[DigitalOcean API Slugs](https://slugs.do-api.dev/)
+Additionally, if DigitalOcean Spaces is the chosen media storage backend, a pair of Spaces access keys is required.
+[Digital Ocean Personal Access Token](https://cloud.digitalocean.com/account/api/)
 
 **Note:** all credentials can be generated in the DigitalOcean API configuration section.<br/>
 ⚠️ Beware that the token is shown only once after creation.
@@ -42,6 +42,7 @@ Additionally, if DigitalOcean Spaces is the chosen media storage backend, a pair
 
 If the GitLab integration is enabled, a Personal Access Token with _api_ permission is required.<br/>
 It can be generated in the GitLab User Settings panel.
+[GitLab Personal Access Token](https://gitlab.com/-/profile/personal_access_tokens)
 
 **Note:** the token can be generated in the Access Tokens section of the GitLab User Settings panel.<br/>
 ⚠️ Beware that the token is shown only once after creation.
@@ -253,6 +254,8 @@ If you don't want DigitalOcean DNS configuration the following args are required
 | none            | Project have no media                       | `--media-storage=none`                       |
 
 ### 🌊 DigitalOcean Kubernates
+[DigitalOcean API Slugs](https://slugs.do-api.dev/)
+[DigitalOcean Database Slugs](https://docs.digitalocean.com/reference/api/api-reference/#tag/Databases)
 
 #### DigitalOcean Token
 
