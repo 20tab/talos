@@ -351,8 +351,8 @@ def collect(
         "terraform_dir": terraform_dir,
         "logs_dir": logs_dir,
     }
-    dumps_dir.mkdir(exist_ok=True)
-    dump_path = dumps_dir / f"{time():.0f}.json"
+    DUMPS_DIR.mkdir(exist_ok=True)
+    dump_path = DUMPS_DIR / f"{time():.0f}.json"
     dump_path.write_text(json.dumps(options))
     return options
 
