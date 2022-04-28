@@ -69,26 +69,33 @@ Backend type (django, none) [django]:
 Backend service slug [backend]:
 Frontend type (nextjs, none) [nextjs]:
 Frontend service slug [frontend]:
+Deploy type (digitalocean-k8s, other-k8s) [digitalocean-k8s]:
+Terraform backend (terraform-cloud, gitlab) [terraform-cloud]:
+Terraform host name [app.terraform.io]:
+Terraform Cloud User token:
+Terraform Organization: my-organization-name
+Do you want to create Terraform Cloud Organization 'my-organization-name'? [y/N]:
 Choose the environments distribution:
   1 - All environments share the same stack (Default)
   2 - Dev and Stage environments share the same stack, Prod has its own
   3 - Each environment has its own stack
  (1, 2, 3) [1]:
-Deploy type (digitalocean-k8s, other-k8s) [digitalocean-k8s]:
+Do you want to enable the monitoring stack? [y/N]:
 DigitalOcean token:
-Project domain (e.g. 20tab.com, if you prefer to skip DigitalOcean DNS configuration, leave blank) []:
+Do you want to configure DNS records? (BEWARE: NS must be set accordingly) [y/N]:
 Development environment complete URL [https://dev.my-project-name.com]:
 Staging environment complete URL [https://stage.my-project-name.com]:
 Production environment complete URL [https://www.my-project-name.com]:
+Do you want Traefik to generate SSL certificates? [Y/n]:
+Let's Encrypt certificates email: info@my-organization-email.com
+Do you want to use Redis? [y/N]:
 Kubernetes cluster DigitalOcean region [fra1]:
 Database cluster DigitalOcean region [fra1]:
 Database cluster node size [db-s-1vcpu-2gb]:
-Do you want to configure Redis? [y/N]:
-Sentry organization (e.g. "20tab", leave blank if unused) []:
-Do you want to enable the monitoring stack? [y/N]:
-Do you want to configure Pact? [Y/n]: n
 Media storage (digitalocean-s3, aws-s3, local, none) [digitalocean-s3]:
-Do you want to configure GitLab? [Y/n]:
+Do you want to use Sentry? [y/N]:
+Do you want to use Pact? [y/N]:
+Do you want to use GitLab? [Y/n]:
 GitLab group slug [my-project-name]:
 Make sure the GitLab "my-project-name" group exists before proceeding. Continue? [y/N]: y
 GitLab private token (with API scope enabled):
@@ -96,12 +103,13 @@ Comma-separated GitLab group owners []:
 Comma-separated GitLab group maintainers []:
 Comma-separated GitLab group developers []:
 DigitalOcean Spaces region [fra1]:
-DigitalOcean Spaces Access Key ID:
-DigitalOcean Spaces Secret Access Key:
+S3 Access Key ID:
+S3 Secret Access Key:
 Initializing the orchestrator service:
 ...cookiecutting the service
 ...generating the .env file
 ...creating the GitLab repository and associated resources
+...creating the Terraform Cloud resources
 Initializing the backend service:
 ...cookiecutting the service
 ...generating the .env file
@@ -114,10 +122,12 @@ Initializing the backend service:
 	- base.txt
 ...creating the '/static' directory
 ...creating the GitLab repository and associated resources
+...creating the Terraform Cloud resources
 Initializing the frontend service:
 ...cookiecutting the service
 ...generating the .env file
 ...creating the GitLab repository and associated resources
+...creating the Terraform Cloud resources
 ```
 ## 🗒️ Arguments
 
@@ -169,6 +179,30 @@ none | the frontend service will not be initialized | `--frontend-type=none`
 
 ### 📐 Architecture
 
+#### Deploy type
+Value  | Description | Argument
+------------- | ------------- | -------------
+digitalocean-k8s  | [DigitalOcean](#🌊-digitalocean-kubernates) | `--deployment-type=digitalocean-k8s`
+other-k8s  | [Other Kubernetes](#☸️-other-kubernetes) | `--deployment-type=other-k8s`
+
+#### Terraform backend
+Name | Argument
+------------- | -------------
+Terraform Cloud | `--terraform-backend=terraform-cloud`
+GitLab | `--terraform-backend=gitlab`
+
+##### Terraform Cloud required argument
+`--terraform-cloud-hostname=app.terraform.io`<br/>
+`--terraform-cloud-token={{terraform-cloud-token}}`<br/>
+`--terraform-cloud-organization`
+
+##### Terraform Cloud create organization
+`--terraform-cloud-organization-create`<br/>
+`--terraform-cloud-admin-email={{terraform-cloud-admin-email}}`
+
+Disabled args
+`--terraform-cloud-organization-create-skip`
+
 #### Environment distribution
 Choose the environments distribution:
 Value  | Description | Argument
@@ -176,12 +210,6 @@ Value  | Description | Argument
 1  | All environments share the same stack (Default) | `--environment-distribution=1`
 2  | Dev and Stage environments share the same stack, Prod has its own | `--environment-distribution=2`
 3  | Each environment has its own stack | `--environment-distribution=3`
-
-#### Deploy type
-Value  | Description | Argument
-------------- | ------------- | -------------
-digitalocean-k8s  | It will use the DigitalOcean | `--deployment-type=digitalocean-k8s`
-other-k8s  | The configuration is custom and must be done manually | `--deployment-type=other-k8s`
 
 #### Project Domain
 If you don't want DigitalOcean DNS configuration the following args are required
@@ -199,7 +227,7 @@ aws-s3  | AWS S3 are used to store media | `--media-storage=aws-s3`
 local  | Docker Volume are used to store media | `--media-storage=local`
 none  | Project have no media | `--media-storage=none`
 
-### 🌊 DigitalOcean
+### 🌊 DigitalOcean Kubernates
 
 #### DigitalOcean Token
 `--digitalocean-token={{digitalocean-token}}`
@@ -247,6 +275,26 @@ For enabling redis integration the following arguments are needed:
 
 Disabled args
 `--no-redis`
+
+### ☸️ Other Kubernetes
+
+#### Kubernetes cluster CA certificate
+`--kubernetes-cluster-ca-certificate={{absolute-path-to-certificarte}}`
+
+#### Kubernetes host
+`--kubernetes-host={{kubernetes-host-url}}`
+
+#### Kubernetes token
+`--kubernetes-token={{kubernetes-token}}`
+
+#### Postgres
+`--postgres-image=postgres:14`
+`--postgres-persistent-volume-capacity=10Gi`
+`--postgres-persistent-volume-claim-capacity=""`
+`--postgres-persistent-volume-host-path={{postgres-persistent-volume-host-path}}`
+
+#### Redis
+`--redis-image=redis:6.2`
 
 ### 🦊 GitLab
 > **⚠️ Important:  Make sure the GitLab group exists before creating.**

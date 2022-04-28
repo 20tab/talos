@@ -72,21 +72,21 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--project-url-stage")
 @click.option("--project-url-prod")
 @click.option("--project-url-monitoring")
-@click.option("--letsencrypt-certificate-email")
+@click.option("--letsencrypt-certificate-email") #ADD TO README
 @click.option(
     "--digitalocean-domain-create/--digitalocean-domain-create-skip",
     is_flag=True,
     default=None,
-)
+) #ADD TO README
 @click.option("--digitalocean-k8s-cluster-region")
 @click.option("--digitalocean-database-cluster-region")
 @click.option("--digitalocean-database-cluster-node-size")
-@click.option("--postgres_image")
-@click.option("--postgres_persistent_volume_capacity")
-@click.option("--postgres_persistent_volume_claim_capacity")
-@click.option("--postgres_persistent_volume_host_path")
+@click.option("--postgres-image")
+@click.option("--postgres-persistent-volume-capacity")
+@click.option("--postgres-persistent-volume-claim-capacity")
+@click.option("--postgres-persistent-volume-host-path")
 @click.option("--use-redis/--no-redis", is_flag=True, default=None)
-@click.option("--redis_image")
+@click.option("--redis-image")
 @click.option("--digitalocean-redis-cluster-region")
 @click.option("--digitalocean-redis-cluster-node-size")
 @click.option("--sentry-org")
