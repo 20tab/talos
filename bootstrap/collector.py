@@ -2,7 +2,6 @@
 
 import json
 from functools import partial
-from pathlib import Path
 from shutil import rmtree
 from time import time
 
