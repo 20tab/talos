@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from time import time
-from typing import Optional
 
 import click
 from cookiecutter.main import cookiecutter
@@ -51,68 +50,68 @@ class Runner:
     project_dirname: str
     service_dir: Path
     backend_type: str
-    backend_service_slug: Optional[str] = None
-    backend_service_port: Optional[int] = None
+    backend_service_slug: str | None = None
+    backend_service_port: int | None = None
     frontend_type: str
-    frontend_service_slug: Optional[str] = None
-    frontend_service_port: Optional[int] = None
+    frontend_service_slug: str | None = None
+    frontend_service_port: int | None = None
     deployment_type: str
     terraform_backend: str
-    terraform_cloud_hostname: Optional[str] = None
-    terraform_cloud_token: Optional[str] = None
-    terraform_cloud_organization: Optional[str] = None
-    terraform_cloud_organization_create: Optional[bool] = None
-    terraform_cloud_admin_email: Optional[str] = None
-    digitalocean_token: Optional[str] = None
-    kubernetes_cluster_ca_certificate: Optional[str] = None
-    kubernetes_host: Optional[str] = None
-    kubernetes_token: Optional[str] = None
+    terraform_cloud_hostname: str | None = None
+    terraform_cloud_token: str | None = None
+    terraform_cloud_organization: str | None = None
+    terraform_cloud_organization_create: bool | None = None
+    terraform_cloud_admin_email: str | None = None
+    digitalocean_token: str | None = None
+    kubernetes_cluster_ca_certificate: str | None = None
+    kubernetes_host: str | None = None
+    kubernetes_token: str | None = None
     environment_distribution: str
-    project_domain: Optional[str] = None
-    domain_prefix_dev: Optional[str] = None
-    domain_prefix_stage: Optional[str] = None
-    domain_prefix_prod: Optional[str] = None
-    domain_prefix_monitoring: Optional[str] = None
+    project_domain: str | None = None
+    domain_prefix_dev: str | None = None
+    domain_prefix_stage: str | None = None
+    domain_prefix_prod: str | None = None
+    domain_prefix_monitoring: str | None = None
     project_url_dev: str = ""
     project_url_stage: str = ""
     project_url_prod: str = ""
-    project_url_monitoring: Optional[str] = None
-    letsencrypt_certificate_email: Optional[str] = None
-    digitalocean_domain_create: Optional[bool] = None
-    digitalocean_k8s_cluster_region: Optional[str] = None
-    digitalocean_database_cluster_region: Optional[str] = None
-    digitalocean_database_cluster_node_size: Optional[str] = None
-    postgres_image: Optional[str] = None
-    postgres_persistent_volume_capacity: Optional[str] = None
-    postgres_persistent_volume_claim_capacity: Optional[str] = None
-    postgres_persistent_volume_host_path: Optional[str] = None
+    project_url_monitoring: str | None = None
+    letsencrypt_certificate_email: str | None = None
+    digitalocean_domain_create: bool | None = None
+    digitalocean_k8s_cluster_region: str | None = None
+    digitalocean_database_cluster_region: str | None = None
+    digitalocean_database_cluster_node_size: str | None = None
+    postgres_image: str | None = None
+    postgres_persistent_volume_capacity: str | None = None
+    postgres_persistent_volume_claim_capacity: str | None = None
+    postgres_persistent_volume_host_path: str | None = None
     use_redis: bool = False
-    redis_image: Optional[str] = None
-    digitalocean_redis_cluster_region: Optional[str] = None
-    digitalocean_redis_cluster_node_size: Optional[str] = None
-    sentry_org: Optional[str] = None
-    sentry_url: Optional[str] = None
-    sentry_auth_token: Optional[str] = None
-    backend_sentry_dsn: Optional[str] = None
-    frontend_sentry_dsn: Optional[str] = None
-    pact_broker_url: Optional[str] = None
-    pact_broker_username: Optional[str] = None
-    pact_broker_password: Optional[str] = None
+    redis_image: str | None = None
+    digitalocean_redis_cluster_region: str | None = None
+    digitalocean_redis_cluster_node_size: str | None = None
+    sentry_org: str | None = None
+    sentry_url: str | None = None
+    sentry_auth_token: str | None = None
+    backend_sentry_dsn: str | None = None
+    frontend_sentry_dsn: str | None = None
+    pact_broker_url: str | None = None
+    pact_broker_username: str | None = None
+    pact_broker_password: str | None = None
     media_storage: str
-    s3_region: Optional[str] = None
-    s3_host: Optional[str] = None
-    s3_access_id: Optional[str] = None
-    s3_secret_key: Optional[str] = None
-    s3_bucket_name: Optional[str] = None
-    gitlab_private_token: Optional[str] = None
-    gitlab_group_slug: Optional[str] = None
-    gitlab_group_owners: Optional[str] = None
-    gitlab_group_maintainers: Optional[str] = None
-    gitlab_group_developers: Optional[str] = None
-    uid: Optional[int] = None
-    gid: Optional[int] = None
-    terraform_dir: Optional[Path] = None
-    logs_dir: Optional[Path] = None
+    s3_region: str | None = None
+    s3_host: str | None = None
+    s3_access_id: str | None = None
+    s3_secret_key: str | None = None
+    s3_bucket_name: str | None = None
+    gitlab_private_token: str | None = None
+    gitlab_group_slug: str | None = None
+    gitlab_group_owners: str | None = None
+    gitlab_group_maintainers: str | None = None
+    gitlab_group_developers: str | None = None
+    uid: int | None = None
+    gid: int | None = None
+    terraform_dir: Path | None = None
+    logs_dir: Path | None = None
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
     stacks_environments: dict = field(init=False, default_factory=dict)
