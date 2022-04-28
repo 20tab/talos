@@ -17,7 +17,7 @@ In order to run Talos via Docker, a working [Docker installation](https://docs.d
 In order to run Talos as a shell command, first clone the repository in a local projects directory
 ```console
 cd ~/projects
-git clone https://github.com/20tab/20tab-standard-project.git talos
+git clone git@github.com:20tab/20tab-standard-project.git talos
 ```
 Then, install the following requirements
 | Requirements | Instructions |
@@ -129,6 +129,7 @@ Initializing the frontend service:
 ...creating the GitLab repository and associated resources
 ...creating the Terraform Cloud resources
 ```
+
 ## 🗒️ Arguments
 
 The following arguments can be appended to the Docker and shell commands
