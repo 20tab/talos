@@ -598,15 +598,6 @@ class Runner:
             self.init_gitlab()
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
             self.init_terraform_cloud()
-        backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
-        if backend_template_url:
-            self.init_subrepo(
-                self.backend_service_slug,
-                backend_template_url,
-                internal_service_port=self.backend_service_port,
-                media_storage=self.media_storage,
-                sentry_dsn=self.backend_sentry_dsn,
-            )
         frontend_template_url = FRONTEND_TEMPLATE_URLS.get(self.frontend_type)
         if frontend_template_url:
             self.init_subrepo(
@@ -617,6 +608,15 @@ class Runner:
                 or None,
                 internal_service_port=self.frontend_service_port,
                 sentry_dsn=self.frontend_sentry_dsn,
+            )
+        backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
+        if backend_template_url:
+            self.init_subrepo(
+                self.backend_service_slug,
+                backend_template_url,
+                internal_service_port=self.backend_service_port,
+                media_storage=self.media_storage,
+                sentry_dsn=self.backend_sentry_dsn,
             )
         self.change_output_owner()
         self.cleanup()

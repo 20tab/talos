@@ -124,6 +124,11 @@ def collect(
     if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
         frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
     deployment_type = clean_deployment_type(deployment_type)
+    # The "digitalocean-k8s" deployment type includes Postgres by default
+    if digitalocean_enabled := ("digitalocean" in deployment_type):
+        digitalocean_token = validate_or_prompt_password(
+            "DigitalOcean token", digitalocean_token
+        )
     (
         terraform_backend,
         terraform_cloud_hostname,
@@ -145,11 +150,6 @@ def collect(
     use_monitoring = click.confirm(
         warning("Do you want to enable the monitoring stack?"), default=False
     )
-    # The "digitalocean-k8s" deployment type includes Postgres by default
-    if digitalocean_enabled := ("digitalocean" in deployment_type):
-        digitalocean_token = validate_or_prompt_password(
-            "DigitalOcean token", digitalocean_token
-        )
     if other_kubernetes_enabled := (deployment_type == DEPLOYMENT_TYPE_OTHER):
         (
             kubernetes_cluster_ca_certificate,

@@ -60,6 +60,7 @@ before_script:
   stage: Base
   variables:
     TERRAFORM_EXTRA_VAR_FILE: {{ stack_slug }}.tfvars
+    TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/base/vars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: stack_{{ stack_slug }}_base{% endif %}{% if "s3" in cookiecutter.media_storage %}
     TF_VAR_s3_access_id: "${S3_ACCESS_ID}"
@@ -111,6 +112,7 @@ stack_{{ stack_slug }}_base_apply:
   stage: Cluster
   variables:
     TERRAFORM_EXTRA_VAR_FILE: {{ stack_slug }}.tfvars
+    TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/cluster/vars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: stack_{{ stack_slug }}_cluster{% endif %}
     TF_VAR_grafana_password: "${GRAFANA_PASSWORD}"
@@ -160,6 +162,7 @@ stack_{{ stack_slug }}_cluster_apply:
 .{{ stack_slug }}_env:
   stage: Environment
   variables:
+    TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/environment/vars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}
     TF_VAR_basic_auth_password: "${BASIC_AUTH_PASSWORD}"
     TF_VAR_basic_auth_username: "${BASIC_AUTH_USERNAME}"
