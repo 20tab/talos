@@ -1,13 +1,12 @@
 #!/bin/sh -e
 
-if [ "${DEBUG_OUTPUT}" = "true" ]; then
+if [ "${DEBUG_OUTPUT}" == "true" ]; then
     set -x
 fi
 
 plan_cache="plan.cache"
 plan_json="plan.json"
-var_file="${TF_ROOT}/../vars/.tfvars"
-extra_var_file="${TF_ROOT}/../vars/${TERRAFORM_EXTRA_VAR_FILE}"
+var_file="${TERRAFORM_VARS_DIR}/.tfvars"
 
 JQ_PLAN='
   (
@@ -19,21 +18,19 @@ JQ_PLAN='
   }
 '
 
-if [ "${TERRAFORM_BACKEND}" == "gitlab" ]; then
+case "${TERRAFORM_BACKEND}" in
+  "gitlab")
     # If TF_USERNAME is unset then default to GITLAB_USER_LOGIN
     TF_USERNAME="${TF_USERNAME:-${GITLAB_USER_LOGIN}}"
-
     # If TF_PASSWORD is unset then default to gitlab-ci-token/CI_JOB_TOKEN
     if [ -z "${TF_PASSWORD}" ]; then
     TF_USERNAME="gitlab-ci-token"
     TF_PASSWORD="${CI_JOB_TOKEN}"
     fi
-
     # If TF_ADDRESS is unset but TF_STATE_NAME is provided, then default to GitLab backend in current project
     if [ -n "${TF_STATE_NAME}" ]; then
     TF_ADDRESS="${TF_ADDRESS:-${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}}"
     fi
-
     # Set variables for the HTTP backend to default to TF_* values
     export TF_HTTP_ADDRESS="${TF_HTTP_ADDRESS:-${TF_ADDRESS}}"
     export TF_HTTP_LOCK_ADDRESS="${TF_HTTP_LOCK_ADDRESS:-${TF_ADDRESS}/lock}"
@@ -43,7 +40,6 @@ if [ "${TERRAFORM_BACKEND}" == "gitlab" ]; then
     export TF_HTTP_USERNAME="${TF_HTTP_USERNAME:-${TF_USERNAME}}"
     export TF_HTTP_PASSWORD="${TF_HTTP_PASSWORD:-${TF_PASSWORD}}"
     export TF_HTTP_RETRY_WAIT_MIN="${TF_HTTP_RETRY_WAIT_MIN:-5}"
-
     # Expose Gitlab specific variables to terraform since no -tf-var is available
     # Usable in the .tf file as variable "CI_JOB_ID" { type = string } etc
     export TF_VAR_CI_JOB_ID="${TF_VAR_CI_JOB_ID:-${CI_JOB_ID}}"
@@ -54,9 +50,8 @@ if [ "${TERRAFORM_BACKEND}" == "gitlab" ]; then
     export TF_VAR_CI_PROJECT_NAMESPACE="${TF_VAR_CI_PROJECT_NAMESPACE:-${CI_PROJECT_NAMESPACE}}"
     export TF_VAR_CI_PROJECT_PATH="${TF_VAR_CI_PROJECT_PATH:-${CI_PROJECT_PATH}}"
     export TF_VAR_CI_PROJECT_URL="${TF_VAR_CI_PROJECT_URL:-${CI_PROJECT_URL}}"
-fi
-
-if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
+  ;;
+  "terraform-cloud")
     export TF_CLI_CONFIG_FILE="${TF_ROOT}/cloud.tfc"
     cat << EOF > ${TF_CLI_CONFIG_FILE}
 {
@@ -67,6 +62,15 @@ if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
   }
 }
 EOF
+  ;;
+esac
+
+if [ "${TERRAFORM_EXTRA_VAR_FILE}" != "" ]; then
+  extra_var_file="${TERRAFORM_VARS_DIR}/${TERRAFORM_EXTRA_VAR_FILE}"
+  touch ${extra_var_file}
+  var_files="-var-file=${var_file} -var-file=${extra_var_file}"
+else
+  var_files="-var-file=${var_file}"
 fi
 
 # Use terraform automation mode (will remove some verbose unneeded messages)
@@ -78,8 +82,6 @@ init() {
   else
     terraform init "${@}" -input=false -reconfigure
   fi
-  # prevent non-existing VAR-
-  touch ${extra_var_file}
 }
 
 case "${1}" in
@@ -89,7 +91,7 @@ case "${1}" in
   ;;
   "destroy")
     init
-    terraform "${@}" -var-file=${var_file} -var-file=${extra_var_file} -auto-approve
+    terraform "${@}" ${var_files} -auto-approve
   ;;
   "fmt")
     terraform "${@}" -check -diff -recursive
@@ -101,7 +103,7 @@ case "${1}" in
   ;;
   "plan")
     init
-    terraform "${@}" -var-file=${var_file} -var-file=${extra_var_file} -input=false -out="${plan_cache}"
+    terraform "${@}" ${var_files} -input=false -out="${plan_cache}"
   ;;
   "plan-json")
     terraform show -json "${plan_cache}" | \

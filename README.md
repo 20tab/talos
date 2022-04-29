@@ -47,6 +47,13 @@ It can be generated in the GitLab User Settings panel.
 **Note:** the token can be generated in the Access Tokens section of the GitLab User Settings panel.<br/>
 ⚠️ Beware that the token is shown only once after creation.
 
+### 🌎 Terraform Cloud
+
+If the Terraform Cloud integration is enabled, a User API token is required.<br/>
+[Terraform Cloud API Token](https://app.terraform.io/app/settings/tokens)
+
+**Note:** ⚠️ Beware that the token is shown only once after creation.
+
 ## 🚀️ Quickstart
 
 Change to the projects directory, for example
@@ -254,6 +261,7 @@ If you don't want DigitalOcean DNS configuration the following args are required
 | none            | Project have no media                       | `--media-storage=none`                       |
 
 ### 🌊 DigitalOcean Kubernates
+
 [DigitalOcean API Slugs](https://slugs.do-api.dev/)
 [DigitalOcean Database Slugs](https://docs.digitalocean.com/reference/api/api-reference/#tag/Databases)
 
