@@ -33,7 +33,7 @@ resource "helm_release" "traefik" {
         var.ssl_enabled == "true" ? {
           additionalArguments = concat(
             [
-              "--entrypoints.web.http.redirections.entryPoint.to=websecure",
+              "--entrypoints.web.http.redirections.entryPoint.to=:443",
               "--entrypoints.websecure.http.tls=true",
             ],
             var.letsencrypt_certificate_email != "" ? [
