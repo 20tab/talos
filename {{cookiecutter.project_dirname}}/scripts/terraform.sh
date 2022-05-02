@@ -77,6 +77,7 @@ fi
 export TF_IN_AUTOMATION=true
 
 init() {
+  cd ${TF_ROOT}
   if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
     terraform init "${@}" -input=false
   else
@@ -106,6 +107,8 @@ case "${1}" in
     terraform "${@}" ${var_files} -input=false -out="${plan_cache}"
   ;;
   "plan-json")
+    init
+    terraform plan ${var_files} -input=false -out="${plan_cache}"
     terraform show -json "${plan_cache}" | \
       jq -r "${JQ_PLAN}" \
       > "${plan_json}"
