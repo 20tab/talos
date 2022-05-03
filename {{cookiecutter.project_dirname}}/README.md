@@ -179,41 +179,15 @@ $ make rebuild s=backend
 
 ### Create and activate a local SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
 
-Move to the `nginx` directory:
+Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certificate:
 
-```console
-$ cd nginx
-```
+#### Firefox 
 
-Install the certificate utils:
+- Settings > Privacy & Security > Manage Certificates > View Certificates... > Authorities > Import
 
--   Linux
+#### Chrome
 
-    ```console
-    $ sudo apt-get install openssl libnss3-tools
-    ```
-
--   macOs
-    ```console
-    $ brew install openssl nss
-    ```
-    **NOTE** : Follow all steps at the end of the installation (can be displayed again via `brew info <package-name>`).
-
-Create the certificate files:
-
-```console
-$ openssl req -config localhost.conf -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout localhost.key -days 1024 -out localhost.crt
-```
-
-```console
-$ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.crt
-```
-
-Import certificate into shared database (password: `localhost`):
-
-```console
-$ pk12util -d sql:$HOME/.pki/nssdb -i localhost.pfx
-```
+- Settings > Security > Certificates > Authorities > Import  
 
 **NOTE**: In the event of a `PR_FILE_NOT_FOUND_ERROR` or `SEC_ERROR_BAD_DATABASE` error, run the following commands and try again:
 
