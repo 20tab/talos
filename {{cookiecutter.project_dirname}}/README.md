@@ -177,7 +177,7 @@ You can pass the service name:
 $ make rebuild s=backend
 ```
 
-### Create and activate a local SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
+### Create and activate a local SSL Certificate
 
 Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certificate:
 
@@ -189,24 +189,3 @@ Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certif
 
 - Settings > Security > Certificates > Authorities > Import  
 
-**NOTE**: In the event of a `PR_FILE_NOT_FOUND_ERROR` or `SEC_ERROR_BAD_DATABASE` error, run the following commands and try again:
-
-```console
-$ mkdir -p $HOME/.pki/nssdb
-$ certutil -d $HOME/.pki/nssdb -N
-```
-
-Trust the self-signed server certificate:
-
--   Linux
-
-    ```console
-    $ certutil -d sql:$HOME/.pki/nssdb -A -t "P,," -n 'dev cert' -i localhost.crt
-    ```
-
--   macOS
-    ```console
-    $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.crt
-    ```
-
-<a id="f-setup-https-locally" href="#a-setup-https-locally">1</a>. For further reference look [here](https://medium.com/@workockmoses/how-to-setup-https-for-local-development-on-ubuntu-with-self-signed-certificate-f97834064fd).
