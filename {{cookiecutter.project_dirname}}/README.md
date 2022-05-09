@@ -177,7 +177,7 @@ You can pass the service name:
 $ make rebuild s=backend
 ```
 
-### Create and activate a local SSL Certificate
+### Activate a valid local SSL Certificate
 
 Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certificate:
 
