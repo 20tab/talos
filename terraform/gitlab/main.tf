@@ -34,7 +34,7 @@ terraform {
   required_providers {
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "3.12.0"
+      version = "~> 3.13"
     }
   }
 }
@@ -46,11 +46,10 @@ provider "gitlab" {
 /* Data Sources */
 
 data "gitlab_group" "group" {
-  full_path = var.gitlab_group_slug
+  full_path = var.group_slug
   # Restore resourse once fixed https://gitlab.com/gitlab-org/gitlab/-/issues/244345
-  # name             = var.project_name
-  # path             = var.project_slug
-  # description      = var.project_description
+  # name             = var.group_name
+  # path             = var.group_slug
   # visibility_level = "private"
 }
 
@@ -66,9 +65,9 @@ data "http" "user_info" {
 /* Project */
 
 resource "gitlab_project" "main" {
-  name                   = title(var.service_slug)
-  path                   = var.service_slug
-  description            = "The \"${var.project_name}\" project ${var.service_slug} service."
+  name                   = var.project_name
+  path                   = var.project_slug
+  description            = var.project_description
   namespace_id           = data.gitlab_group.group.id
   initialize_with_readme = false
   shared_runners_enabled = true
@@ -77,13 +76,11 @@ resource "gitlab_project" "main" {
 resource "null_resource" "init_repo" {
   depends_on = [gitlab_branch_protection.main]
 
-  triggers = {
-    service_project_id = gitlab_project.main.id
-  }
+  triggers = { project_id = gitlab_project.main.id }
 
   provisioner "local-exec" {
     command = join(" && ", [
-      "cd ${var.service_dir}",
+      "cd ${var.local_repository_dir}",
       format(
         join(" && ", [
           "git init --initial-branch=main",
@@ -99,7 +96,6 @@ resource "null_resource" "init_repo" {
           "https://oauth2:${var.gitlab_token}@$1"
         ),
         gitlab_project.main.ssh_url_to_repo,
-
       )
     ])
   }
@@ -117,7 +113,7 @@ resource "gitlab_branch_protection" "main" {
 /* Group Memberships */
 
 data "gitlab_users" "owners" {
-  for_each = toset(compact(split(",", var.gitlab_group_owners)))
+  for_each = toset(compact(split(",", var.group_owners)))
 
   search = trimspace(each.key)
 }
@@ -131,7 +127,7 @@ resource "gitlab_group_membership" "owners" {
 }
 
 data "gitlab_users" "maintainers" {
-  for_each = toset(compact(split(",", var.gitlab_group_maintainers)))
+  for_each = toset(compact(split(",", var.group_maintainers)))
 
   search = trimspace(each.key)
 }
@@ -145,7 +141,7 @@ resource "gitlab_group_membership" "maintainers" {
 }
 
 data "gitlab_users" "developers" {
-  for_each = toset(compact(split(",", var.gitlab_group_developers)))
+  for_each = toset(compact(split(",", var.group_developers)))
 
   search = trimspace(each.key)
 }
@@ -163,7 +159,7 @@ resource "gitlab_group_membership" "developers" {
 resource "gitlab_deploy_token" "regcred" {
   group    = data.gitlab_group.group.id
   name     = "Kubernetes registry credentials"
-  username = "${var.project_slug}-k8s-regcred"
+  username = "${var.group_slug}-k8s-regcred"
   scopes   = ["read_registry"]
 }
 
@@ -178,7 +174,7 @@ resource "gitlab_group_badge" "pipeline" {
 /* Group Variables */
 
 resource "gitlab_group_variable" "vars" {
-  for_each = var.gitlab_group_variables
+  for_each = var.group_variables
 
   group     = data.gitlab_group.group.id
   key       = each.key
@@ -187,10 +183,18 @@ resource "gitlab_group_variable" "vars" {
   masked    = lookup(each.value, "masked", false)
 }
 
-resource "gitlab_group_variable" "regcred" {
+resource "gitlab_group_variable" "registry_password" {
   group     = data.gitlab_group.group.id
-  key       = "K8S_REGCRED"
+  key       = "REGISTRY_PASSWORD"
   value     = gitlab_deploy_token.regcred.token
+  protected = true
+  masked    = true
+}
+
+resource "gitlab_group_variable" "registry_username" {
+  group     = data.gitlab_group.group.id
+  key       = "REGISTRY_USERNAME"
+  value     = gitlab_deploy_token.regcred.username
   protected = true
   masked    = true
 }
@@ -198,7 +202,7 @@ resource "gitlab_group_variable" "regcred" {
 /* Project Variables */
 
 resource "gitlab_project_variable" "vars" {
-  for_each = var.gitlab_project_variables
+  for_each = var.project_variables
 
   project           = gitlab_project.main.id
   key               = each.key

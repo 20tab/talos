@@ -1,7 +1,7 @@
-variable "create_domain" {
-  description = "If true, a DigitalOcean domain is created."
+variable "create_s3_bucket" {
+  description = "Tell if a DigitalOcean Spaces bucket should be created."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "database_cluster_engine" {
@@ -87,10 +87,9 @@ variable "k8s_cluster_version" {
   default     = ""
 }
 
-variable "project_domain" {
-  description = "The project domain."
+variable "project_slug" {
+  description = "The project slug."
   type        = string
-  default     = ""
 }
 
 variable "redis_cluster_node_count" {
@@ -102,6 +101,7 @@ variable "redis_cluster_node_count" {
 variable "redis_cluster_node_size" {
   description = "The DigitalOcean Redis cluster droplet size."
   type        = string
+  default     = ""
 }
 
 variable "redis_cluster_region" {
@@ -119,6 +119,7 @@ variable "s3_access_id" {
   description = "The S3 bucket access key ID."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "s3_region" {
@@ -131,6 +132,7 @@ variable "s3_secret_key" {
   description = "The S3 bucket secret access key."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "stack_slug" {
@@ -138,8 +140,14 @@ variable "stack_slug" {
   type        = string
 }
 
+variable "ssl_enabled" {
+  description = "Tell if SSL should be enabled."
+  type        = bool
+  default     = false
+}
+
 variable "use_redis" {
-  description = "If 'true', a Redis database is created."
-  type        = string
-  default     = "false"
+  description = "Tell if a Redis service is used."
+  type        = bool
+  default     = false
 }

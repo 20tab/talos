@@ -161,13 +161,13 @@ cython_debug/
 .DS_Store
 
 # Terraform
-*.tfvars
 .terraform*
+secrets.tf
 terraform.tfstate
 terraform.tfstate.backup
-secrets.tf
-
+terraform.tfvars
 
 # Other
 *.bak
 .subrepos
+.dumps/

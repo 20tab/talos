@@ -1,20 +1,9 @@
 locals {
-  project_slug = "{{ cookiecutter.project_slug }}"
-
-  stacks = jsondecode(<<EOF
-{{ cookiecutter.stacks|tojson(2) }}
-EOF
-  )
-  envs = local.stacks[var.stack_slug]
-
   monitoring_enabled = var.monitoring_url != "" && var.stack_slug == "main"
   monitoring_host    = local.monitoring_enabled ? regexall("https?://([^/]+)", var.monitoring_url)[0][0] : ""
 }
 
 terraform {
-  backend "http" {
-  }
-
   required_providers {
     helm = {
       source  = "hashicorp/helm"

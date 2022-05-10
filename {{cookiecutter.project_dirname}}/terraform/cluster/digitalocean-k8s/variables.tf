@@ -1,7 +1,19 @@
+variable "create_domain" {
+  description = "Tell if a DigitalOcean domain should be created."
+  type        = bool
+  default     = true
+}
+
 variable "digitalocean_token" {
   description = "The DigitalOcean access token."
   type        = string
   sensitive   = true
+}
+
+variable "domain_prefixes" {
+  description = "The list of domain prefixes."
+  type        = list(string)
+  default     = []
 }
 
 variable "grafana_password" {
@@ -47,10 +59,15 @@ variable "project_domain" {
   default     = ""
 }
 
-variable "ssl_enabled" {
-  description = "If 'true', enable SSL."
+variable "project_slug" {
+  description = "The project slug."
   type        = string
-  default     = "false"
+}
+
+variable "ssl_enabled" {
+  description = "Tell if SSL should be enabled."
+  type        = bool
+  default     = false
 }
 
 variable "stack_slug" {

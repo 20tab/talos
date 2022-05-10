@@ -1,8 +1,3 @@
-variable "media_storage" {
-  description = "The media storage solution."
-  type        = string
-}
-
 variable "namespace" {
   description = "The namespace for Kubernetes resources."
   type        = string

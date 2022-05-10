@@ -26,6 +26,7 @@ from bootstrap.collector import (
     clean_s3_media_storage_data,
     clean_sentry_org,
     clean_service_dir,
+    clean_terraform_backend,
 )
 
 
@@ -54,18 +55,19 @@ class TestBootstrapCollector(TestCase):
             clean_project_slug("My Project", "my-new-project"), project_slug
         )
 
-    @mock.patch("pathlib.Path.is_absolute", return_value=True)
-    def test_clean_service_dir(self, m):
+    def test_clean_service_dir(self):
         """Test cleaning the service directory."""
-        self.assertTrue(
-            clean_service_dir("tests", "my_project").endswith("/tests/my_project")
-        )
-        with mock.patch("shutil.rmtree", return_value=None), mock.patch(
-            "pathlib.Path.is_dir", return_value=True
-        ), input("Y"):
-            self.assertTrue(
-                clean_service_dir("tests", "my_project").endswith("/tests/my_project")
-            )
+        MockedPath = mock.MagicMock(spec=Path)
+        output_dir = MockedPath("mocked-tests")
+        output_dir.is_absolute.return_value = True
+        service_dir = MockedPath("mocked-tests/my_project")
+        service_dir.is_dir.return_value = False
+        output_dir.__truediv__.return_value = service_dir
+        self.assertEqual(clean_service_dir(output_dir, "my_project"), service_dir)
+        service_dir.is_dir.return_value = True
+        output_dir.__truediv__.return_value = service_dir
+        with mock.patch("bootstrap.collector.rmtree", return_value=None), input("Y"):
+            self.assertEqual(clean_service_dir(output_dir, "my_project"), service_dir)
 
     def test_clean_backend_type(self):
         """Test cleaning the back end type."""
@@ -100,6 +102,51 @@ class TestBootstrapCollector(TestCase):
             self.assertEqual(clean_deployment_type(None), "digitalocean-k8s")
         with input("non-existing", ""):
             self.assertEqual(clean_deployment_type(None), "digitalocean-k8s")
+
+    def test_clean_terraform_backend(self):
+        """Test cleaning the Terraform ."""
+        self.assertEqual(
+            clean_terraform_backend("gitlab", None, None, None, None, None),
+            ("gitlab", None, None, None, None, None),
+        )
+        with input("gitlab"):
+            self.assertEqual(
+                clean_terraform_backend("wrong-backend", None, None, None, None, None),
+                ("gitlab", None, None, None, None, None),
+            )
+        with input("terraform-cloud", "", "myOrg", "y", "bad-email", "admin@test.com"):
+            self.assertEqual(
+                clean_terraform_backend(
+                    "wrong-backend", None, "mytfcT0k3N", None, None, None
+                ),
+                (
+                    "terraform-cloud",
+                    "app.terraform.io",
+                    "mytfcT0k3N",
+                    "myOrg",
+                    True,
+                    "admin@test.com",
+                ),
+            )
+        with input(
+            "terraform-cloud",
+            "tfc.mydomain.com",
+            {"hidden": "mytfcT0k3N"},
+            "myOrg",
+            "n",
+            None,
+        ):
+            self.assertEqual(
+                clean_terraform_backend("wrong-backend", None, None, None, None, None),
+                (
+                    "terraform-cloud",
+                    "tfc.mydomain.com",
+                    "mytfcT0k3N",
+                    "myOrg",
+                    False,
+                    "",
+                ),
+            )
 
     def test_clean_environment_distribution(self):
         """Test cleaning the environment distribution."""
@@ -160,10 +207,10 @@ class TestBootstrapCollector(TestCase):
 
     def test_clean_project_domain(self):
         """Test cleaning the project domain."""
-        self.assertEqual(clean_project_domain(""), "")
+        self.assertEqual(clean_project_domain(""), None)
         self.assertEqual(clean_project_domain("myproject.com"), "myproject.com")
         with input("n"):
-            self.assertEqual(clean_project_domain(None), "")
+            self.assertEqual(clean_project_domain(None), None)
         with input("y", "myproject.com"):
             self.assertEqual(clean_project_domain(None), "myproject.com")
 
@@ -192,12 +239,12 @@ class TestBootstrapCollector(TestCase):
                     "alpha",
                     "beta",
                     "www2",
-                    "",
+                    None,
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    "",
-                    "",
+                    None,
+                    None,
                 ),
             )
         self.assertEqual(
@@ -221,12 +268,12 @@ class TestBootstrapCollector(TestCase):
                 "alpha",
                 "beta",
                 "www2",
-                "",
+                None,
                 "https://alpha.myproject.com",
                 "https://beta.myproject.com",
                 "https://www2.myproject.com",
-                "",
-                "",
+                None,
+                None,
             ),
         )
         # project domain not set
@@ -254,16 +301,16 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    "",
-                    "",
+                    None,
+                    None,
                 ),
             )
         with input(
@@ -286,16 +333,16 @@ class TestBootstrapCollector(TestCase):
                     "",
                 ),
                 (
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    "",
-                    "",
+                    None,
+                    None,
                 ),
             )
         # other kubernetes
@@ -322,16 +369,16 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    "",
-                    "",
+                    None,
+                    None,
                 ),
             )
         # monitoring enabled
@@ -362,7 +409,7 @@ class TestBootstrapCollector(TestCase):
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
                     "https://mylogs.myproject.com",
-                    "",
+                    None,
                 ),
             )
         with input(
@@ -389,16 +436,16 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
                     "https://mylogs.myproject.com",
-                    "",
+                    None,
                 ),
             )
         # Let's Encrypt certificates enabled
@@ -427,11 +474,11 @@ class TestBootstrapCollector(TestCase):
                     None,
                 ),
                 (
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
@@ -519,7 +566,7 @@ class TestBootstrapCollector(TestCase):
                 clean_pact_broker_data("https://broker.myproject.com", None, None),
                 ("https://broker.myproject.com", "user.name", "mYV4l1DP4sSw0rD"),
             )
-        self.assertEqual(clean_pact_broker_data("", None, None), ("", "", ""))
+        self.assertEqual(clean_pact_broker_data("", None, None), (None, None, None))
 
     def test_clean_media_storage(self):
         """Test cleaning the media storage."""
@@ -585,7 +632,7 @@ class TestBootstrapCollector(TestCase):
             )
         self.assertEqual(
             clean_gitlab_group_data("my-project", "", "", "", "", ""),
-            ("", "", "", "", ""),
+            (None, None, None, None, None),
         )
 
     def test_clean_s3_media_storage_data(self):

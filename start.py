@@ -2,6 +2,7 @@
 """Initialize a template based web project."""
 
 import os
+from pathlib import Path
 
 import click
 
@@ -14,7 +15,7 @@ from bootstrap.constants import (
 )
 from bootstrap.exceptions import BootstrapError
 from bootstrap.helpers import slugify_option
-from bootstrap.runner import run
+from bootstrap.runner import Runner
 
 OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 
@@ -22,8 +23,14 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.command()
 @click.option("--uid", type=int)
 @click.option("--gid", type=int)
-@click.option("--output-dir", default=OUTPUT_DIR)
-@click.option("--project-name", prompt=True)
+@click.option(
+    "--output-dir",
+    default=OUTPUT_DIR,
+    type=click.Path(
+        exists=True, path_type=Path, file_okay=False, readable=True, writable=True
+    ),
+)
+@click.option("--project-name")
 @click.option("--project-slug", callback=slugify_option)
 @click.option("--project-dirname")
 @click.option("--backend-type")
@@ -36,6 +43,16 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
     "--deployment-type",
     type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
 )
+@click.option("--terraform-backend")
+@click.option("--terraform-cloud-hostname")
+@click.option("--terraform-cloud-token")
+@click.option("--terraform-cloud-organization")
+@click.option(
+    "--terraform-cloud-organization-create/--terraform-cloud-organization-create-skip",
+    is_flag=True,
+    default=None,
+)
+@click.option("--terraform-cloud-admin-email")
 @click.option("--digitalocean-token")
 @click.option(
     "--kubernetes-cluster-ca-certificate",
@@ -55,17 +72,21 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--project-url-stage")
 @click.option("--project-url-prod")
 @click.option("--project-url-monitoring")
-@click.option("--letsencrypt-certificate-email")
-@click.option("--digitalocean-create-domain")
+@click.option("--letsencrypt-certificate-email")  # ADD TO README
+@click.option(
+    "--digitalocean-domain-create/--digitalocean-domain-create-skip",
+    is_flag=True,
+    default=None,
+)  # ADD TO README
 @click.option("--digitalocean-k8s-cluster-region")
 @click.option("--digitalocean-database-cluster-region")
 @click.option("--digitalocean-database-cluster-node-size")
-@click.option("--postgres_image")
-@click.option("--postgres_persistent_volume_capacity")
-@click.option("--postgres_persistent_volume_claim_capacity")
-@click.option("--postgres_persistent_volume_host_path")
+@click.option("--postgres-image")
+@click.option("--postgres-persistent-volume-capacity")
+@click.option("--postgres-persistent-volume-claim-capacity")
+@click.option("--postgres-persistent-volume-host-path")
 @click.option("--use-redis/--no-redis", is_flag=True, default=None)
-@click.option("--redis_image")
+@click.option("--redis-image")
 @click.option("--digitalocean-redis-cluster-region")
 @click.option("--digitalocean-redis-cluster-node-size")
 @click.option("--sentry-org")
@@ -90,13 +111,13 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gitlab-group-owners")
 @click.option("--gitlab-group-maintainers")
 @click.option("--gitlab-group-developers")
-@click.option("--terraform-dir")
-@click.option("--logs-dir")
+@click.option("--terraform-dir", type=click.Path())
+@click.option("--logs-dir", type=click.Path())
 @click.option("--quiet", is_flag=True)
 def main(**options):
     """Run the setup."""
     try:
-        run(**collect(**options))
+        Runner(**collect(**options)).run()
     except BootstrapError as e:
         raise click.Abort() from e
 

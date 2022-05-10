@@ -1,0 +1,2 @@
+{% for item in cookiecutter.tfvars.base_stage|sort %}{{ item }}
+{% endfor %}

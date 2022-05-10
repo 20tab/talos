@@ -1,0 +1,2 @@
+{% for item in cookiecutter.tfvars.cluster_dev|sort %}{{ item }}
+{% endfor %}

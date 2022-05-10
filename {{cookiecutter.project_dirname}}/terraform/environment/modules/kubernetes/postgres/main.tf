@@ -39,10 +39,7 @@ resource "kubernetes_persistent_volume_claim_v1" "main" {
     access_modes = ["ReadWriteOnce"]
     resources {
       requests = {
-        storage = coalesce(
-          var.persistent_volume_claim_capacity,
-          var.persistent_volume_capacity
-        )
+        storage = var.persistent_volume_claim_capacity
       }
     }
     volume_name = kubernetes_persistent_volume_v1.main.metadata[0].name
