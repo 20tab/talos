@@ -315,8 +315,6 @@ class Runner:
                 "clone",
                 template_url,
                 subrepo_dir,
-                "--branch",
-                "feature/terraform-cloud",
                 "-q",
             ]
         )
