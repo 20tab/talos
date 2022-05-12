@@ -1,5 +1,11 @@
-variable "backend_middlewares" {
-  description = "The backend middlewares list."
+variable "backend_service_extra_middlewares" {
+  description = "The backend service additional middlewares."
+  type        = list(string)
+  default     = []
+}
+
+variable "backend_service_paths" {
+  description = "The backend service paths."
   type        = list(string)
   default     = []
 }
@@ -17,9 +23,9 @@ variable "backend_service_slug" {
 }
 
 variable "basic_auth_enabled" {
-  description = "The basic_auth switch."
-  type        = string
-  default     = ""
+  description = "Tell if the basic auth should be enabled."
+  type        = bool
+  default     = false
 }
 
 variable "basic_auth_password" {
@@ -35,8 +41,14 @@ variable "basic_auth_username" {
   default     = ""
 }
 
-variable "frontend_middlewares" {
-  description = "The frontend middlewares list."
+variable "frontend_service_extra_middlewares" {
+  description = "The frontend service additional middlewares."
+  type        = list(string)
+  default     = []
+}
+
+variable "frontend_service_paths" {
+  description = "The frontend service paths."
   type        = list(string)
   default     = []
 }
@@ -51,11 +63,6 @@ variable "frontend_service_slug" {
   description = "The frontend service slug."
   type        = string
   default     = ""
-}
-
-variable "media_storage" {
-  description = "The media storage solution."
-  type        = string
 }
 
 variable "namespace" {

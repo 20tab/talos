@@ -1,16 +1,7 @@
 locals {
-  backend_paths = toset(
-    var.backend_service_slug != "" ? (
-      var.frontend_service_slug != "" ? concat(
-        ["/admin", "/api", "/static"],
-        var.media_storage == "local" ? ["/media"] : []
-      ) : ["/"]
-    ) : []
-  )
-  frontend_paths = toset(var.frontend_service_slug != "" ? ["/"] : [])
-
   basic_auth_ready = alltrue(
     [
+      var.basic_auth_enabled,
       var.basic_auth_username != "",
       var.basic_auth_password != ""
     ]
@@ -99,30 +90,36 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
       {
         entryPoints = ["web", "websecure"]
         routes = concat(
-          # backend routes
-          [
-            for path in local.backend_paths : {
-              kind        = "Rule"
-              match       = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
-              middlewares = concat(local.base_middlewares, var.backend_middlewares)
-              services = [
-                {
-                  name = var.backend_service_slug
-                  port = var.backend_service_port
-                }
-              ]
-            }
-          ],
           # frontend routes
           [
-            for path in local.frontend_paths : {
-              kind        = "Rule"
-              match       = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
-              middlewares = concat(local.base_middlewares, var.frontend_middlewares)
+            for path in toset(var.frontend_service_paths) : {
+              kind  = "Rule"
+              match = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = concat(
+                local.base_middlewares,
+                var.frontend_service_extra_middlewares,
+              )
               services = [
                 {
                   name = var.frontend_service_slug
                   port = var.frontend_service_port
+                }
+              ]
+            }
+          ],
+          # backend routes
+          [
+            for path in toset(var.backend_service_paths) : {
+              kind  = "Rule"
+              match = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
+              middlewares = concat(
+                local.base_middlewares,
+                var.backend_service_extra_middlewares,
+              )
+              services = [
+                {
+                  name = var.backend_service_slug
+                  port = var.backend_service_port
                 }
               ]
             }

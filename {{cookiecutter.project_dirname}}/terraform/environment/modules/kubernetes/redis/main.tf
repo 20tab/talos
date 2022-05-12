@@ -106,6 +106,9 @@ resource "kubernetes_secret_v1" "main" {
     namespace = var.namespace
   }
   data = {
-    CACHE_URL = "redis://:${random_password.main.result}@${kubernetes_service_v1.main.metadata[0].name}:6379"
+    CACHE_URL = join("", [
+      "redis://:${random_password.main.result}@${kubernetes_service_v1.main.metadata[0].name}:6379",
+      var.key_prefix != "" ? "?key_prefix=${var.key_prefix}" : ""
+    ])
   }
 }

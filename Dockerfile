@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && python3 -m pip install --no-cache-dir -r requirements/common.txt
 COPY . .
 RUN mkdir ${OUTPUT_BASE_DIR}
-ENTRYPOINT [ "python", "/app/setup.py" ]
+ENTRYPOINT [ "python", "/app/start.py" ]
 
 FROM base AS local
 

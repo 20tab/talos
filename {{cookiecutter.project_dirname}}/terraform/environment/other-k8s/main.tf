@@ -1,35 +1,21 @@
 locals {
-  project_slug = "{{ cookiecutter.project_slug }}"
-
-  media_storage = "{{ cookiecutter.media_storage }}"
-
   namespace = kubernetes_namespace_v1.main.metadata[0].name
 
   project_host = regexall("https?://([^/]+)", var.project_url)[0][0]
 
-  registry_username = coalesce(var.registry_username, "${local.project_slug}-k8s-regcred")
-
-  use_s3 = length(regexall("s3", local.media_storage)) > 0
-
-  s3_host = local.media_storage == "digitalocean-s3" ? "digitaloceanspaces.com" : var.s3_host
-
   postgres_dump_enabled = alltrue(
     [
+      var.database_dumps_enabled,
       var.env_slug == "prod",
-      local.use_s3,
       var.s3_region != "",
       var.s3_access_id != "",
       var.s3_secret_key != "",
-      local.s3_host != "",
-      var.s3_bucket_name != "",
+      var.s3_host != "" || var.s3_bucket_name != "",
     ]
   )
 }
 
 terraform {
-  backend "http" {
-  }
-
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
@@ -54,7 +40,7 @@ provider "kubernetes" {
 
 resource "kubernetes_namespace_v1" "main" {
   metadata {
-    name = "${local.project_slug}-${var.env_slug}"
+    name = "${var.project_slug}-${var.env_slug}"
   }
 }
 
@@ -67,8 +53,8 @@ module "postgres" {
 
   postgres_image = var.postgres_image
 
-  database_name = "${local.project_slug}-${var.env_slug}-database"
-  database_user = "${local.project_slug}-${var.env_slug}-database-user"
+  database_name = "${var.project_slug}-${var.env_slug}-database"
+  database_user = "${var.project_slug}-${var.env_slug}-database-user"
 
   persistent_volume_capacity       = var.postgres_persistent_volume_capacity
   persistent_volume_claim_capacity = var.postgres_persistent_volume_claim_capacity
@@ -76,13 +62,14 @@ module "postgres" {
 }
 
 module "redis" {
-  count = var.use_redis == "true" ? 1 : 0
+  count = var.use_redis ? 1 : 0
 
   source = "../modules/kubernetes/redis"
 
   namespace = local.namespace
 
   redis_image = var.redis_image
+  key_prefix  = var.env_slug
 }
 
 /* Routing */
@@ -98,15 +85,15 @@ module "routing" {
   basic_auth_username = var.basic_auth_username
   basic_auth_password = var.basic_auth_password
 
-  backend_middlewares  = var.backend_middlewares
-  backend_service_port = var.backend_service_port
-  backend_service_slug = var.backend_service_slug
+  backend_service_extra_middlewares = var.backend_service_extra_traefik_middlewares
+  backend_service_slug              = var.backend_service_slug
+  backend_service_paths             = var.backend_service_paths
+  backend_service_port              = var.backend_service_port
 
-  frontend_middlewares  = var.frontend_middlewares
-  frontend_service_port = var.frontend_service_port
-  frontend_service_slug = var.frontend_service_slug
-
-  media_storage = local.media_storage
+  frontend_service_extra_middlewares = var.frontend_service_extra_traefik_middlewares
+  frontend_service_slug              = var.frontend_service_slug
+  frontend_service_paths             = var.frontend_service_paths
+  frontend_service_port              = var.frontend_service_port
 
   tls_certificate_crt = var.tls_certificate_crt
   tls_certificate_key = var.tls_certificate_key
@@ -123,7 +110,7 @@ resource "kubernetes_secret_v1" "regcred" {
     ".dockerconfigjson" = jsonencode({
       auths = {
         "${var.registry_server}" = {
-          auth = "${base64encode("${local.registry_username}:${var.registry_password}")}"
+          auth = "${base64encode("${var.registry_username}:${var.registry_password}")}"
         }
       }
     })
@@ -140,11 +127,9 @@ module "database_dump_cronjob" {
 
   namespace = local.namespace
 
-  media_storage = local.media_storage
-
   s3_region      = var.s3_region
   s3_access_id   = var.s3_access_id
   s3_secret_key  = var.s3_secret_key
-  s3_host        = local.s3_host
+  s3_host        = var.s3_host
   s3_bucket_name = var.s3_bucket_name
 }

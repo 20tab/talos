@@ -1,5 +1,9 @@
 """Web project initialization CLI constants."""
 
+from pathlib import Path
+
+DUMPS_DIR = Path(__file__).parent.parent / ".dumps"
+
 # Env vars
 
 GITLAB_TOKEN_ENV_VAR = "GITLAB_PRIVATE_TOKEN"
@@ -74,3 +78,11 @@ MEDIA_STORAGE_CHOICES = [
     "local",
     "none",
 ]
+
+# Terraform backend
+
+TERRAFORM_BACKEND_GITLAB = "gitlab"
+
+TERRAFORM_BACKEND_TFC = "terraform-cloud"
+
+TERRAFORM_BACKEND_CHOICES = [TERRAFORM_BACKEND_TFC, TERRAFORM_BACKEND_GITLAB]

@@ -10,7 +10,7 @@ chardet==4.0.0
     # via binaryornot
 charset-normalizer==2.0.12
     # via requests
-click==8.1.0
+click==8.1.2
     # via
     #   -r requirements/common.in
     #   cookiecutter
@@ -56,6 +56,8 @@ poyo==0.5.0
     # via cookiecutter
 pycodestyle==2.8.0
     # via flake8
+pydantic==1.9.0
+    # via -r requirements/common.in
 pydocstyle==6.1.1
     # via flake8-docstrings
 pyflakes==2.4.0
@@ -83,8 +85,10 @@ tomli==2.0.1
     # via
     #   coverage
     #   mypy
-typing-extensions==4.1.1
-    # via mypy
+typing-extensions==4.2.0
+    # via
+    #   mypy
+    #   pydantic
 urllib3==1.26.9
     # via requests
 validators==0.18.2
