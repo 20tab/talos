@@ -173,7 +173,7 @@ resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
 }
 
 resource "kubernetes_manifest" "metrics_ingress_route" {
-  count = var.stack_slug == "main" && local.basic_auth_ready ? 1 : 0
+  count = var.stack_slug == "main" ? 1 : 0
 
   manifest = {
     apiVersion = "traefik.containo.us/v1alpha1"
