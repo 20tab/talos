@@ -177,62 +177,15 @@ You can pass the service name:
 $ make rebuild s=backend
 ```
 
-### Create and activate a local SSL Certificate <sup id="a-setup-https-locally">[1](#f-setup-https-locally)</sup>
+### Activate a valid local SSL Certificate
 
-Move to the `nginx` directory:
+Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certificate:
 
-```console
-$ cd nginx
-```
+#### Firefox 
 
-Install the certificate utils:
+- Settings > Privacy & Security > Manage Certificates > View Certificates... > Authorities > Import
 
--   Linux
+#### Chrome
 
-    ```console
-    $ sudo apt-get install openssl libnss3-tools
-    ```
+- Settings > Security > Certificates > Authorities > Import  
 
--   macOs
-    ```console
-    $ brew install openssl nss
-    ```
-    **NOTE** : Follow all steps at the end of the installation (can be displayed again via `brew info <package-name>`).
-
-Create the certificate files:
-
-```console
-$ openssl req -config localhost.conf -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout localhost.key -days 1024 -out localhost.crt
-```
-
-```console
-$ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.crt
-```
-
-Import certificate into shared database (password: `localhost`):
-
-```console
-$ pk12util -d sql:$HOME/.pki/nssdb -i localhost.pfx
-```
-
-**NOTE**: In the event of a `PR_FILE_NOT_FOUND_ERROR` or `SEC_ERROR_BAD_DATABASE` error, run the following commands and try again:
-
-```console
-$ mkdir -p $HOME/.pki/nssdb
-$ certutil -d $HOME/.pki/nssdb -N
-```
-
-Trust the self-signed server certificate:
-
--   Linux
-
-    ```console
-    $ certutil -d sql:$HOME/.pki/nssdb -A -t "P,," -n 'dev cert' -i localhost.crt
-    ```
-
--   macOS
-    ```console
-    $ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain localhost.crt
-    ```
-
-<a id="f-setup-https-locally" href="#a-setup-https-locally">1</a>. For further reference look [here](https://medium.com/@workockmoses/how-to-setup-https-for-local-development-on-ubuntu-with-self-signed-certificate-f97834064fd).

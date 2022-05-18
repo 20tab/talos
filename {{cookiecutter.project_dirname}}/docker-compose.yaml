@@ -43,14 +43,18 @@ services:
     volumes:
       - ./{{ cookiecutter.frontend_service_slug }}:/app{% endif %}
 
-  nginx:
-    build: ./nginx{% if cookiecutter.backend_type != 'none' or cookiecutter.frontend_type != 'none' %}
+  traefik:
+    image: traefik:v2.6
     depends_on:{% if cookiecutter.backend_type != 'none' %}
       - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-      - {{ cookiecutter.frontend_service_slug }}{% endif %}{% endif %}
+      - {{ cookiecutter.frontend_service_slug }}{% endif %}
+    volumes:
+      - ./traefik/:/traefik/:ro
+    command:
+      - "--configFile=/traefik/conf/static.yaml"
     ports:
-      - ${LOCAL_HTTP_PORT:-8080}:80
-      - ${LOCAL_HTTPS_PORT:-8443}:443
+      - "${LOCAL_HTTPS_PORT:-8443}:8443"
+      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
 
   postgres:
     environment:
@@ -63,3 +67,4 @@ services:
 
 volumes:
   pg_data: {}
+
