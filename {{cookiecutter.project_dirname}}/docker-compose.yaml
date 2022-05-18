@@ -51,10 +51,10 @@ services:
     volumes:
       - ./traefik/:/traefik/:ro
     command:
-      - "--configFile=/traefik/config.yaml"
+      - "--configFile=/traefik/conf/static.yaml"
     ports:
       - "${LOCAL_HTTPS_PORT:-8443}:8443"
-      - "8080:8080"
+      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
 
   postgres:
     environment:
