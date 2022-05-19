@@ -2,7 +2,7 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
-> A [20tab](https://www.20tab.com/) standard project.
+> A [20tab](https://www.20tab.com/) project.
 
 ## 🧩 Requirements
 
@@ -18,7 +18,7 @@ In order to run Talos as a shell command, first clone the repository in a local 
 
 ```console
 cd ~/projects
-git clone git@github.com:20tab/20tab-standard-project.git talos
+git clone git@github.com:20tab/talos.git
 ```
 
 Then, install the following requirements
@@ -193,7 +193,7 @@ The following arguments can be appended to the Docker and shell commands
 
 | Value  | Description                                           | Argument                 |
 | ------ | ----------------------------------------------------- | ------------------------ |
-| nextjs | https://github.com/20tab/react-ts-continuous-delivery | `--frontend-type=nextjs` |
+| nextjs | https://github.com/20tab/nextjs-continuous-delivery | `--frontend-type=nextjs` |
 | none   | the frontend service will not be initialized          | `--frontend-type=none`   |
 
 #### Frontend service slug

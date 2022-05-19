@@ -15,7 +15,7 @@ BACKEND_TEMPLATE_URLS = {
 }
 
 FRONTEND_TEMPLATE_URLS = {
-    "nextjs": "https://github.com/20tab/react-ts-continuous-delivery"
+    "nextjs": "https://github.com/20tab/nextjs-continuous-delivery"
 }
 
 SUBREPOS_DIR = ".subrepos"
