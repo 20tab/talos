@@ -78,6 +78,11 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
     is_flag=True,
     default=None,
 )  # ADD TO README
+@click.option(
+    "--digitalocean-dns-records-create/--digitalocean-dns-records-create-skip",
+    is_flag=True,
+    default=None,
+)  # ADD TO README
 @click.option("--digitalocean-k8s-cluster-region")
 @click.option("--digitalocean-database-cluster-region")
 @click.option("--digitalocean-database-cluster-node-size")

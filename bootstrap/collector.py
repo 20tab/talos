@@ -74,6 +74,7 @@ def collect(
     project_url_monitoring,
     letsencrypt_certificate_email,
     digitalocean_domain_create,
+    digitalocean_dns_records_create,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -171,8 +172,7 @@ def collect(
         project_url_prod,
         project_url_monitoring,
         letsencrypt_certificate_email,
-    ) = clean_project_urls(
-        deployment_type,
+    ) = clean_domains(
         project_slug,
         project_domain,
         use_monitoring,
@@ -190,14 +190,15 @@ def collect(
     if digitalocean_enabled:
         (
             digitalocean_domain_create,
+            digitalocean_dns_records_create,
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
             digitalocean_redis_cluster_region,
             digitalocean_redis_cluster_node_size,
         ) = clean_digitalocean_options(
-            project_domain,
             digitalocean_domain_create,
+            digitalocean_dns_records_create,
             digitalocean_k8s_cluster_region,
             digitalocean_database_cluster_region,
             digitalocean_database_cluster_node_size,
@@ -584,26 +585,7 @@ def clean_kubernetes_credentials(
     return kubernetes_cluster_ca_certificate, kubernetes_host, kubernetes_token
 
 
-def clean_project_domain(project_domain):
-    """Return the project domain."""
-    return (
-        project_domain
-        or (
-            project_domain is None
-            and click.confirm(
-                warning(
-                    "Do you want to configure DNS records? "
-                    "(BEWARE: NS must be set accordingly)"
-                )
-            )
-            and validate_or_prompt_domain("Project domain", project_domain)
-        )
-        or None
-    )
-
-
-def clean_project_urls(
-    deployment_type,
+def clean_domains(
     project_slug,
     project_domain,
     use_monitoring,
@@ -618,68 +600,32 @@ def clean_project_urls(
     letsencrypt_certificate_email,
 ):
     """Return project URLs."""
-    if deployment_type == DEPLOYMENT_TYPE_DIGITALOCEAN and (
-        project_domain := clean_project_domain(project_domain)
-    ):
-        domain_prefix_dev = domain_prefix_dev or click.prompt(
-            "Development domain prefix", default="dev"
+    project_domain = validate_or_prompt_domain(
+        "Project domain", project_domain, default=f"{project_slug}.com"
+    )
+    domain_prefix_dev = domain_prefix_dev or click.prompt(
+        "Development domain prefix", default="dev"
+    )
+    project_url_dev = f"https://{domain_prefix_dev}.{project_domain}"
+    domain_prefix_stage = domain_prefix_stage or click.prompt(
+        "Staging domain prefix", default="stage"
+    )
+    project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
+    domain_prefix_prod = domain_prefix_prod or click.prompt(
+        "Production domain prefix", default="www"
+    )
+    project_url_prod = f"https://{domain_prefix_prod}.{project_domain}"
+    if use_monitoring:
+        domain_prefix_monitoring = domain_prefix_monitoring or click.prompt(
+            "Monitorng domain prefix", default="logs"
         )
-        project_url_dev = f"https://{domain_prefix_dev}.{project_domain}"
-        domain_prefix_stage = domain_prefix_stage or click.prompt(
-            "Staging domain prefix", default="stage"
-        )
-        project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
-        domain_prefix_prod = domain_prefix_prod or click.prompt(
-            "Production domain prefix", default="www"
-        )
-        project_url_prod = f"https://{domain_prefix_prod}.{project_domain}"
-        if use_monitoring:
-            domain_prefix_monitoring = domain_prefix_monitoring or click.prompt(
-                "Monitorng domain prefix", default="logs"
-            )
-            project_url_monitoring = (
-                f"https://{domain_prefix_monitoring}.{project_domain}"
-            )
-        else:
-            domain_prefix_monitoring = None
-            project_url_monitoring = None
-        letsencrypt_certificate_email = None
+        project_url_monitoring = f"https://{domain_prefix_monitoring}.{project_domain}"
     else:
-        project_domain = None
-        domain_prefix_dev = None
-        domain_prefix_stage = None
-        domain_prefix_prod = None
         domain_prefix_monitoring = None
-        project_url_dev = validate_or_prompt_url(
-            "Development environment complete URL",
-            project_url_dev or None,
-            default=f"https://dev.{project_slug}.com",
-            required=False,
-        )
-        project_url_stage = validate_or_prompt_url(
-            "Staging environment complete URL",
-            project_url_stage or None,
-            default=f"https://stage.{project_slug}.com",
-            required=False,
-        )
-        project_url_prod = validate_or_prompt_url(
-            "Production environment complete URL",
-            project_url_prod or None,
-            default=f"https://www.{project_slug}.com",
-            required=False,
-        )
-        if use_monitoring:
-            project_url_monitoring = validate_or_prompt_url(
-                "Monitoring complete URL",
-                project_url_monitoring or None,
-                default=f"https://logs.{project_slug}.com",
-                required=False,
-            )
-        else:
-            project_url_monitoring = None
-        letsencrypt_certificate_email = clean_letsencrypt_certificate_email(
-            letsencrypt_certificate_email
-        )
+        project_url_monitoring = None
+    letsencrypt_certificate_email = clean_letsencrypt_certificate_email(
+        letsencrypt_certificate_email
+    )
     return (
         project_domain,
         domain_prefix_dev,
@@ -784,8 +730,8 @@ def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
 
 
 def clean_digitalocean_options(
-    project_domain,
     digitalocean_domain_create,
+    digitalocean_dns_records_create,
     digitalocean_k8s_cluster_region,
     digitalocean_database_cluster_region,
     digitalocean_database_cluster_node_size,
@@ -795,17 +741,22 @@ def clean_digitalocean_options(
 ):
     """Return DigitalOcean configuration options."""
     # TODO: ask these settings for each stack
-    if project_domain:
-        digitalocean_domain_create = (
-            digitalocean_domain_create
-            if digitalocean_domain_create is not None
-            else click.confirm(
-                f"Do you want to create DigitalOcean domain '{project_domain}'?",
-                default=True,
-            )
+    digitalocean_domain_create = (
+        digitalocean_domain_create
+        if digitalocean_domain_create is not None
+        else click.confirm(
+            "Do you want to create the DigitalOcean domain?",
+            default=True,
         )
-    else:
-        digitalocean_domain_create = None
+    )
+    digitalocean_dns_records_create = (
+        digitalocean_dns_records_create
+        if digitalocean_dns_records_create is not None
+        else click.confirm(
+            "Do you want to create DigitalOcean DNS records?",
+            default=True,
+        )
+    )
     digitalocean_k8s_cluster_region = digitalocean_k8s_cluster_region or click.prompt(
         "Kubernetes cluster DigitalOcean region", default="fra1"
     )
@@ -836,6 +787,7 @@ def clean_digitalocean_options(
         )
     return (
         digitalocean_domain_create,
+        digitalocean_dns_records_create,
         digitalocean_k8s_cluster_region,
         digitalocean_database_cluster_region,
         digitalocean_database_cluster_node_size,
