@@ -92,31 +92,3 @@ resource "helm_release" "grafana" {
 
   depends_on = [kubernetes_config_map_v1.k8s_logs_dashboard]
 }
-
-/* Grafana Ingress Route */
-
-resource "kubernetes_manifest" "grafana_ingress_route" {
-  manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
-    kind       = "IngressRoute"
-    metadata = {
-      name      = "grafana-ingress-route"
-      namespace = local.namespace
-    }
-    spec = {
-      entryPoints = ["web", "websecure"]
-      routes = [
-        {
-          kind  = "Rule"
-          match = "Host(`${var.host}`) && PathPrefix(`/`)"
-          services = [
-            {
-              name = "grafana"
-              port = 80
-            }
-          ]
-        }
-      ]
-    }
-  }
-}

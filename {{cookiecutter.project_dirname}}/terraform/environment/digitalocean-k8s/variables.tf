@@ -41,6 +41,18 @@ variable "basic_auth_username" {
   default     = ""
 }
 
+variable "create_dns_records" {
+  description = "Tell if DigitalOcean DNS records should be created."
+  type        = bool
+  default     = true
+}
+
+variable "create_domain" {
+  description = "Tell if a DigitalOcean domain should be created."
+  type        = bool
+  default     = false
+}
+
 variable "database_connection_pool_size" {
   description = "The DigitalOcean database connection pool size."
   type        = number
@@ -63,12 +75,6 @@ variable "digitalocean_token" {
   description = "The DigitalOcean access token."
   type        = string
   sensitive   = true
-}
-
-variable "domain_prefix" {
-  description = "The environment domain prefix (e.g. 'www')."
-  type        = string
-  default     = ""
 }
 
 variable "env_slug" {
@@ -100,15 +106,45 @@ variable "frontend_service_slug" {
   default     = ""
 }
 
-variable "project_slug" {
-  description = "The project slug."
+variable "grafana_password" {
+  description = "The Grafana admin password."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "grafana_user" {
+  description = "The Grafana admin username."
+  type        = string
+  default     = "admin"
+}
+
+variable "grafana_version" {
+  description = "The Grafana version."
+  type        = string
+  default     = "8.4.2"
+}
+
+variable "letsencrypt_certificate_email" {
+  description = "The email used to issue the Let's Encrypt certificate."
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_subdomain" {
+  description = "The monitoring subdomain."
+  type        = string
+  default     = ""
+}
+
+variable "project_domain" {
+  description = "The project domain."
   type        = string
 }
 
-variable "project_url" {
-  description = "The project url."
+variable "project_slug" {
+  description = "The project slug."
   type        = string
-  default     = ""
 }
 
 variable "registry_password" {
@@ -163,6 +199,12 @@ variable "s3_secret_key" {
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
+}
+
+variable "subdomains" {
+  description = "The subdomains associated to the environment."
+  type        = list(string)
+  default     = []
 }
 
 variable "tls_certificate_crt" {
