@@ -281,9 +281,9 @@ If you don't want DigitalOcean DNS configuration the following args are required
 If you want DigitalOcean DNS configuration the following args are required
 
 `--project-domain=project-domain.com`<br/>
-`--domain-prefix-dev=dev`<br/>
-`--domain-prefix-stage=test`<br/>
-`--domain-prefix-prod=www`
+`--subdomain-dev=dev`<br/>
+`--subdomain-stage=test`<br/>
+`--subdomain-prod=www`
 
 #### Kubernetes cluster DigitalOcean region
 
@@ -303,7 +303,7 @@ For enabling monitoring the following arguments are needed:
 
 if project domain is managed use
 
-`--domain-prefix-monitoring=logs`
+`--subdomain-monitoring=logs`
 
 else use
 

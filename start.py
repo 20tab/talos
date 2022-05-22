@@ -64,14 +64,13 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
     "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)
 )
 @click.option("--project-domain")
-@click.option("--domain-prefix-dev")
-@click.option("--domain-prefix-stage")
-@click.option("--domain-prefix-prod")
-@click.option("--domain-prefix-monitoring")
+@click.option("--subdomain-dev")
+@click.option("--subdomain-stage")
+@click.option("--subdomain-prod")
+@click.option("--subdomain-monitoring")
 @click.option("--project-url-dev")
 @click.option("--project-url-stage")
 @click.option("--project-url-prod")
-@click.option("--project-url-monitoring")
 @click.option("--letsencrypt-certificate-email")  # ADD TO README
 @click.option(
     "--digitalocean-domain-create/--digitalocean-domain-create-skip",

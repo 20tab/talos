@@ -64,14 +64,13 @@ def collect(
     kubernetes_token,
     environment_distribution,
     project_domain,
-    domain_prefix_dev,
-    domain_prefix_stage,
-    domain_prefix_prod,
-    domain_prefix_monitoring,
+    subdomain_dev,
+    subdomain_stage,
+    subdomain_prod,
+    subdomain_monitoring,
     project_url_dev,
     project_url_stage,
     project_url_prod,
-    project_url_monitoring,
     letsencrypt_certificate_email,
     digitalocean_domain_create,
     digitalocean_dns_records_create,
@@ -163,27 +162,25 @@ def collect(
         )
     (
         project_domain,
-        domain_prefix_dev,
-        domain_prefix_stage,
-        domain_prefix_prod,
-        domain_prefix_monitoring,
+        subdomain_dev,
+        subdomain_stage,
+        subdomain_prod,
+        subdomain_monitoring,
         project_url_dev,
         project_url_stage,
         project_url_prod,
-        project_url_monitoring,
         letsencrypt_certificate_email,
     ) = clean_domains(
         project_slug,
         project_domain,
         use_monitoring,
-        domain_prefix_dev,
-        domain_prefix_stage,
-        domain_prefix_prod,
-        domain_prefix_monitoring,
+        subdomain_dev,
+        subdomain_stage,
+        subdomain_prod,
+        subdomain_monitoring,
         project_url_dev,
         project_url_stage,
         project_url_prod,
-        project_url_monitoring,
         letsencrypt_certificate_email,
     )
     use_redis = click.confirm(warning("Do you want to use Redis?"), default=False)
@@ -304,16 +301,16 @@ def collect(
         "kubernetes_token": kubernetes_token,
         "environment_distribution": environment_distribution,
         "project_domain": project_domain,
-        "domain_prefix_dev": domain_prefix_dev,
-        "domain_prefix_stage": domain_prefix_stage,
-        "domain_prefix_prod": domain_prefix_prod,
-        "domain_prefix_monitoring": domain_prefix_monitoring,
+        "subdomain_dev": subdomain_dev,
+        "subdomain_stage": subdomain_stage,
+        "subdomain_prod": subdomain_prod,
+        "subdomain_monitoring": subdomain_monitoring,
         "project_url_dev": project_url_dev,
         "project_url_stage": project_url_stage,
         "project_url_prod": project_url_prod,
-        "project_url_monitoring": project_url_monitoring,
         "letsencrypt_certificate_email": letsencrypt_certificate_email,
         "digitalocean_domain_create": digitalocean_domain_create,
+        "digitalocean_dns_records_create": digitalocean_dns_records_create,
         "digitalocean_k8s_cluster_region": digitalocean_k8s_cluster_region,
         "digitalocean_database_cluster_region": digitalocean_database_cluster_region,
         "digitalocean_database_cluster_node_size": (
@@ -589,53 +586,49 @@ def clean_domains(
     project_slug,
     project_domain,
     use_monitoring,
-    domain_prefix_dev,
-    domain_prefix_stage,
-    domain_prefix_prod,
-    domain_prefix_monitoring,
+    subdomain_dev,
+    subdomain_stage,
+    subdomain_prod,
+    subdomain_monitoring,
     project_url_dev,
     project_url_stage,
     project_url_prod,
-    project_url_monitoring,
     letsencrypt_certificate_email,
 ):
     """Return project URLs."""
     project_domain = validate_or_prompt_domain(
         "Project domain", project_domain, default=f"{project_slug}.com"
     )
-    domain_prefix_dev = domain_prefix_dev or click.prompt(
+    subdomain_dev = subdomain_dev or click.prompt(
         "Development domain prefix", default="dev"
     )
-    project_url_dev = f"https://{domain_prefix_dev}.{project_domain}"
-    domain_prefix_stage = domain_prefix_stage or click.prompt(
+    project_url_dev = f"https://{subdomain_dev}.{project_domain}"
+    subdomain_stage = subdomain_stage or click.prompt(
         "Staging domain prefix", default="stage"
     )
-    project_url_stage = f"https://{domain_prefix_stage}.{project_domain}"
-    domain_prefix_prod = domain_prefix_prod or click.prompt(
+    project_url_stage = f"https://{subdomain_stage}.{project_domain}"
+    subdomain_prod = subdomain_prod or click.prompt(
         "Production domain prefix", default="www"
     )
-    project_url_prod = f"https://{domain_prefix_prod}.{project_domain}"
+    project_url_prod = f"https://{subdomain_prod}.{project_domain}"
     if use_monitoring:
-        domain_prefix_monitoring = domain_prefix_monitoring or click.prompt(
+        subdomain_monitoring = subdomain_monitoring or click.prompt(
             "Monitorng domain prefix", default="logs"
         )
-        project_url_monitoring = f"https://{domain_prefix_monitoring}.{project_domain}"
     else:
-        domain_prefix_monitoring = None
-        project_url_monitoring = None
+        subdomain_monitoring = None
     letsencrypt_certificate_email = clean_letsencrypt_certificate_email(
         letsencrypt_certificate_email
     )
     return (
         project_domain,
-        domain_prefix_dev,
-        domain_prefix_stage,
-        domain_prefix_prod,
-        domain_prefix_monitoring,
+        subdomain_dev,
+        subdomain_stage,
+        subdomain_prod,
+        subdomain_monitoring,
         project_url_dev,
         project_url_stage,
         project_url_prod,
-        project_url_monitoring,
         letsencrypt_certificate_email,
     )
 

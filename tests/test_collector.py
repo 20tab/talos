@@ -220,7 +220,6 @@ class TestBootstrapCollector(TestCase):
                     None,
                     None,
                     None,
-                    None,
                     "test@test.com",
                 ),
                 (
@@ -232,7 +231,6 @@ class TestBootstrapCollector(TestCase):
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    None,
                     "test@test.com",
                 ),
             )
@@ -248,7 +246,6 @@ class TestBootstrapCollector(TestCase):
                 None,
                 None,
                 None,
-                None,
                 "test@test.com",
             ),
             (
@@ -260,7 +257,6 @@ class TestBootstrapCollector(TestCase):
                 "https://alpha.myproject.com",
                 "https://beta.myproject.com",
                 "https://www2.myproject.com",
-                None,
                 "test@test.com",
             ),
         )
@@ -285,7 +281,6 @@ class TestBootstrapCollector(TestCase):
                     None,
                     None,
                     None,
-                    None,
                 ),
                 (
                     "myproject.com",
@@ -296,7 +291,6 @@ class TestBootstrapCollector(TestCase):
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    None,
                     None,
                 ),
             )
@@ -315,7 +309,6 @@ class TestBootstrapCollector(TestCase):
                     None,
                     None,
                     None,
-                    None,
                 ),
                 (
                     "myproject.com",
@@ -326,7 +319,6 @@ class TestBootstrapCollector(TestCase):
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    "https://mylogs.myproject.com",
                     None,
                 ),
             )  # Let's Encrypt certificates enabled
@@ -352,7 +344,6 @@ class TestBootstrapCollector(TestCase):
                     None,
                     None,
                     None,
-                    None,
                 ),
                 (
                     "myproject.com",
@@ -363,7 +354,6 @@ class TestBootstrapCollector(TestCase):
                     "https://alpha.myproject.com",
                     "https://beta.myproject.com",
                     "https://www2.myproject.com",
-                    "https://mylogs.myproject.com",
                     "test@test.com",
                 ),
             )

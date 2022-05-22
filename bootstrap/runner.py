@@ -68,16 +68,16 @@ class Runner:
     kubernetes_token: str | None = None
     environment_distribution: str
     project_domain: str | None = None
-    domain_prefix_dev: str | None = None
-    domain_prefix_stage: str | None = None
-    domain_prefix_prod: str | None = None
-    domain_prefix_monitoring: str | None = None
+    subdomain_dev: str | None = None
+    subdomain_stage: str | None = None
+    subdomain_prod: str | None = None
+    subdomain_monitoring: str | None = None
     project_url_dev: str = ""
     project_url_stage: str = ""
     project_url_prod: str = ""
-    project_url_monitoring: str | None = None
     letsencrypt_certificate_email: str | None = None
     digitalocean_domain_create: bool | None = None
+    digitalocean_dns_records_create: bool | None = None
     digitalocean_k8s_cluster_region: str | None = None
     digitalocean_database_cluster_region: str | None = None
     digitalocean_database_cluster_node_size: str | None = None
@@ -131,17 +131,17 @@ class Runner:
         dev_env = {
             "name": "Development",
             "url": self.project_url_dev,
-            "prefix": self.domain_prefix_dev,
+            "prefix": self.subdomain_dev,
         }
         stage_env = {
             "name": "Staging",
             "url": self.project_url_stage,
-            "prefix": self.domain_prefix_stage,
+            "prefix": self.subdomain_stage,
         }
         prod_env = {
             "name": "Production",
             "url": self.project_url_prod,
-            "prefix": self.domain_prefix_prod,
+            "prefix": self.subdomain_prod,
         }
         if self.environment_distribution == "1":
             self.stacks_environments = {
@@ -204,24 +204,22 @@ class Runner:
                 ("backend_service_port", None, "num"),
                 "backend_service_slug",
             )
-        self.project_domain and self.add_cluster_tfvars("project_domain")
-        self.letsencrypt_certificate_email and self.add_cluster_tfvars(
-            "letsencrypt_certificate_email",
-            ("ssl_enabled", True, "bool"),
+        self.project_domain and self.add_environment_tfvars("project_domain")
+        if self.letsencrypt_certificate_email:
+            self.add_cluster_tfvars("letsencrypt_certificate_email")
+            self.add_environment_tfvars("letsencrypt_certificate_email")
+        self.subdomain_monitoring and self.add_environment_tfvars(
+            ("monitoring_subdomain", self.subdomain_monitoring), env_slug="prod"
         )
         if self.use_redis:
             self.add_base_tfvars(("use_redis", True, "bool"))
             self.add_environment_tfvars(("use_redis", True, "bool"))
-        if self.project_url_monitoring:
-            self.add_cluster_tfvars(
-                ("monitoring_url", self.project_url_monitoring),
-            )
-            self.domain_prefix_monitoring and self.add_cluster_tfvars(
-                ("monitoring_domain_prefix", self.domain_prefix_monitoring),
-            )
         if "digitalocean" in self.deployment_type:
-            self.project_domain and self.add_cluster_tfvars(
-                ("create_domain", self.digitalocean_domain_create, "bool")
+            self.add_environment_tfvars(
+                ("create_dns_records", self.digitalocean_dns_records_create, "bool"),
+            )
+            self.digitalocean_domain_create and self.add_environment_tfvars(
+                ("create_domain", True, "bool"), env_slug="dev"
             )
             self.add_base_tfvars(
                 ("k8s_cluster_region", self.digitalocean_k8s_cluster_region),
@@ -248,22 +246,10 @@ class Runner:
             self.add_environment_tfvars(
                 ("digitalocean_spaces_bucket_available", True, "bool")
             )
-        for stack_slug, stack_envs in self.stacks_environments.items():
-            domain_prefixes = []
-            for env_slug, env_data in stack_envs.items():
-                self.add_environment_tfvars(
-                    ("basic_auth_enabled", env_slug != "prod", "bool"),
-                    ("project_url", env_data["url"]),
-                    ("stack_slug", stack_slug),
-                    env_slug=env_slug,
-                )
-                if env_prefix := env_data["prefix"]:
-                    domain_prefixes.append(env_prefix)
-                    self.add_environment_tfvars(
-                        ("domain_prefix", env_prefix), env_slug=env_slug
-                    )
-            domain_prefixes and self.add_cluster_tfvars(
-                ("domain_prefixes", domain_prefixes, "list"), stack_slug=stack_slug
+        for env_slug in ("dev", "stage", "prod"):
+            self.add_environment_tfvars(
+                ("subdomains", [getattr(self, f"subdomain_{env_slug}")], "list"),
+                env_slug=env_slug,
             )
 
     def init_service(self):
