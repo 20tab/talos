@@ -131,6 +131,12 @@ variable "letsencrypt_certificate_email" {
   default     = ""
 }
 
+variable "letsencrypt_server" {
+  description = "The Let's Encrypt server used to generate certificates."
+  type        = string
+  default     = ""
+}
+
 variable "monitoring_subdomain" {
   description = "The monitoring subdomain."
   type        = string

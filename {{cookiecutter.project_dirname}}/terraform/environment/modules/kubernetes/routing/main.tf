@@ -119,7 +119,7 @@ resource "kubernetes_manifest" "issuer" {
     spec = {
       acme = {
         email  = var.letsencrypt_certificate_email
-        server = "https://acme-staging-v02.api.letsencrypt.org/directory"
+        server = coalesce(var.letsencrypt_server, "https://acme-v02.api.letsencrypt.org/directory")
         privateKeySecretRef = {
           name = "issuer-private-key"
         }
@@ -181,7 +181,7 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
               match = "Host(${local.traefik_hosts}) && PathPrefix(`${path}`)"
               middlewares = concat(
                 local.base_middlewares,
-                [for i in var.frontend_service_extra_middlewares : {name = i}],
+                [for i in var.frontend_service_extra_middlewares : { name = i }],
               )
               services = [
                 {
@@ -198,7 +198,7 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
               match = "Host(${local.traefik_hosts}) && PathPrefix(`${path}`)"
               middlewares = concat(
                 local.base_middlewares,
-                [for i in var.backend_service_extra_middlewares : {name = i}],
+                [for i in var.backend_service_extra_middlewares : { name = i }],
               )
               services = [
                 {
@@ -247,15 +247,15 @@ resource "kubernetes_manifest" "ingressroute_redirect_to_https" {
         entryPoints = ["web"]
         routes = [
           {
-            kind        = "Rule"
-            match       = "Host(${local.traefik_hosts})"
+            kind  = "Rule"
+            match = "Host(${local.traefik_hosts})"
             middlewares = [
-              {name = "redirect-to-https"}
+              { name = "redirect-to-https" }
             ]
             services = [
               {
-                name = var.frontend_service_slug
-                port = var.frontend_service_port
+                name = coalesce(var.frontend_service_slug, var.backend_service_slug)
+                port = coalesce(var.frontend_service_port, var.backend_service_port)
               }
             ]
           }

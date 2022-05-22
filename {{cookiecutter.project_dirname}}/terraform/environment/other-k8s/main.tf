@@ -107,6 +107,7 @@ module "routing" {
   frontend_service_port              = var.frontend_service_port
 
   letsencrypt_certificate_email = var.letsencrypt_certificate_email
+  letsencrypt_server            = var.letsencrypt_server
   tls_certificate_crt           = var.tls_certificate_crt
   tls_certificate_key           = var.tls_certificate_key
 
