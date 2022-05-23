@@ -246,11 +246,14 @@ class Runner:
             self.add_environment_tfvars(
                 ("digitalocean_spaces_bucket_available", True, "bool")
             )
-        for env_slug in ("dev", "stage", "prod"):
-            self.add_environment_tfvars(
-                ("subdomains", [getattr(self, f"subdomain_{env_slug}")], "list"),
-                env_slug=env_slug,
-            )
+        for stack_slug, stack_envs in self.stacks_environments.items():
+            for env_slug, env_data in stack_envs.items():
+                self.add_environment_tfvars(
+                    ("basic_auth_enabled", env_slug != "prod", "bool"),
+                    ("stack_slug", stack_slug),
+                    ("subdomains", [getattr(self, f"subdomain_{env_slug}")], "list"),
+                    env_slug=env_slug,
+                )
 
     def init_service(self):
         """Initialize the service."""
