@@ -404,7 +404,7 @@ class Runner:
             gitlab_group_variables.update(
                 TFC_TOKEN='{value = "%s", masked = true}' % self.terraform_cloud_token,
             )
-        if self.project_url_monitoring:
+        if self.subdomain_monitoring:
             gitlab_project_variables.update(
                 GRAFANA_PASSWORD='{value = "%s", masked = true}'
                 % secrets.token_urlsafe(12),
