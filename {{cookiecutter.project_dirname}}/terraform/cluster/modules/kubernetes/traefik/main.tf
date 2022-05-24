@@ -22,29 +22,31 @@ resource "helm_release" "traefik" {
   values = [
     file("${path.module}/values.yaml"),
     yamlencode(
-      merge(
-        {
-          service = {
-            enabled     = "true"
-            type        = "LoadBalancer"
-            annotations = var.load_balancer_annotations
-          }
-        },
-        var.ssl_enabled ? {
-          additionalArguments = concat(
-            [
-              "--entrypoints.web.http.redirections.entryPoint.to=:443",
-              "--entrypoints.websecure.http.tls=true",
-            ],
-            var.letsencrypt_certificate_email != "" ? [
-              "--certificatesresolvers.default.acme.tlschallenge",
-              "--certificatesresolvers.default.acme.email=${var.letsencrypt_certificate_email}",
-              "--certificatesresolvers.default.acme.storage=/data/acme.json",
-              "--entrypoints.websecure.http.tls.certResolver=default",
-            ] : [],
-          )
-        } : {}
-      )
+      {
+        service = {
+          enabled     = "true"
+          type        = "LoadBalancer"
+          annotations = var.load_balancer_annotations
+        }
+      }
     )
   ]
+}
+
+/* Cert Manager */
+
+resource "helm_release" "cert_manager" {
+  count = var.letsencrypt_certificate_email != "" ? 1 : 0
+
+  name             = "cert-manager"
+  chart            = "cert-manager"
+  namespace        = "cert-manager"
+  create_namespace = true
+  repository       = "https://charts.jetstack.io"
+  version          = "1.7.2"
+
+  set {
+    name  = "installCRDs"
+    value = true
+  }
 }

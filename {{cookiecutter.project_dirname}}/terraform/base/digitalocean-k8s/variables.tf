@@ -140,12 +140,6 @@ variable "stack_slug" {
   type        = string
 }
 
-variable "ssl_enabled" {
-  description = "Tell if SSL should be enabled."
-  type        = bool
-  default     = false
-}
-
 variable "use_redis" {
   description = "Tell if a Redis service is used."
   type        = bool

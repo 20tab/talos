@@ -9,9 +9,3 @@ variable "load_balancer_annotations" {
   type        = map(string)
   default     = {}
 }
-
-variable "ssl_enabled" {
-  description = "Tell if SSL should be enabled."
-  type        = bool
-  default     = false
-}

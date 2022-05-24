@@ -3,7 +3,7 @@ locals {
 
   namespace = kubernetes_namespace_v1.main.metadata[0].name
 
-  project_host = regexall("https?://([^/]+)", var.project_url)[0][0]
+  domain_id = var.create_dns_records ? var.create_domain ? digitalocean_domain.main[0].id : data.digitalocean_domain.main[0].id : ""
 
   s3_host        = var.digitalocean_spaces_bucket_available ? "https://${var.s3_region}.digitaloceanspaces.com" : var.s3_host
   s3_bucket_name = var.digitalocean_spaces_bucket_available ? "${local.base_resource_name_prefix}-s3-bucket" : var.s3_bucket_name
@@ -73,6 +73,16 @@ data "digitalocean_spaces_bucket" "postgres_dump" {
   region = var.s3_region
 }
 
+data "digitalocean_loadbalancer" "main" {
+  name = "${local.base_resource_name_prefix}-load-balancer"
+}
+
+data "digitalocean_domain" "main" {
+  count = var.create_dns_records && !var.create_domain ? 1 : 0
+
+  name = var.project_domain
+}
+
 /* Database */
 
 resource "digitalocean_database_user" "postgres" {
@@ -94,12 +104,52 @@ resource "digitalocean_database_connection_pool" "postgres" {
   size       = var.database_connection_pool_size
 }
 
+/* Domain */
+
+resource "digitalocean_domain" "main" {
+  count = var.create_dns_records && var.create_domain ? 1 : 0
+
+  name = var.project_domain
+}
+
+/* DNS records */
+
+resource "digitalocean_record" "main" {
+  for_each = toset(var.create_dns_records ? [for i in var.subdomains : i == "" ? "@" : i] : [])
+
+  domain = local.domain_id
+  type   = "A"
+  name   = each.key
+  value  = data.digitalocean_loadbalancer.main.ip
+}
+
+resource "digitalocean_record" "monitoring" {
+  count = var.create_dns_records && var.monitoring_subdomain != "" ? 1 : 0
+
+  domain = local.domain_id
+  type   = "A"
+  name   = var.monitoring_subdomain
+  value  = data.digitalocean_loadbalancer.main.ip
+}
+
 /* Namespace */
 
 resource "kubernetes_namespace_v1" "main" {
   metadata {
     name = "${var.project_slug}-${var.env_slug}"
   }
+}
+
+/* Monitoring */
+
+module "monitoring" {
+  count = var.monitoring_subdomain != "" ? 1 : 0
+
+  source = "../modules/kubernetes/monitoring"
+
+  grafana_user     = var.grafana_user
+  grafana_password = var.grafana_password
+  grafana_version  = var.grafana_version
 }
 
 /* Routing */
@@ -109,7 +159,8 @@ module "routing" {
 
   namespace = local.namespace
 
-  project_host = local.project_host
+  project_domain = var.project_domain
+  subdomains     = var.subdomains
 
   basic_auth_enabled  = var.basic_auth_enabled
   basic_auth_username = var.basic_auth_username
@@ -125,8 +176,12 @@ module "routing" {
   frontend_service_paths             = var.frontend_service_paths
   frontend_service_port              = var.frontend_service_port
 
-  tls_certificate_crt = var.tls_certificate_crt
-  tls_certificate_key = var.tls_certificate_key
+  letsencrypt_certificate_email = var.letsencrypt_certificate_email
+  letsencrypt_server            = var.letsencrypt_server
+  tls_certificate_crt           = var.tls_certificate_crt
+  tls_certificate_key           = var.tls_certificate_key
+
+  monitoring_subdomain = var.monitoring_subdomain
 }
 
 /* Secrets */

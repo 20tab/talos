@@ -7,9 +7,16 @@ locals {
     ]
   )
 
+  domains           = [for i in var.subdomains : i == "" ? var.project_domain : "${i}.${var.project_domain}"]
+  monitoring_domain = var.monitoring_subdomain != "" ? "${var.monitoring_subdomain}.${var.project_domain}" : ""
+
+  traefik_hosts = join(", ", [for i in local.domains : "`${i}`"])
+
   base_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
 
-  tls_enabled = var.tls_certificate_crt != "" && var.tls_certificate_key != ""
+  letsencrypt_enabled        = var.letsencrypt_certificate_email != ""
+  manual_certificate_enabled = var.tls_certificate_crt != "" && var.tls_certificate_key != ""
+  tls_enabled                = local.manual_certificate_enabled || local.letsencrypt_enabled
 }
 
 terraform {
@@ -58,10 +65,31 @@ resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
   }
 }
 
+/* HTTPS Redirect */
+
+resource "kubernetes_manifest" "middleware_redirect_to_https" {
+  count = local.tls_enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "Middleware"
+    metadata = {
+      name      = "redirect-to-https"
+      namespace = var.namespace
+    }
+    spec = {
+      redirectScheme = {
+        scheme    = "https"
+        permanent = true
+      }
+    }
+  }
+}
+
 /* TLS Secret */
 
 resource "kubernetes_secret_v1" "tls" {
-  count = local.tls_enabled ? 1 : 0
+  count = local.manual_certificate_enabled ? 1 : 0
 
   metadata {
     name      = "tls-certificate"
@@ -76,6 +104,62 @@ resource "kubernetes_secret_v1" "tls" {
   type = "kubernetes.io/tls"
 }
 
+/* Let's Encrypt Certificate */
+
+resource "kubernetes_manifest" "issuer" {
+  count = local.letsencrypt_enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Issuer"
+    metadata = {
+      name      = "letsencrypt"
+      namespace = var.namespace
+    }
+    spec = {
+      acme = {
+        email  = var.letsencrypt_certificate_email
+        server = coalesce(var.letsencrypt_server, "https://acme-v02.api.letsencrypt.org/directory")
+        privateKeySecretRef = {
+          name = "issuer-private-key"
+        }
+        solvers = [
+          {
+            http01 = {
+              ingress = {
+                class = "traefik-cert-manager"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+resource "kubernetes_manifest" "certificate" {
+  count = local.letsencrypt_enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "letsencrypt"
+      namespace = var.namespace
+    }
+    spec = {
+      secretName = "tls-certificate"
+      issuerRef = {
+        name = "letsencrypt"
+        kind = "Issuer"
+      }
+      dnsNames = concat(
+        local.domains, local.monitoring_domain != "" ? [local.monitoring_domain] : []
+      )
+    }
+  }
+}
+
 /* Traefik Ingress Route */
 
 resource "kubernetes_manifest" "traefik_ingress_route" {
@@ -88,16 +172,16 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
     }
     spec = merge(
       {
-        entryPoints = ["web", "websecure"]
+        entryPoints = local.tls_enabled ? ["websecure"] : ["web"]
         routes = concat(
           # frontend routes
           [
             for path in toset(var.frontend_service_paths) : {
               kind  = "Rule"
-              match = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
+              match = "Host(${local.traefik_hosts}) && PathPrefix(`${path}`)"
               middlewares = concat(
                 local.base_middlewares,
-                var.frontend_service_extra_middlewares,
+                [for i in var.frontend_service_extra_middlewares : { name = i }],
               )
               services = [
                 {
@@ -111,10 +195,10 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
           [
             for path in toset(var.backend_service_paths) : {
               kind  = "Rule"
-              match = "Host(`${var.project_host}`) && PathPrefix(`${path}`)"
+              match = "Host(${local.traefik_hosts}) && PathPrefix(`${path}`)"
               middlewares = concat(
                 local.base_middlewares,
-                var.backend_service_extra_middlewares,
+                [for i in var.backend_service_extra_middlewares : { name = i }],
               )
               services = [
                 {
@@ -123,14 +207,60 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
                 }
               ]
             }
-          ]
+          ],
+          # monitoring rule
+          local.monitoring_domain != "" ? [
+            {
+              kind  = "Rule"
+              match = "Host(`${local.monitoring_domain}`) && PathPrefix(`/`)"
+              services = [
+                {
+                  name = "grafana"
+                  port = 80
+                }
+              ]
+            }
+          ] : []
         )
       },
       local.tls_enabled ? {
         tls = {
-          secretName = kubernetes_secret_v1.tls[0].metadata[0].name
+          secretName = "tls-certificate"
         }
       } : {}
+    )
+  }
+}
+
+resource "kubernetes_manifest" "ingressroute_redirect_to_https" {
+  count = local.tls_enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "redirect-to-https"
+      namespace = var.namespace
+    }
+    spec = merge(
+      {
+        entryPoints = ["web"]
+        routes = [
+          {
+            kind  = "Rule"
+            match = "Host(${local.traefik_hosts})"
+            middlewares = [
+              { name = "redirect-to-https" }
+            ]
+            services = [
+              {
+                name = coalesce(var.frontend_service_slug, var.backend_service_slug)
+                port = coalesce(var.frontend_service_port, var.backend_service_port)
+              }
+            ]
+          }
+        ]
+      }
     )
   }
 }
