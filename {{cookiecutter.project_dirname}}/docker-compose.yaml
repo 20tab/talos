@@ -24,7 +24,9 @@ services:
       - DJANGO_SUPERUSER_EMAIL
       - DJANGO_SUPERUSER_PASSWORD
       - DJANGO_SUPERUSER_USERNAME
-      - EMAIL_URL
+      - EMAIL_URL{% if cookiecutter.pact_enabled %}
+      - PACT_BROKER_URL
+      - PACT_PROVIDER_NAME{% endif %}
       - PYTHONBREAKPOINT
     user: ${USER:-appuser}
     volumes:

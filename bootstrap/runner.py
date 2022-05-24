@@ -270,6 +270,7 @@ class Runner:
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
                 "media_storage": self.media_storage,
+                "pact_enabled": bool(self.pact_broker_url),
                 "project_dirname": self.project_dirname,
                 "project_domain": self.project_domain,
                 "project_name": self.project_name,
