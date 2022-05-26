@@ -197,6 +197,8 @@ module "metrics" {
   basic_auth_enabled  = var.basic_auth_enabled
   basic_auth_username = var.basic_auth_username
   basic_auth_password = var.basic_auth_password
+
+  tls_secret_name = module.routing.tls_secret_name
 }
 
 /* Secrets */

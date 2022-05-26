@@ -63,33 +63,40 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
       name      = "metrics-ingress-route"
       namespace = "kube-system"
     }
-    spec = {
-      entryPoints = ["web", "websecure"]
-      routes = concat(
-        local.basic_auth_ready ? [
-          {
+    spec = merge(
+      {
+        entryPoints = var.tls_secret_name ? ["websecure"] : ["web"]
+        routes = concat(
+          local.basic_auth_ready ? [
+            {
+              kind        = "Rule"
+              match       = "Host(`${var.project_domain}`) && PathPrefix(`/metrics`)"
+              middlewares = [{ "name" : "metrics-basic-auth-middleware" }]
+              services = [
+                {
+                  name = "kube-state-metrics"
+                  port = 8080
+                }
+              ]
+          }] : [],
+          [{
             kind        = "Rule"
-            match       = "Host(`${var.project_domain}`) && PathPrefix(`/metrics`)"
-            middlewares = [{ "name" : "metrics-basic-auth-middleware" }]
+            match       = "Host(`${var.project_domain}`) && PathPrefix(`/healthz`)"
+            middlewares = []
             services = [
               {
                 name = "kube-state-metrics"
                 port = 8080
               }
             ]
-        }] : [],
-        [{
-          kind        = "Rule"
-          match       = "Host(`${var.project_domain}`) && PathPrefix(`/healthz`)"
-          middlewares = []
-          services = [
-            {
-              name = "kube-state-metrics"
-              port = 8080
             }
-          ]
-          }
-      ])
-    }
+        ])
+      },
+      var.tls_secret_name != "" ? {
+        tls = {
+          secretName = var.tls_secret_name
+        }
+      } : {}
+    )
   }
 }

@@ -15,3 +15,8 @@ variable "project_domain" {
   description = "The project domain."
   type        = string
 }
+
+variable "tls_secret_name" {
+  description = "The tls secret name"
+  type        = string
+}
