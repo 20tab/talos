@@ -65,7 +65,7 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
     }
     spec = merge(
       {
-        entryPoints = var.tls_secret_name ? ["websecure"] : ["web"]
+        entryPoints = var.tls_secret_name != "" ? ["websecure"] : ["web"]
         routes = concat(
           local.basic_auth_ready ? [
             {

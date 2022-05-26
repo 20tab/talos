@@ -19,4 +19,5 @@ variable "project_domain" {
 variable "tls_secret_name" {
   description = "The tls secret name"
   type        = string
+  default     = ""
 }
