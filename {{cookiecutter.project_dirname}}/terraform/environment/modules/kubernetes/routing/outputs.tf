@@ -1,3 +1,4 @@
 output "tls_secret_name" {
-  value = "tls-certificate"
+  description = "The name of the TLS certificate Kubernetes secret."
+  value       = local.tls_secret_name
 }

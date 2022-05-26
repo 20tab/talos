@@ -119,7 +119,7 @@ module "routing" {
 module "metrics" {
   count = var.stack_slug == "main" ? 1 : 0
 
-  source = "../modules/kubernetes/routing/metrics"
+  source = "../modules/kubernetes/metrics"
 
   project_domain = var.project_domain
 

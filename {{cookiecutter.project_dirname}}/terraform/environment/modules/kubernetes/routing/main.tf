@@ -17,6 +17,8 @@ locals {
   letsencrypt_enabled        = var.letsencrypt_certificate_email != ""
   manual_certificate_enabled = var.tls_certificate_crt != "" && var.tls_certificate_key != ""
   tls_enabled                = local.manual_certificate_enabled || local.letsencrypt_enabled
+
+  tls_secret_name = local.tls_enabled ? "tls-certificate" : ""
 }
 
 terraform {
@@ -92,7 +94,7 @@ resource "kubernetes_secret_v1" "tls" {
   count = local.manual_certificate_enabled ? 1 : 0
 
   metadata {
-    name      = "tls-certificate"
+    name      = local.tls_secret_name
     namespace = var.namespace
   }
 
@@ -148,7 +150,7 @@ resource "kubernetes_manifest" "certificate" {
       namespace = var.namespace
     }
     spec = {
-      secretName = "tls-certificate"
+      secretName = local.tls_secret_name
       issuerRef = {
         name = "letsencrypt"
         kind = "Issuer"
@@ -225,7 +227,7 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
       },
       local.tls_enabled ? {
         tls = {
-          secretName = "tls-certificate"
+          secretName = local.tls_secret_name
         }
       } : {}
     )
