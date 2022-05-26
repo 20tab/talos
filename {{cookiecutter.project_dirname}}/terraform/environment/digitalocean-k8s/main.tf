@@ -18,14 +18,6 @@ locals {
       local.s3_host != "" || local.s3_bucket_name != "",
     ]
   )
-  
-  basic_auth_ready = alltrue(
-    [
-      var.basic_auth_enabled,
-      var.basic_auth_username != "",
-      var.basic_auth_password != ""
-    ]
-  )
 }
 
 terraform {
@@ -199,16 +191,15 @@ module "routing" {
 /* Routing Metrics */
 
 module "metrics" {
+  count = var.stack_slug == "main" ? 1 : 0
+
   source = "../modules/kubernetes/routing/metrics"
 
-  project_host = local.project_host
+  project_domain = var.project_domain
 
-  basic_auth_ready    = local.basic_auth_ready
   basic_auth_enabled  = var.basic_auth_enabled
   basic_auth_username = var.basic_auth_username
   basic_auth_password = var.basic_auth_password
-
-  stack_slug = var.stack_slug
 }
 
 /* Secrets */

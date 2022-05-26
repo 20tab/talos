@@ -1,3 +1,13 @@
+locals {
+  basic_auth_ready = alltrue(
+    [
+      var.basic_auth_enabled,
+      var.basic_auth_username != "",
+      var.basic_auth_password != ""
+    ]
+  )
+}
+
 terraform {
   required_providers {
     kubernetes = {
@@ -10,7 +20,7 @@ terraform {
 /* Metrics Ingress Route */
 
 resource "kubernetes_secret_v1" "metrics_basic_auth" {
-  count = var.stack_slug == "main" && var.basic_auth_ready ? 1 : 0
+  count = local.basic_auth_ready ? 1 : 0
 
   metadata {
     name      = "metrics-basic-auth"
@@ -26,7 +36,7 @@ resource "kubernetes_secret_v1" "metrics_basic_auth" {
 }
 
 resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
-  count = var.stack_slug == "main" && var.basic_auth_ready ? 1 : 0
+  count = local.basic_auth_ready ? 1 : 0
 
   manifest = {
     apiVersion = "traefik.containo.us/v1alpha1"
@@ -45,7 +55,6 @@ resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
 }
 
 resource "kubernetes_manifest" "metrics_ingress_route" {
-  count = var.stack_slug == "main" ? 1 : 0
 
   manifest = {
     apiVersion = "traefik.containo.us/v1alpha1"
@@ -57,10 +66,10 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
     spec = {
       entryPoints = ["web", "websecure"]
       routes = concat(
-        var.basic_auth_ready ? [
+        local.basic_auth_ready ? [
           {
             kind        = "Rule"
-            match       = "Host(`${var.project_host}`) && PathPrefix(`/metrics`)"
+            match       = "Host(`${var.project_domain}`) && PathPrefix(`/metrics`)"
             middlewares = [{ "name" : "metrics-basic-auth-middleware" }]
             services = [
               {
@@ -71,7 +80,7 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
         }] : [],
         [{
           kind        = "Rule"
-          match       = "Host(`${var.project_host}`) && PathPrefix(`/healthz`)"
+          match       = "Host(`${var.project_domain}`) && PathPrefix(`/healthz`)"
           middlewares = []
           services = [
             {

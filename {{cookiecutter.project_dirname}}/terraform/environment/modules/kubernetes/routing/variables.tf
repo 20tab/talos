@@ -99,11 +99,6 @@ variable "project_domain" {
   type        = string
 }
 
-variable "stack_slug" {
-  description = "The stack slug (e.g. 'main')."
-  type        = string
-}
-
 variable "subdomains" {
   description = "The subdomains associated to the environment."
   type        = list(string)
