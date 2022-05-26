@@ -65,19 +65,43 @@ variable "frontend_service_slug" {
   default     = ""
 }
 
+variable "letsencrypt_certificate_email" {
+  description = "The email used to issue the Let's Encrypt certificate."
+  type        = string
+  default     = ""
+}
+
+variable "letsencrypt_server" {
+  description = "The Let's Encrypt server used to generate certificates."
+  type        = string
+  default     = ""
+}
+
+variable "monitoring_subdomain" {
+  description = "The monitoring subdomain, if enabled."
+  type        = string
+  default     = ""
+}
+
 variable "namespace" {
   description = "The namespace for Kubernetes resources."
   type        = string
 }
 
-variable "project_host" {
-  description = "The project host."
+variable "project_domain" {
+  description = "The project domain."
   type        = string
 }
 
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string
+}
+
+variable "subdomains" {
+  description = "The subdomains associated to the environment."
+  type        = list(string)
+  default     = []
 }
 
 variable "tls_certificate_crt" {

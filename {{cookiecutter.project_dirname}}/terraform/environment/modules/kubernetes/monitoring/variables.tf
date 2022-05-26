@@ -13,9 +13,3 @@ variable "grafana_version" {
   description = "The Grafana version."
   type        = string
 }
-
-variable "host" {
-  description = "The monitoring host."
-  type        = string
-  default     = ""
-}
