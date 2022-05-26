@@ -92,9 +92,6 @@ module "routing" {
   project_domain = var.project_domain
   subdomains     = var.subdomains
 
-  stack_slug = var.stack_slug
-
-  basic_auth_ready    = local.basic_auth_ready
   basic_auth_enabled  = var.basic_auth_enabled
   basic_auth_username = var.basic_auth_username
   basic_auth_password = var.basic_auth_password
