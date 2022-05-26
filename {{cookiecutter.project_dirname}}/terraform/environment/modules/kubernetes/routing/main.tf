@@ -223,3 +223,36 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
     )
   }
 }
+
+resource "kubernetes_manifest" "ingressroute_redirect_to_https" {
+  count = local.tls_enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "redirect-to-https"
+      namespace = var.namespace
+    }
+    spec = merge(
+      {
+        entryPoints = ["web"]
+        routes = [
+          {
+            kind  = "Rule"
+            match = "Host(${local.traefik_hosts})"
+            middlewares = [
+              { name = "redirect-to-https" }
+            ]
+            services = [
+              {
+                name = coalesce(var.frontend_service_slug, var.backend_service_slug)
+                port = coalesce(var.frontend_service_port, var.backend_service_port)
+              }
+            ]
+          }
+        ]
+      }
+    )
+  }
+}
