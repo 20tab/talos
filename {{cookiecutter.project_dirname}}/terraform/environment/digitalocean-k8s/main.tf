@@ -184,6 +184,23 @@ module "routing" {
   monitoring_subdomain = var.monitoring_subdomain
 }
 
+
+/* Routing Metrics */
+
+module "metrics" {
+  count = var.stack_slug == "main" ? 1 : 0
+
+  source = "../modules/kubernetes/metrics"
+
+  project_domain = var.project_domain
+
+  basic_auth_enabled  = var.basic_auth_enabled
+  basic_auth_username = var.basic_auth_username
+  basic_auth_password = var.basic_auth_password
+
+  tls_secret_name = module.routing.tls_secret_name
+}
+
 /* Secrets */
 
 resource "kubernetes_secret_v1" "regcred" {

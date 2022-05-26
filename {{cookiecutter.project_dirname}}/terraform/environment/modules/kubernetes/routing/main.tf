@@ -1,5 +1,5 @@
 locals {
-  basic_auth_enabled = alltrue(
+  basic_auth_ready = alltrue(
     [
       var.basic_auth_enabled,
       var.basic_auth_username != "",
@@ -12,11 +12,13 @@ locals {
 
   traefik_hosts = join(", ", [for i in local.domains : "`${i}`"])
 
-  base_middlewares = local.basic_auth_enabled ? [{ "name" : "traefik-basic-auth-middleware" }] : []
+  base_middlewares = local.basic_auth_ready ? [{ "name" : "traefik-basic-auth-middleware" }] : []
 
   letsencrypt_enabled        = var.letsencrypt_certificate_email != ""
   manual_certificate_enabled = var.tls_certificate_crt != "" && var.tls_certificate_key != ""
   tls_enabled                = local.manual_certificate_enabled || local.letsencrypt_enabled
+
+  tls_secret_name = local.tls_enabled ? "tls-certificate" : ""
 }
 
 terraform {
@@ -31,7 +33,7 @@ terraform {
 /* Basic Auth */
 
 resource "kubernetes_secret_v1" "traefik_basic_auth" {
-  count = local.basic_auth_enabled ? 1 : 0
+  count = local.basic_auth_ready ? 1 : 0
 
   metadata {
     name      = "basic-auth"
@@ -47,7 +49,7 @@ resource "kubernetes_secret_v1" "traefik_basic_auth" {
 }
 
 resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
-  count = local.basic_auth_enabled ? 1 : 0
+  count = local.basic_auth_ready ? 1 : 0
 
   manifest = {
     "apiVersion" = "traefik.containo.us/v1alpha1"
@@ -92,7 +94,7 @@ resource "kubernetes_secret_v1" "tls" {
   count = local.manual_certificate_enabled ? 1 : 0
 
   metadata {
-    name      = "tls-certificate"
+    name      = local.tls_secret_name
     namespace = var.namespace
   }
 
@@ -148,7 +150,7 @@ resource "kubernetes_manifest" "certificate" {
       namespace = var.namespace
     }
     spec = {
-      secretName = "tls-certificate"
+      secretName = local.tls_secret_name
       issuerRef = {
         name = "letsencrypt"
         kind = "Issuer"
@@ -225,7 +227,7 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
       },
       local.tls_enabled ? {
         tls = {
-          secretName = "tls-certificate"
+          secretName = local.tls_secret_name
         }
       } : {}
     )
