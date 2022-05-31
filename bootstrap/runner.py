@@ -328,9 +328,7 @@ class Runner:
             "terraform_cloud_admin_email": self.terraform_cloud_admin_email,
             "terraform_cloud_hostname": self.terraform_cloud_hostname,
             "terraform_cloud_organization": self.terraform_cloud_organization,
-            "terraform_cloud_organization_create": (
-                self.terraform_cloud_organization_create
-            ),
+            "terraform_cloud_organization_create": False,
             "terraform_cloud_token": self.terraform_cloud_token,
             "terraform_dir": str(self.terraform_dir.resolve()),
             "uid": self.uid,
