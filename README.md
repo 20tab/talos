@@ -74,6 +74,10 @@ docker run --interactive --tty --rm --volume $PWD:/data 20tab/talos:latest
 ./talos/start.py
 ```
 
+### ⚠️ Provisioning
+
+The first run is manual, made from GitLab Pipeline. Use orchestrator generated README for more details.
+
 ### Example
 
 ```console
