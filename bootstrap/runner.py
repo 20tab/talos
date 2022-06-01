@@ -564,7 +564,7 @@ class Runner:
         ]
         env = dict(
             TF_VAR_project_name=self.project_name,
-            TF_VAR_project_slug=self.project_slug,
+            TF_VAR_project_slug=self.gitlab_group_slug,
             TF_VAR_service_slug="orchestrator",
             VAULT_ADDR=self.vault_address,
             VAULT_TOKEN=self.vault_token,
