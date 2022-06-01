@@ -7,7 +7,9 @@ terraform {
   }
 }
 
-provider "vault" {}
+provider "vault" {
+  skip_child_token = true
+}
 
 /* Auth backend */
 
@@ -26,17 +28,39 @@ resource "vault_policy" "main" {
   policy = <<EOF
 # Permissions for the ${var.project_slug} project
 
-# Manage secrets
-path "${var.project_slug}/*" {
-  capabilities = [ "list", "read", "create", "update", "delete" ]
+path "sys/mounts" {
+  capabilities = ["list", "read"]
 }
 
-path "sys/mounts/${var.project_slug}/*" {
-  capabilities = [ "list", "read", "create", "update", "delete" ]
+# Manage KV secrets
+path "${var.project_slug}/*" {
+  capabilities = ["list", "read", "create", "update", "delete"]
+}
+
+path "sys/mounts/${var.project_slug}" {
+  capabilities = ["create", "update", "delete"]
 }
 
 path "${var.project_slug}" {                                                                                                                                                 
-    capabilities = [ "list" ]                                                                                                                                  
+  capabilities = ["list"]                                                                                                                                  
+}
+
+# Manage TFC secrets
+path "${var.project_slug}-tfc/*" {
+  capabilities = ["list", "read", "create", "update", "delete"]
+}
+
+path "sys/mounts/${var.project_slug}-tfc" {
+  capabilities = ["create", "update", "delete"]
+}
+
+path "${var.project_slug}-tfc" {                                                                                                                                                 
+  capabilities = ["list"]                                                                                                                                  
+}
+
+# Enable ops on children token
+path "auth/token/create" {
+  capabilities = ["create", "read", "update", "list"]
 }
 EOF
 }
