@@ -668,6 +668,8 @@ class Runner:
             self.init_gitlab()
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
             self.init_terraform_cloud()
+        if self.vault_token:
+            self.init_vault()
         frontend_template_url = FRONTEND_TEMPLATE_URLS.get(self.frontend_type)
         if frontend_template_url:
             self.init_subrepo(
