@@ -59,6 +59,7 @@ def collect(
     terraform_cloud_organization_create,
     terraform_cloud_admin_email,
     vault_token,
+    vault_address,
     digitalocean_token,
     kubernetes_cluster_ca_certificate,
     kubernetes_host,
@@ -145,7 +146,7 @@ def collect(
         terraform_cloud_organization_create,
         terraform_cloud_admin_email,
     )
-    vault_token = clean_vault_data(vault_token, quiet)
+    vault_token, vault_address = clean_vault_data(vault_token, vault_address, quiet)
     environment_distribution = clean_environment_distribution(
         environment_distribution, deployment_type
     )
@@ -298,6 +299,7 @@ def collect(
         "terraform_cloud_organization_create": terraform_cloud_organization_create,
         "terraform_cloud_admin_email": terraform_cloud_admin_email,
         "vault_token": vault_token,
+        "vault_address": vault_address,
         "digitalocean_token": digitalocean_token,
         "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
         "kubernetes_host": kubernetes_host,
@@ -548,7 +550,7 @@ def clean_terraform_backend(
     )
 
 
-def clean_vault_data(vault_token, quiet=False):
+def clean_vault_data(vault_token, vault_address, quiet=False):
     """Return the Vault data, if applicable."""
     if vault_token or (
         vault_token is None
@@ -564,9 +566,11 @@ def clean_vault_data(vault_token, quiet=False):
             ),
             abort=True,
         )
+        vault_address = validate_or_prompt_url("Vault address", vault_address)
     else:
         vault_token = None
-    return vault_token
+        vault_address = None
+    return vault_token, vault_address
 
 
 def clean_environment_distribution(environment_distribution, deployment_type):

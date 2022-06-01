@@ -63,6 +63,7 @@ class Runner:
     terraform_cloud_organization_create: bool | None = None
     terraform_cloud_admin_email: str | None = None
     vault_token: str | None = None
+    vault_address: str | None = None
     digitalocean_token: str | None = None
     kubernetes_cluster_ca_certificate: str | None = None
     kubernetes_host: str | None = None
@@ -401,7 +402,11 @@ class Runner:
         """Set the GitLab group and project variables."""
         if self.pact_broker_url:
             self.add_gitlab_group_variables(("PACT_ENABLED", "true", False, False))
-        if not self.vault_token:
+        if self.vault_token:
+            self.add_gitlab_group_variables(
+                ("VAULT_ADDR", self.vault_address, False, False)
+            )
+        else:
             self.set_gitlab_variables_secrets()
 
     def set_gitlab_variables_secrets(self):
@@ -563,6 +568,8 @@ class Runner:
             TF_VAR_project_slug=self.project_slug,
             TF_VAR_service_secrets=json.dumps({i: service_secrets for i in envs}),
             TF_VAR_service_slug="orchestrator",
+            VAULT_ADDR=self.vault_address,
+            VAULT_TOKEN=self.vault_token,
         )
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
             env.update(TF_VAR_terraform_cloud_token=self.terraform_cloud_token)
