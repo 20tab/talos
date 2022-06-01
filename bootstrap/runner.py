@@ -28,7 +28,7 @@ from bootstrap.constants import (
     TERRAFORM_BACKEND_TFC,
 )
 from bootstrap.exceptions import BootstrapError
-from bootstrap.helpers import format_tfvar
+from bootstrap.helpers import format_gitlab_variable, format_tfvar
 
 error = partial(click.style, fg="red")
 
@@ -62,6 +62,7 @@ class Runner:
     terraform_cloud_organization: str | None = None
     terraform_cloud_organization_create: bool | None = None
     terraform_cloud_admin_email: str | None = None
+    vault_token: str | None = None
     digitalocean_token: str | None = None
     kubernetes_cluster_ca_certificate: str | None = None
     kubernetes_host: str | None = None
@@ -115,6 +116,7 @@ class Runner:
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
     stacks_environments: dict = field(init=False, default_factory=dict)
+    gitlab_variables: dict = field(init=False, default_factory=dict)
     tfvars: dict = field(init=False, default_factory=dict)
 
     def __post_init__(self):
@@ -125,21 +127,22 @@ class Runner:
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
         self.set_stacks_environments()
         self.set_tfvars()
+        self.set_gitlab_variables()
 
     def set_stacks_environments(self):
         """Set the environments distribution per stack."""
         dev_env = {
-            "name": "Development",
+            "name": "development",
             "url": self.project_url_dev,
             "prefix": self.subdomain_dev,
         }
         stage_env = {
-            "name": "Staging",
+            "name": "staging",
             "url": self.project_url_stage,
             "prefix": self.subdomain_stage,
         }
         prod_env = {
-            "name": "Production",
+            "name": "production",
             "url": self.project_url_prod,
             "prefix": self.subdomain_prod,
         }
@@ -159,29 +162,61 @@ class Runner:
                 "main": {"prod": prod_env},
             }
 
+    def add_gitlab_variable(
+        self, level, var_name, var_value=None, masked=False, protected=True
+    ):
+        """Add a GitLab variable to the given level registry."""
+        vars_dict = self.gitlab_variables.setdefault(level, {})
+        if var_value is None:
+            var_value = getattr(self, var_name)
+        vars_dict[var_name] = format_gitlab_variable(var_value, masked, protected)
+
+    def add_gitlab_variables(self, level, *vars):
+        """Add one or more GitLab variable to the given level registry."""
+        [self.add_tfvar(level, *((i,) if isinstance(i, str) else i)) for i in vars]
+
+    def add_gitlab_group_variables(self, *vars):
+        """Add one or more GitLab group variable."""
+        self.add_tfvars("group", *vars)
+
+    def add_gitlab_project_variables(self, *vars):
+        """Add one or more GitLab project variable."""
+        self.add_tfvars("project", *vars)
+
+    def render_gitlab_variables_to_string(self, level):
+        """Return the given level GitLab variables rendered to string."""
+        return "{%s}" % ", ".join(
+            f"{k} = {v}" for k, v in self.gitlab_variables.get(level, {}).items()
+        )
+
+    def add_cluster_tfvars(self, *vars, stack_slug=None):
+        """Add one or more cluster Terraform variable."""
+        tf_stage = "cluster" + (stack_slug and f"_{stack_slug}" or "")
+        self.add_tfvars(tf_stage, *vars)
+
     def add_tfvar(self, tf_stage, var_name, var_value=None, var_type=None):
-        """Add a Terraform value to the given .tfvars file."""
+        """Add a Terraform value to the given .tfvars file internal registry."""
         vars_list = self.tfvars.setdefault(tf_stage, [])
         if var_value is None:
             var_value = getattr(self, var_name)
         vars_list.append("=".join((var_name, format_tfvar(var_value, var_type))))
 
     def add_tfvars(self, tf_stage, *vars):
-        """Add one or more Terraform variables to the given stage."""
+        """Add one or more Terraform variable to the given stage."""
         [self.add_tfvar(tf_stage, *((i,) if isinstance(i, str) else i)) for i in vars]
 
     def add_base_tfvars(self, *vars, stack_slug=None):
-        """Add one or more base Terraform variables."""
+        """Add one or more base Terraform variable."""
         tf_stage = "base" + (stack_slug and f"_{stack_slug}" or "")
         self.add_tfvars(tf_stage, *vars)
 
     def add_cluster_tfvars(self, *vars, stack_slug=None):
-        """Add one or more cluster Terraform variables."""
+        """Add one or more cluster Terraform variable."""
         tf_stage = "cluster" + (stack_slug and f"_{stack_slug}" or "")
         self.add_tfvars(tf_stage, *vars)
 
     def add_environment_tfvars(self, *vars, env_slug=None):
-        """Add one or more environment Terraform variables."""
+        """Add one or more environment Terraform variable."""
         tf_stage = "environment" + (env_slug and f"_{env_slug}" or "")
         self.add_tfvars(tf_stage, *vars)
 
@@ -322,6 +357,8 @@ class Runner:
             "project_url_dev": self.project_url_dev,
             "project_url_prod": self.project_url_prod,
             "project_url_stage": self.project_url_stage,
+            "sentry_org": self.sentry_org,
+            "sentry_url": self.sentry_url,
             "service_dir": str((self.service_dir / service_slug).resolve()),
             "service_slug": service_slug,
             "terraform_backend": self.terraform_backend,
@@ -360,20 +397,18 @@ class Runner:
                 ]
             )
 
-    def get_gitlab_variables(self):
-        """Return the GitLab group and project variables."""
-        gitlab_group_variables = dict(
-            BASIC_AUTH_USERNAME=('{value = "%s"}' % self.project_slug),
-            BASIC_AUTH_PASSWORD=(
-                '{value = "%s", masked = true}' % secrets.token_urlsafe(12)
-            ),
-        )
-        gitlab_project_variables = {}
-        # Sentry and Pact env vars are used by the GitLab CI/CD
-        self.sentry_org and gitlab_group_variables.update(
-            SENTRY_ORG='{value = "%s"}' % self.sentry_org,
-            SENTRY_URL='{value = "%s"}' % self.sentry_url,
-            SENTRY_AUTH_TOKEN='{value = "%s", masked = true}' % self.sentry_auth_token,
+    def set_gitlab_variables(self):
+        """Set the GitLab group and project variables."""
+        if self.pact_broker_url:
+            self.add_gitlab_group_variables(("PACT_ENABLED", "true", False, False))
+        if not self.vault_token:
+            self.set_gitlab_variables_secrets()
+
+    def set_gitlab_variables_secrets(self):
+        """Set secrets as GitLab group and project variables."""
+        self.add_gitlab_group_variables(
+            ("BASIC_AUTH_USERNAME", self.project_slug),
+            ("BASIC_AUTH_PASSWORD", secrets.token_urlsafe(12), True),
         )
         if self.pact_broker_url:
             pact_broker_url = self.pact_broker_url
@@ -384,82 +419,113 @@ class Runner:
                 rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
                 pact_broker_url,
             )
-            gitlab_group_variables.update(
-                PACT_ENABLED='{value = "true", protected = false}',
-                PACT_BROKER_BASE_URL=(
-                    '{value = "%s", protected = false}' % pact_broker_url
-                ),
-                PACT_BROKER_USERNAME=(
-                    '{value = "%s", protected = false}' % pact_broker_username
-                ),
-                PACT_BROKER_PASSWORD=(
-                    '{value = "%s", masked = true, protected = false}'
-                    % pact_broker_password
-                ),
-                PACT_BROKER_AUTH_URL=(
-                    '{value = "%s", masked = true, protected = false}'
-                    % pact_broker_auth_url
-                ),
+            self.add_gitlab_group_variables(
+                ("PACT_BROKER_BASE_URL", pact_broker_url, False, False),
+                ("PACT_BROKER_USERNAME", pact_broker_username, False, False),
+                ("PACT_BROKER_PASSWORD", pact_broker_password, True, False),
+                ("PACT_BROKER_AUTH_URL", pact_broker_auth_url, True, False),
             )
         # TODO: extend after implementing Vault
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
-            gitlab_group_variables.update(
-                TFC_TOKEN='{value = "%s", masked = true}' % self.terraform_cloud_token,
+            self.add_gitlab_group_variables(
+                ("TFC_TOKEN", self.terraform_cloud_token, True)
             )
         if self.subdomain_monitoring:
-            gitlab_project_variables.update(
-                GRAFANA_PASSWORD='{value = "%s", masked = true}'
-                % secrets.token_urlsafe(12),
+            self.add_gitlab_project_variables(
+                ("GRAFANA_PASSWORD", secrets.token_urlsafe(12), True)
             )
-        self.digitalocean_token and gitlab_group_variables.update(
-            DIGITALOCEAN_TOKEN='{value = "%s", masked = true}' % self.digitalocean_token
+        self.digitalocean_token and self.add_gitlab_group_variables(
+            ("DIGITALOCEAN_TOKEN", self.digitalocean_token, True)
         )
         if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            gitlab_group_variables.update(
-                KUBERNETES_CLUSTER_CA_CERTIFICATE='{value = "%s", masked = true}'
-                % base64.b64encode(
-                    Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                ).decode(),
-                KUBERNETES_HOST='{value = "%s"}' % self.kubernetes_host,
-                KUBERNETES_TOKEN='{value = "%s", masked = true}'
-                % self.kubernetes_token,
+            self.add_gitlab_group_variables(
+                (
+                    "KUBERNETES_CLUSTER_CA_CERTIFICATE",
+                    base64.b64encode(
+                        Path(self.kubernetes_cluster_ca_certificate).read_bytes()
+                    ).decode(),
+                    True,
+                ),
+                ("KUBERNETES_HOST", self.kubernetes_host),
+                ("KUBERNETES_TOKEN", self.kubernetes_token, True),
             )
-        "s3" in self.media_storage and gitlab_group_variables.update(
-            S3_ACCESS_ID='{value = "%s", masked = true}' % self.s3_access_id,
-            S3_SECRET_KEY='{value = "%s", masked = true}' % self.s3_secret_key,
-            S3_REGION='{value = "%s"}' % self.s3_region,
-            S3_HOST='{value = "%s"}' % self.s3_host,
+        "s3" in self.media_storage and self.add_gitlab_group_variables(
+            ("S3_ACCESS_ID", self.s3_access_id, True),
+            ("S3_SECRET_KEY", self.s3_secret_key, True),
+            ("S3_REGION", self.s3_region),
+            ("S3_HOST", self.s3_host),
         )
         if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-            gitlab_group_variables.update(
-                S3_HOST='{value = "%s"}' % self.s3_host,
-            )
+            self.add_gitlab_group_variables(("S3_HOST", self.s3_host))
         elif self.media_storage == MEDIA_STORAGE_AWS_S3:
-            gitlab_group_variables.update(
-                S3_BUCKET_NAME='{value = "%s"}' % self.s3_bucket_name,
+            self.add_gitlab_group_variables(("S3_BUCKET_NAME", self.s3_bucket_name))
+
+    def get_vault_secrets(self):
+        """Return the Vault common and service secrets."""
+        common_secrets = dict(
+            basic_auth_username=self.project_slug,
+            basic_auth_password=secrets.token_urlsafe(12),
+        )
+        service_secrets = {}
+        # Sentry and Pact env vars are used by the GitLab CI/CD
+        common_secrets.update(sentry_auth_token=self.sentry_auth_token)
+        if self.pact_broker_url:
+            pact_broker_url = self.pact_broker_url
+            pact_broker_username = self.pact_broker_username
+            pact_broker_password = self.pact_broker_password
+            pact_broker_auth_url = re.sub(
+                r"^(https?)://(.*)$",
+                rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
+                pact_broker_url,
             )
-        return gitlab_group_variables, gitlab_project_variables
+            common_secrets.update(
+                pact_broker_base_url=pact_broker_url,
+                pact_broker_username=pact_broker_username,
+                pact_broker_password=pact_broker_password,
+                pact_broker_auth_url=pact_broker_auth_url,
+            )
+        if self.subdomain_monitoring:
+            service_secrets.update(grafana_password=secrets.token_urlsafe(12))
+        self.digitalocean_token and common_secrets.update(
+            digitalocean_token=self.digitalocean_token
+        )
+        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
+            common_secrets.update(
+                kubernetes_cluster_ca_certificate=base64.b64encode(
+                    Path(self.kubernetes_cluster_ca_certificate).read_bytes()
+                ).decode(),
+                kubernetes_host=self.kubernetes_host,
+                kubernetes_token=self.kubernetes_token,
+            )
+        "s3" in self.media_storage and common_secrets.update(
+            s3_access_id=self.s3_access_id,
+            s3_secret_key=self.s3_secret_key,
+            s3_region=self.s3_region,
+            s3_host=self.s3_host,
+        )
+        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
+            common_secrets.update(s3_host=self.s3_host)
+        elif self.media_storage == MEDIA_STORAGE_AWS_S3:
+            common_secrets.update(s3_bucket_name=self.s3_bucket_name)
+        return common_secrets, service_secrets
 
     def init_gitlab(self):
         """Initialize the GitLab resources."""
         click.echo(info("...creating the GitLab resources"))
-        group_variables, project_variables = self.get_gitlab_variables()
         env = dict(
             TF_VAR_gitlab_token=self.gitlab_private_token,
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
             TF_VAR_group_name=self.project_name,
             TF_VAR_group_owners=self.gitlab_group_owners,
             TF_VAR_group_slug=self.gitlab_group_slug,
-            TF_VAR_group_variables="{%s}"
-            % ", ".join(f"{k} = {v}" for k, v in group_variables.items()),
+            TF_VAR_group_variables=self.render_gitlab_variables_to_string("group"),
             TF_VAR_local_repository_dir=self.service_dir,
             TF_VAR_project_description=(
                 f'The "{self.project_name}" project {self.service_slug} service.'
             ),
             TF_VAR_project_name=self.service_slug.title(),
             TF_VAR_project_slug=self.service_slug,
-            TF_VAR_project_variables="{%s}"
-            % ", ".join(f"{k} = {v}" for k, v in project_variables.items()),
+            TF_VAR_project_variables=self.render_gitlab_variables_to_string("project"),
         )
         self.run_terraform("gitlab", env)
 
@@ -483,6 +549,24 @@ class Runner:
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
         )
         self.run_terraform("terraform-cloud", env)
+
+    def init_vault(self):
+        """Initialize the Vault resources."""
+        click.echo(info("...creating the Vault resources"))
+        common_secrets, service_secrets = self.get_vault_secrets()
+        envs = [
+            j["name"] for i in self.stacks_environments.values() for j in i.values()
+        ]
+        env = dict(
+            TF_VAR_common_secrets=json.dumps({i: common_secrets for i in envs}),
+            TF_VAR_project_name=self.project_name,
+            TF_VAR_project_slug=self.project_slug,
+            TF_VAR_service_secrets=json.dumps({i: service_secrets for i in envs}),
+            TF_VAR_service_slug="orchestrator",
+        )
+        if self.terraform_backend == TERRAFORM_BACKEND_TFC:
+            env.update(TF_VAR_terraform_cloud_token=self.terraform_cloud_token)
+        self.run_terraform("vault", env)
 
     def run_terraform(self, module_name, env):
         """Initialize the Terraform controlled resources."""

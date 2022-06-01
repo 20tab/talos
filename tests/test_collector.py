@@ -26,6 +26,7 @@ from bootstrap.collector import (
     clean_sentry_org,
     clean_service_dir,
     clean_terraform_backend,
+    clean_vault_data,
 )
 
 
@@ -146,6 +147,16 @@ class TestBootstrapCollector(TestCase):
                     "",
                 ),
             )
+
+    def test_clean_vault_data(self):
+        """Test cleaning the Vault data ."""
+        self.assertEqual(clean_vault_data("v4UlTtok3N", True), "v4UlTtok3N")
+        with input("y", {"hidden": "v4UlTtok3N"}):
+            self.assertEqual(clean_vault_data(None, True), "v4UlTtok3N")
+        with input("y", {"hidden": "v4UlTtok3N"}, "y"):
+            self.assertEqual(clean_vault_data(None, False), "v4UlTtok3N")
+        with input("n"):
+            self.assertEqual(clean_vault_data(None, True), None)
 
     def test_clean_environment_distribution(self):
         """Test cleaning the environment distribution."""

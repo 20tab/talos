@@ -16,13 +16,13 @@
   "stacks": {
     "main": {
       "dev": {
-        "name": "Development"
+        "name": "development"
       },
       "stage": {
-        "name": "Staging"
+        "name": "staging"
       },
       "prod": {
-        "name": "Production"
+        "name": "production"
       }
     }
   },
