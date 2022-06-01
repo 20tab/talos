@@ -174,15 +174,18 @@ class Runner:
 
     def add_gitlab_variables(self, level, *vars):
         """Add one or more GitLab variable to the given level registry."""
-        [self.add_tfvar(level, *((i,) if isinstance(i, str) else i)) for i in vars]
+        [
+            self.add_gitlab_variable(level, *((i,) if isinstance(i, str) else i))
+            for i in vars
+        ]
 
     def add_gitlab_group_variables(self, *vars):
         """Add one or more GitLab group variable."""
-        self.add_tfvars("group", *vars)
+        self.add_gitlab_variables("group", *vars)
 
     def add_gitlab_project_variables(self, *vars):
         """Add one or more GitLab project variable."""
-        self.add_tfvars("project", *vars)
+        self.add_gitlab_variables("project", *vars)
 
     def render_gitlab_variables_to_string(self, level):
         """Return the given level GitLab variables rendered to string."""
