@@ -193,11 +193,6 @@ class Runner:
             f"{k} = {v}" for k, v in self.gitlab_variables.get(level, {}).items()
         )
 
-    def add_cluster_tfvars(self, *vars, stack_slug=None):
-        """Add one or more cluster Terraform variable."""
-        tf_stage = "cluster" + (stack_slug and f"_{stack_slug}" or "")
-        self.add_tfvars(tf_stage, *vars)
-
     def add_tfvar(self, tf_stage, var_name, var_value=None, var_type=None):
         """Add a Terraform value to the given .tfvars file internal registry."""
         vars_list = self.tfvars.setdefault(tf_stage, [])
@@ -286,7 +281,7 @@ class Runner:
                 ("digitalocean_spaces_bucket_available", True, "bool")
             )
         for stack_slug, stack_envs in self.stacks_environments.items():
-            for env_slug, env_data in stack_envs.items():
+            for env_slug, _env_data in stack_envs.items():
                 self.add_environment_tfvars(
                     ("basic_auth_enabled", env_slug != "prod", "bool"),
                     ("stack_slug", stack_slug),
@@ -342,6 +337,8 @@ class Runner:
             [
                 "git",
                 "clone",
+                "--branch",
+                "feature/vault",
                 template_url,
                 subrepo_dir,
                 "-q",
@@ -566,13 +563,17 @@ class Runner:
             j["name"] for i in self.stacks_environments.values() for j in i.values()
         ]
         env = dict(
-            TF_VAR_common_secrets=json.dumps({i: common_secrets for i in envs}),
             TF_VAR_project_name=self.project_name,
             TF_VAR_project_slug=self.project_slug,
-            TF_VAR_service_secrets=json.dumps({i: service_secrets for i in envs}),
             TF_VAR_service_slug="orchestrator",
             VAULT_ADDR=self.vault_address,
             VAULT_TOKEN=self.vault_token,
+        )
+        common_secrets and env.update(
+            TF_VAR_common_secrets=json.dumps({i: common_secrets for i in envs})
+        )
+        service_secrets and env.update(
+            TF_VAR_service_secrets=json.dumps({i: service_secrets for i in envs}),
         )
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
             env.update(TF_VAR_terraform_cloud_token=self.terraform_cloud_token)
