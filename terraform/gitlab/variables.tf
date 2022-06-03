@@ -62,3 +62,9 @@ variable "project_variables" {
   type        = map(map(any))
   default     = {}
 }
+
+variable "vault_enabled" {
+  description = "Tell if Vault is enabled."
+  type        = bool
+  default     = false
+}

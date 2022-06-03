@@ -118,6 +118,7 @@ class Runner:
     service_slug: str = field(init=False)
     stacks_environments: dict = field(init=False, default_factory=dict)
     gitlab_variables: dict = field(init=False, default_factory=dict)
+    terraform_outputs: dict = field(init=False, default_factory=dict)
     tfvars: dict = field(init=False, default_factory=dict)
 
     def __post_init__(self):
@@ -388,18 +389,6 @@ class Runner:
             cwd=subrepo_dir,
         )
 
-    def change_output_owner(self):
-        """Change the owner of the output directory recursively."""
-        if self.uid:
-            subprocess.run(
-                [
-                    "chown",
-                    "-R",
-                    ":".join(map(str, filter(None, (self.uid, self.gid)))),
-                    self.service_dir,
-                ]
-            )
-
     def set_gitlab_variables(self):
         """Set the GitLab group and project variables."""
         if self.pact_broker_url:
@@ -416,6 +405,9 @@ class Runner:
         self.add_gitlab_group_variables(
             ("BASIC_AUTH_USERNAME", self.project_slug),
             ("BASIC_AUTH_PASSWORD", secrets.token_urlsafe(12), True),
+        )
+        self.sentry_org and self.add_gitlab_group_variables(
+            "SENTRY_AUTH_TOKEN", self.sentry_auth_token, True
         )
         if self.pact_broker_url:
             pact_broker_url = self.pact_broker_url
@@ -475,7 +467,9 @@ class Runner:
         )
         service_secrets = {}
         # Sentry and Pact env vars are used by the GitLab CI/CD
-        common_secrets.update(sentry_auth_token=self.sentry_auth_token)
+        self.sentry_org and common_secrets.update(
+            sentry_auth_token=self.sentry_auth_token
+        )
         if self.pact_broker_url:
             pact_broker_url = self.pact_broker_url
             pact_broker_username = self.pact_broker_username
@@ -518,7 +512,7 @@ class Runner:
 
     def init_gitlab(self):
         """Initialize the GitLab resources."""
-        click.echo(info("...creating the GitLab resources"))
+        click.echo(info("...creating the GitLab resources with Terraform"))
         env = dict(
             TF_VAR_gitlab_token=self.gitlab_private_token,
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
@@ -533,12 +527,15 @@ class Runner:
             TF_VAR_project_name=self.service_slug.title(),
             TF_VAR_project_slug=self.service_slug,
             TF_VAR_project_variables=self.render_gitlab_variables_to_string("project"),
+            TF_VAR_vault_enabled=self.vault_address and "true" or "false",
         )
-        self.run_terraform("gitlab", env)
+        self.run_terraform(
+            "gitlab", env, outputs=["registry_password", "registry_username"]
+        )
 
     def init_terraform_cloud(self):
         """Initialize the Terraform Cloud resources."""
-        click.echo(info("...creating the Terraform Cloud resources"))
+        click.echo(info("...creating the Terraform Cloud resources with Terraform"))
         stacks_environments = {
             k: list(v.keys()) for k, v in self.stacks_environments.items()
         }
@@ -559,7 +556,7 @@ class Runner:
 
     def init_vault(self):
         """Initialize the Vault resources."""
-        click.echo(info("...creating the Vault resources"))
+        click.echo(info("...creating the Vault resources with Terraform"))
         common_secrets, service_secrets = self.get_vault_secrets()
         envs = [
             j["name"] for i in self.stacks_environments.values() for j in i.values()
@@ -571,6 +568,11 @@ class Runner:
             VAULT_ADDR=self.vault_address,
             VAULT_TOKEN=self.vault_token,
         )
+        if gitlab_terraform_outputs := self.terraform_outputs.get("gitlab"):
+            common_secrets.update(
+                registry_username=gitlab_terraform_outputs["registry_username"],
+                registry_password=gitlab_terraform_outputs["registry_password"],
+            )
         common_secrets and env.update(
             TF_VAR_common_secrets=json.dumps({i: common_secrets for i in envs})
         )
@@ -581,7 +583,7 @@ class Runner:
             env.update(TF_VAR_terraform_cloud_token=self.terraform_cloud_token)
         self.run_terraform("vault", env)
 
-    def run_terraform(self, module_name, env):
+    def run_terraform(self, module_name, env, outputs=None):
         """Initialize the Terraform controlled resources."""
         cwd = Path(__file__).parent.parent / "terraform" / module_name
         terraform_dir = self.terraform_dir / self.service_slug / module_name
@@ -624,6 +626,17 @@ class Runner:
                 text=True,
             )
             apply_stdout_path.write_text(apply_process.stdout)
+            for output_name in outputs or []:
+                output_process = subprocess.run(
+                    ["terraform", "output", "-raw", output_name],
+                    capture_output=True,
+                    cwd=cwd,
+                    env=env,
+                    text=True,
+                )
+                self.terraform_outputs.setdefault(module_name, {})[
+                    output_name
+                ] = output_process.stdout
             if apply_process.returncode != 0:
                 apply_stderr_path.write_text(apply_process.stderr)
                 click.echo(
@@ -668,9 +681,23 @@ class Runner:
             )
             raise BootstrapError
 
+    def change_output_owner(self):
+        """Change the owner of the output directory recursively."""
+        if self.uid:
+            subprocess.run(
+                [
+                    "chown",
+                    "-R",
+                    ":".join(map(str, filter(None, (self.uid, self.gid)))),
+                    self.service_dir,
+                ]
+            )
+
     def cleanup(self):
         """Clean up after a successful execution."""
         shutil.rmtree(DUMPS_DIR)
+        shutil.rmtree(SUBREPOS_DIR)
+        shutil.rmtree(self.terraform_dir)
 
     def run(self):
         """Run the bootstrap."""

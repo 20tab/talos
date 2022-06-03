@@ -1,4 +1,7 @@
 terraform {
+  backend "local" {
+  }
+
   required_providers {
     vault = {
       source  = "hashicorp/vault"
@@ -61,7 +64,7 @@ resource "vault_terraform_cloud_secret_role" "main" {
 resource "vault_generic_secret" "common" {
   for_each = var.common_secrets
 
-  path = "${vault_mount.main.path}/common/${each.key}"
+  path = "${vault_mount.main.path}/common/${each.key}/secrets"
 
   data_json = jsonencode(each.value)
 }
@@ -69,7 +72,7 @@ resource "vault_generic_secret" "common" {
 resource "vault_generic_secret" "service" {
   for_each = var.service_secrets
 
-  path = "${vault_mount.main.path}/${var.service_slug}/${each.key}"
+  path = "${vault_mount.main.path}/${var.service_slug}/${each.key}/secrets"
 
   data_json = jsonencode(each.value)
 }

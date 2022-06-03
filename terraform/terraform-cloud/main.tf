@@ -1,12 +1,15 @@
 locals {
   organization = var.create_organization ? tfe_organization.main[0] : data.tfe_organization.main[0]
 
+  stacks       = keys(local.stacks_environments)
+  environments = flatten([for i in values(local.stacks_environments) : keys(i)])
+
   workspaces = concat(
     flatten(
       [
         for stage in ["base", "cluster"] :
         [
-          for stack in var.stacks :
+          for stack in local.stacks :
           {
             name        = "${var.project_slug}_${var.service_slug}_${stage}_${stack}"
             description = "${var.project_name} project, ${var.service_slug} service, ${stack} stack, ${stage} stage"
@@ -21,7 +24,7 @@ locals {
       ]
     ),
     [
-      for env in var.environments :
+      for env in local.environments :
       {
         name        = "${var.project_slug}_${var.service_slug}_environment_${env}"
         description = "${var.project_name} project, ${var.service_slug} service, ${env} environment"
