@@ -442,7 +442,7 @@ class Runner:
 
     def init_gitlab(self):
         """Initialize the GitLab resources."""
-        click.echo(info("...creating the GitLab resources"))
+        click.echo(info("...creating the GitLab resources with Terraform"))
         group_variables, project_variables = self.get_gitlab_variables()
         env = dict(
             TF_VAR_gitlab_token=self.gitlab_private_token,
@@ -465,7 +465,7 @@ class Runner:
 
     def init_terraform_cloud(self):
         """Initialize the Terraform Cloud resources."""
-        click.echo(info("...creating the Terraform Cloud resources"))
+        click.echo(info("...creating the Terraform Cloud resources with Terraform"))
         stacks_environments = {
             k: list(v.keys()) for k, v in self.stacks_environments.items()
         }
