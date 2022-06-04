@@ -31,7 +31,16 @@ services:
       -e TERRAFORM_EXTRA_VAR_FILE
       -e TERRAFORM_VARS_DIR
       -e TF_ROOT{% if cookiecutter.terraform_backend == "gitlab" %}
+      -e CI_API_V4_URL
+      -e CI_COMMIT_SHA
+      -e CI_JOB_ID
+      -e CI_JOB_STAGE
       -e CI_JOB_TOKEN
+      -e CI_PROJECT_DIR
+      -e CI_PROJECT_ID
+      -e CI_PROJECT_NAME
+      -e CI_PROJECT_NAMESPACE
+      -e CI_PROJECT_PATH
       -e TF_STATE_NAME{% else %}
       -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" %}
       -e TFC_TOKEN{% endif %}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
