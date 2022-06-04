@@ -52,7 +52,7 @@ resource "vault_terraform_cloud_secret_role" "main" {
   count = var.terraform_cloud_token != "" ? 1 : 0
 
   backend = vault_terraform_cloud_secret_backend.main[0].backend
-  name    = var.project_slug
+  name    = "${var.service_slug}-role"
   user_id = jsondecode(data.http.tfc_user_info[0].body).data.id
 
   max_ttl = var.terraform_cloud_role_max_ttl
