@@ -9,7 +9,7 @@ backcall==0.2.0
 binaryornot==0.4.4
     # via cookiecutter
 black==22.3.0
-    # via -r requirements/local.in
+    # via -r local.in
 certifi==2021.10.8
     # via requests
 cfgv==3.3.1
@@ -20,14 +20,14 @@ charset-normalizer==2.0.12
     # via requests
 click==8.1.2
     # via
-    #   -r requirements/common.in
+    #   -r common.in
     #   black
     #   cookiecutter
     #   pip-tools
-cookiecutter==1.7.3
-    # via -r requirements/common.in
+cookiecutter==2.1.1
+    # via -r common.in
 coverage[toml]==6.3.2
-    # via -r requirements/test.in
+    # via -r test.in
 decorator==5.1.1
     # via
     #   ipdb
@@ -41,27 +41,27 @@ filelock==3.6.0
     # via virtualenv
 flake8==4.0.1
     # via
-    #   -r requirements/test.in
+    #   -r test.in
     #   flake8-bugbear
     #   flake8-docstrings
     #   flake8-isort
 flake8-bugbear==22.1.11
-    # via -r requirements/test.in
+    # via -r test.in
 flake8-docstrings==1.6.0
-    # via -r requirements/test.in
+    # via -r test.in
 flake8-isort==4.1.1
-    # via -r requirements/test.in
+    # via -r test.in
 identify==2.5.0
     # via pre-commit
 idna==3.3
     # via requests
 ipdb==0.13.9
-    # via -r requirements/local.in
+    # via -r local.in
 ipython==8.2.0
     # via ipdb
 isort==5.10.1
     # via
-    #   -r requirements/test.in
+    #   -r test.in
     #   flake8-isort
 jedi==0.18.1
     # via ipython
@@ -78,7 +78,7 @@ matplotlib-inline==0.1.3
 mccabe==0.6.1
     # via flake8
 mypy==0.942
-    # via -r requirements/test.in
+    # via -r test.in
 mypy-extensions==0.4.3
     # via
     #   black
@@ -96,15 +96,13 @@ pexpect==4.8.0
 pickleshare==0.7.5
     # via ipython
 pip-tools==6.5.1
-    # via -r requirements/local.in
+    # via -r local.in
 platformdirs==2.5.2
     # via
     #   black
     #   virtualenv
-poyo==0.5.0
-    # via cookiecutter
 pre-commit==2.17.0
-    # via -r requirements/local.in
+    # via -r local.in
 prompt-toolkit==3.0.29
     # via ipython
 ptyprocess==0.7.0
@@ -114,7 +112,7 @@ pure-eval==0.2.2
 pycodestyle==2.8.0
     # via flake8
 pydantic==1.9.0
-    # via -r requirements/common.in
+    # via -r common.in
 pydocstyle==6.1.1
     # via flake8-docstrings
 pyflakes==2.4.0
@@ -125,18 +123,19 @@ python-dateutil==2.8.2
     # via arrow
 python-slugify==6.1.1
     # via
-    #   -r requirements/common.in
+    #   -r common.in
     #   cookiecutter
 pyupgrade==2.31.1
-    # via -r requirements/local.in
+    # via -r local.in
 pyyaml==6.0
-    # via pre-commit
+    # via
+    #   cookiecutter
+    #   pre-commit
 requests==2.27.1
     # via cookiecutter
 six==1.16.0
     # via
     #   asttokens
-    #   cookiecutter
     #   python-dateutil
     #   validators
     #   virtualenv
@@ -165,7 +164,7 @@ traitlets==5.1.1
     #   ipython
     #   matplotlib-inline
 types-python-slugify==5.0.4
-    # via -r requirements/local.in
+    # via -r local.in
 typing-extensions==4.2.0
     # via
     #   mypy
@@ -173,7 +172,7 @@ typing-extensions==4.2.0
 urllib3==1.26.9
     # via requests
 validators==0.18.2
-    # via -r requirements/common.in
+    # via -r common.in
 virtualenv==20.14.1
     # via pre-commit
 wcwidth==0.2.5
