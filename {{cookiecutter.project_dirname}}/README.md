@@ -181,11 +181,10 @@ $ make rebuild s=backend
 
 Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certificate:
 
-#### Firefox 
+#### Firefox
 
-- Settings > Privacy & Security > Manage Certificates > View Certificates... > Authorities > Import
+-   Settings > Privacy & Security > Manage Certificates > View Certificates... > Authorities > Import
 
 #### Chrome
 
-- Settings > Security > Certificates > Authorities > Import  
-
+-   Settings > Security > Certificates > Authorities > Import

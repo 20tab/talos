@@ -40,8 +40,8 @@ path "sys/mounts/${var.project_slug}" {
   capabilities = ["create", "update", "delete"]
 }
 
-path "${var.project_slug}" {                                                                                                                                                 
-  capabilities = ["list"]                                                                                                                                  
+path "${var.project_slug}" {
+  capabilities = ["list"]
 }
 
 # Manage TFC secrets
@@ -53,8 +53,8 @@ path "sys/mounts/${var.project_slug}-tfc" {
   capabilities = ["create", "update", "delete"]
 }
 
-path "${var.project_slug}-tfc" {                                                                                                                                                 
-  capabilities = ["list"]                                                                                                                                  
+path "${var.project_slug}-tfc" {
+  capabilities = ["list"]
 }
 
 # Enable ops on children token

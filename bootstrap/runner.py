@@ -332,7 +332,7 @@ class Runner:
 
     def init_subrepo(self, service_slug, template_url, **kwargs):
         """Initialize a subrepo using the given template and options."""
-        subrepo_dir = str((Path(SUBREPOS_DIR) / service_slug).resolve())
+        subrepo_dir = str((SUBREPOS_DIR / service_slug).resolve())
         shutil.rmtree(subrepo_dir, ignore_errors=True)
         subprocess.run(
             [
@@ -450,14 +450,12 @@ class Runner:
             )
         "s3" in self.media_storage and self.add_gitlab_group_variables(
             ("S3_ACCESS_ID", self.s3_access_id, True),
-            ("S3_SECRET_KEY", self.s3_secret_key, True),
+            ("S3_BUCKET_NAME", self.s3_bucket_name),
             ("S3_REGION", self.s3_region),
-            ("S3_HOST", self.s3_host),
+            ("S3_SECRET_KEY", self.s3_secret_key, True),
         )
         if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
             self.add_gitlab_group_variables(("S3_HOST", self.s3_host))
-        elif self.media_storage == MEDIA_STORAGE_AWS_S3:
-            self.add_gitlab_group_variables(("S3_BUCKET_NAME", self.s3_bucket_name))
 
     def get_vault_secrets(self):
         """Return the Vault common and service secrets."""

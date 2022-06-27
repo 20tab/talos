@@ -8,11 +8,11 @@ entryPoints:
     address: ":8443"
     http:
       tls:
-        options: 
+        options:
 
 log:
   level: ERROR
 
 providers:
-  file: 
+  file:
     filename: /traefik/conf/dynamic.yaml
