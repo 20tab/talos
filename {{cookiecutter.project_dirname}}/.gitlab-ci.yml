@@ -27,19 +27,28 @@ services:
       -u `id -u`
       -v ${PWD}:${PWD}
       -w ${PWD}
+      -e PROJECT_SLUG={{ cookiecutter.project_slug }}
       -e TERRAFORM_BACKEND={{ cookiecutter.terraform_backend }}
       -e TERRAFORM_EXTRA_VAR_FILE
       -e TERRAFORM_VARS_DIR
       -e TF_ROOT{% if cookiecutter.terraform_backend == "gitlab" %}
+      -e CI_API_V4_URL
+      -e CI_COMMIT_SHA
+      -e CI_JOB_ID
+      -e CI_JOB_STAGE
       -e CI_JOB_TOKEN
+      -e CI_PROJECT_ID
+      -e CI_PROJECT_NAME
+      -e CI_PROJECT_NAMESPACE
+      -e CI_PROJECT_PATH
+      -e CI_PROJECT_URL
       -e TF_STATE_NAME{% else %}
       -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" %}
       -e TFC_TOKEN{% endif %}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
       -e TF_VAR_digitalocean_token="${DIGITALOCEAN_TOKEN}"{% elif cookiecutter.deployment_type == "other-k8s" %}
       -e TF_VAR_kubernetes_cluster_ca_certificate="${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
       -e TF_VAR_kubernetes_host="${KUBERNETES_HOST}"
-      -e TF_VAR_kubernetes_token="${KUBERNETES_TOKEN}"{% endif %}
-      -e TF_VAR_project_slug={{ cookiecutter.project_slug }}{% if "s3" in cookiecutter.media_storage %}
+      -e TF_VAR_kubernetes_token="${KUBERNETES_TOKEN}"{% endif %}{% if "s3" in cookiecutter.media_storage %}
       -e TF_VAR_s3_access_id="${S3_ACCESS_ID}"
       -e TF_VAR_s3_region="${S3_REGION}"
       -e TF_VAR_s3_secret_key="${S3_SECRET_KEY}"{% if cookiecutter.media_storage == "digitalocean-s3" %}
