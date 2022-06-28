@@ -1,7 +1,6 @@
 locals {
   basic_auth_ready = alltrue(
     [
-      var.basic_auth_enabled,
       var.basic_auth_username != "",
       var.basic_auth_password != ""
     ]

@@ -511,6 +511,7 @@ class Runner:
     def init_gitlab(self):
         """Initialize the GitLab resources."""
         click.echo(info("...creating the GitLab resources with Terraform"))
+        group_variables, project_variables = self.get_gitlab_variables()
         env = dict(
             TF_VAR_gitlab_token=self.gitlab_private_token,
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
