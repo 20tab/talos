@@ -15,7 +15,8 @@ locals {
       var.s3_region != "",
       var.s3_access_id != "",
       var.s3_secret_key != "",
-      local.s3_host != "" || local.s3_bucket_name != "",
+      local.s3_bucket_name != "",
+      local.s3_host != "",
     ]
   )
 }

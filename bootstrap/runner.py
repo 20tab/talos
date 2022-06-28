@@ -290,12 +290,13 @@ class Runner:
             self.use_redis and self.add_environment_tfvars("redis_image")
         if "s3" in self.media_storage:
             self.add_base_tfvars("s3_region")
-            self.add_environment_tfvars("s3_bucket_name", "s3_region")
+            self.add_environment_tfvars("s3_region")
         if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
             self.add_base_tfvars(("create_s3_bucket", True, "bool"))
             self.add_environment_tfvars(
                 "s3_host", ("digitalocean_spaces_bucket_available", True, "bool")
             )
+        self.s3_bucket_name and self.add_environment_tfvars("s3_bucket_name")
         for stack_slug, stack_envs in self.stacks_environments.items():
             for env_slug, _env_data in stack_envs.items():
                 self.add_environment_tfvars(

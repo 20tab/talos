@@ -259,8 +259,7 @@ def collect(
         gitlab_group_developers,
         quiet,
     )
-    # TODO: change when moving secrets to Vault
-    if gitlab_group_slug and "s3" in media_storage:
+    if (gitlab_group_slug or vault_address) and "s3" in media_storage:
         (
             digitalocean_token,
             s3_region,
