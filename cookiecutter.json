@@ -12,7 +12,7 @@
   "terraform_cloud_organization": "",
   "media_storage": ["digitalocean-s3", "aws-s3", "local", "none"],
   "pact_enabled": false,
-  "project_domain": "",
+  "vault_enabled": false,
   "stacks": {
     "main": {
       "dev": {

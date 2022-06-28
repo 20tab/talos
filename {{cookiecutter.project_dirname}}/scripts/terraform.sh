@@ -4,6 +4,10 @@ if [ "${DEBUG_OUTPUT}" == "true" ]; then
     set -x
 fi
 
+export TF_VAR_env_slug="${ENV_SLUG}"
+export TF_VAR_project_slug="${PROJECT_SLUG}"
+export TF_VAR_stack_slug="${STACK_SLUG}"
+
 plan_cache="plan.cache"
 plan_json="plan.json"
 var_file="${TERRAFORM_VARS_DIR}/.tfvars"

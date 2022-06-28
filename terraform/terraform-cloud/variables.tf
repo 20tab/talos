@@ -10,6 +10,11 @@ variable "create_organization" {
   default     = false
 }
 
+variable "environments" {
+  description = "The list of environments slugs."
+  type        = list(string)
+}
+
 variable "hostname" {
   description = "The Terraform Cloud hostname."
   type        = string
@@ -36,9 +41,9 @@ variable "service_slug" {
   type        = string
 }
 
-variable "stacks_environments" {
-  description = "The mapping of stacks and environments."
-  type        = map(map(map(string)))
+variable "stacks" {
+  description = "The list of stacks slugs."
+  type        = list(string)
 }
 
 variable "terraform_cloud_token" {

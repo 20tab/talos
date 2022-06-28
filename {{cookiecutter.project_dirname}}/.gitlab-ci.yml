@@ -26,12 +26,7 @@ services:
       docker run --rm
       -u `id -u`
       -v ${PWD}:${PWD}
-      -w ${PWD}
-      -e PROJECT_SLUG={{ cookiecutter.project_slug }}
-      -e TERRAFORM_BACKEND={{ cookiecutter.terraform_backend }}
-      -e TERRAFORM_EXTRA_VAR_FILE
-      -e TERRAFORM_VARS_DIR
-      -e TF_ROOT{% if cookiecutter.terraform_backend == "gitlab" %}
+      -w ${PWD}{% if cookiecutter.terraform_backend == "gitlab" %}
       -e CI_API_V4_URL
       -e CI_COMMIT_SHA
       -e CI_JOB_ID
@@ -42,19 +37,21 @@ services:
       -e CI_PROJECT_NAME
       -e CI_PROJECT_NAMESPACE
       -e CI_PROJECT_PATH
-      -e CI_PROJECT_URL
-      -e TF_STATE_NAME{% else %}
-      -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" %}
-      -e TFC_TOKEN{% endif %}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+      -e CI_PROJECT_URL{% endif %}
+      -e ENV_SLUG
+      -e PROJECT_SLUG={{ cookiecutter.project_slug }}
+      -e STACK_SLUG
+      -e TERRAFORM_BACKEND={{ cookiecutter.terraform_backend }}
+      -e TERRAFORM_EXTRA_VAR_FILE
+      -e TERRAFORM_VARS_DIR
+      -e TF_ROOT{% if cookiecutter.terraform_backend == "gitlab" %}
+      -e TF_STATE_NAME{% endif %}{% if not cookiecutter.vault_enabled %}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
       -e TF_VAR_digitalocean_token="${DIGITALOCEAN_TOKEN}"{% elif cookiecutter.deployment_type == "other-k8s" %}
       -e TF_VAR_kubernetes_cluster_ca_certificate="${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
       -e TF_VAR_kubernetes_host="${KUBERNETES_HOST}"
       -e TF_VAR_kubernetes_token="${KUBERNETES_TOKEN}"{% endif %}{% if "s3" in cookiecutter.media_storage %}
       -e TF_VAR_s3_access_id="${S3_ACCESS_ID}"
-      -e TF_VAR_s3_region="${S3_REGION}"
-      -e TF_VAR_s3_secret_key="${S3_SECRET_KEY}"{% if cookiecutter.media_storage == "digitalocean-s3" %}
-      -e TF_VAR_s3_host="${S3_HOST}"{% elif cookiecutter.media_storage == "aws-s3" %}
-      -e TF_VAR_s3_bucket_name="${S3_BUCKET_NAME}"{% endif %}{% endif %}
+      -e TF_VAR_s3_secret_key="${S3_SECRET_KEY}"{% endif %}
       -e TF_VAR_basic_auth_password="${BASIC_AUTH_PASSWORD}"
       -e TF_VAR_basic_auth_username="${BASIC_AUTH_USERNAME}"
       -e TF_VAR_grafana_password="${GRAFANA_PASSWORD}"
@@ -62,9 +59,10 @@ services:
       -e TF_VAR_registry_server="${REGISTRY_SERVER:-registry.gitlab.com}"
       -e TF_VAR_registry_username="${REGISTRY_USERNAME}"
       -e TF_VAR_tls_certificate_crt="${TLS_CERTIFICATE_CRT}"
-      -e TF_VAR_tls_certificate_key="${TLS_CERTIFICATE_KEY}"
-      -e TF_VAR_env_slug="${ENV_SLUG}"
-      -e TF_VAR_stack_slug="${STACK_SLUG}"
+      -e TF_VAR_tls_certificate_key="${TLS_CERTIFICATE_KEY}"{% endif %}{% if cookiecutter.terraform_backend != "gitlab" %}
+      -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" and not cookiecutter.vault_enabled %}
+      -e TFC_TOKEN{% endif %}{% if cookiecutter.vault_enabled %}
+      -e VAULT_ADDR{% endif %}
       registry.gitlab.com/gitlab-org/terraform-images/stable:latest sh -c "${TERRAFORM_CMD}"
 
 .init:

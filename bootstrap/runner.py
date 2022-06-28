@@ -19,11 +19,19 @@ from pydantic import validate_arguments
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
     DEPLOYMENT_TYPE_OTHER,
+    DEV_ENV_NAME,
+    DEV_ENV_SLUG,
+    DEV_STACK_SLUG,
     DUMPS_DIR,
     FRONTEND_TEMPLATE_URLS,
-    MEDIA_STORAGE_AWS_S3,
+    MAIN_STACK_SLUG,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
     ORCHESTRATOR_SERVICE_SLUG,
+    PROD_ENV_NAME,
+    PROD_ENV_SLUG,
+    STAGE_ENV_NAME,
+    STAGE_ENV_SLUG,
+    STAGE_STACK_SLUG,
     SUBREPOS_DIR,
     TERRAFORM_BACKEND_TFC,
 )
@@ -134,34 +142,38 @@ class Runner:
     def set_stacks_environments(self):
         """Set the environments distribution per stack."""
         dev_env = {
-            "name": "development",
-            "url": self.project_url_dev,
+            "name": DEV_ENV_NAME,
             "prefix": self.subdomain_dev,
+            "url": self.project_url_dev,
         }
         stage_env = {
-            "name": "staging",
-            "url": self.project_url_stage,
+            "name": STAGE_ENV_NAME,
             "prefix": self.subdomain_stage,
+            "url": self.project_url_stage,
         }
         prod_env = {
-            "name": "production",
-            "url": self.project_url_prod,
+            "name": PROD_ENV_NAME,
             "prefix": self.subdomain_prod,
+            "url": self.project_url_prod,
         }
         if self.environment_distribution == "1":
             self.stacks_environments = {
-                "main": {"dev": dev_env, "stage": stage_env, "prod": prod_env}
+                MAIN_STACK_SLUG: {
+                    DEV_ENV_SLUG: dev_env,
+                    STAGE_ENV_SLUG: stage_env,
+                    PROD_ENV_SLUG: prod_env,
+                }
             }
         elif self.environment_distribution == "2":
             self.stacks_environments = {
-                "dev": {"dev": dev_env, "stage": stage_env},
-                "main": {"prod": prod_env},
+                DEV_STACK_SLUG: {DEV_ENV_SLUG: dev_env, STAGE_ENV_SLUG: stage_env},
+                MAIN_STACK_SLUG: {PROD_ENV_SLUG: prod_env},
             }
         elif self.environment_distribution == "3":
             self.stacks_environments = {
-                "dev": {"dev": dev_env},
-                "stage": {"stage": stage_env},
-                "main": {"prod": prod_env},
+                DEV_STACK_SLUG: {DEV_ENV_SLUG: dev_env},
+                STAGE_STACK_SLUG: {STAGE_ENV_SLUG: stage_env},
+                MAIN_STACK_SLUG: {PROD_ENV_SLUG: prod_env},
             }
 
     def add_gitlab_variable(
@@ -254,7 +266,7 @@ class Runner:
                 ("create_dns_records", self.digitalocean_dns_records_create, "bool"),
             )
             self.digitalocean_domain_create and self.add_environment_tfvars(
-                ("create_domain", True, "bool"), env_slug="dev"
+                ("create_domain", True, "bool"), env_slug=DEV_ENV_SLUG
             )
             self.add_base_tfvars(
                 ("k8s_cluster_region", self.digitalocean_k8s_cluster_region),
@@ -276,10 +288,13 @@ class Runner:
                 "postgres_persistent_volume_host_path",
             )
             self.use_redis and self.add_environment_tfvars("redis_image")
+        if "s3" in self.media_storage:
+            self.add_base_tfvars("s3_region")
+            self.add_environment_tfvars("s3_bucket_name", "s3_region")
         if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
             self.add_base_tfvars(("create_s3_bucket", True, "bool"))
             self.add_environment_tfvars(
-                ("digitalocean_spaces_bucket_available", True, "bool")
+                "s3_host", ("digitalocean_spaces_bucket_available", True, "bool")
             )
         for stack_slug, stack_envs in self.stacks_environments.items():
             for env_slug, _env_data in stack_envs.items():
@@ -307,13 +322,13 @@ class Runner:
                 "media_storage": self.media_storage,
                 "pact_enabled": bool(self.pact_broker_url),
                 "project_dirname": self.project_dirname,
-                "project_domain": self.project_domain,
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
                 "stacks": self.stacks_environments,
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,
                 "tfvars": self.tfvars,
+                "vault_enabled": bool(self.vault_address),
             },
             output_dir=self.output_dir,
             no_input=True,
@@ -424,7 +439,6 @@ class Runner:
                 ("PACT_BROKER_PASSWORD", pact_broker_password, True, False),
                 ("PACT_BROKER_AUTH_URL", pact_broker_auth_url, True, False),
             )
-        # TODO: extend after implementing Vault
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
             self.add_gitlab_group_variables(
                 ("TFC_TOKEN", self.terraform_cloud_token, True)
@@ -450,24 +464,14 @@ class Runner:
             )
         "s3" in self.media_storage and self.add_gitlab_group_variables(
             ("S3_ACCESS_ID", self.s3_access_id, True),
-            ("S3_BUCKET_NAME", self.s3_bucket_name),
-            ("S3_REGION", self.s3_region),
             ("S3_SECRET_KEY", self.s3_secret_key, True),
         )
-        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-            self.add_gitlab_group_variables(("S3_HOST", self.s3_host))
 
-    def get_vault_secrets(self):
-        """Return the Vault common and service secrets."""
-        common_secrets = dict(
-            basic_auth_username=self.project_slug,
-            basic_auth_password=secrets.token_urlsafe(12),
-        )
-        service_secrets = {}
+    def get_vault_ci_jobs_secrets(self, extra_secrets=None):
+        """Return the CI jobs secrets to store on Vault."""
+        data = extra_secrets and extra_secrets.copy() or {}
         # Sentry and Pact env vars are used by the GitLab CI/CD
-        self.sentry_org and common_secrets.update(
-            sentry_auth_token=self.sentry_auth_token
-        )
+        self.sentry_org and data.update(sentry_auth_token=self.sentry_auth_token)
         if self.pact_broker_url:
             pact_broker_url = self.pact_broker_url
             pact_broker_username = self.pact_broker_username
@@ -477,41 +481,86 @@ class Runner:
                 rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
                 pact_broker_url,
             )
-            common_secrets.update(
+            data.update(
                 pact_broker_base_url=pact_broker_url,
                 pact_broker_username=pact_broker_username,
                 pact_broker_password=pact_broker_password,
                 pact_broker_auth_url=pact_broker_auth_url,
             )
-        if self.subdomain_monitoring:
-            service_secrets.update(grafana_password=secrets.token_urlsafe(12))
-        self.digitalocean_token and common_secrets.update(
+        return data and {"ci-jobs": data} or {}
+
+    def get_vault_base_secrets(self, stack_slug, extra_secrets=None):
+        """Return the base secrets to store on Vault."""
+        data = extra_secrets and extra_secrets.copy() or {}
+        self.digitalocean_token and data.update(
             digitalocean_token=self.digitalocean_token
         )
-        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            common_secrets.update(
-                kubernetes_cluster_ca_certificate=base64.b64encode(
-                    Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                ).decode(),
-                kubernetes_host=self.kubernetes_host,
-                kubernetes_token=self.kubernetes_token,
-            )
-        "s3" in self.media_storage and common_secrets.update(
+        "s3" in self.media_storage and data.update(
             s3_access_id=self.s3_access_id,
             s3_secret_key=self.s3_secret_key,
-            s3_region=self.s3_region,
-            s3_host=self.s3_host,
         )
-        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-            common_secrets.update(s3_host=self.s3_host)
-        elif self.media_storage == MEDIA_STORAGE_AWS_S3:
-            common_secrets.update(s3_bucket_name=self.s3_bucket_name)
-        return common_secrets, service_secrets
+        return data and {f"{self.service_slug}/base/{stack_slug}": data} or {}
+
+    def get_vault_cluster_secrets(self, stack_slug, extra_secrets=None):
+        """Return the cluster secrets to store on Vault."""
+        data = extra_secrets and extra_secrets.copy() or {}
+        self.subdomain_monitoring and stack_slug == MAIN_STACK_SLUG and data.update(
+            grafana_password=secrets.token_urlsafe(12)
+        )
+        self.digitalocean_token and data.update(
+            digitalocean_token=self.digitalocean_token
+        )
+        self.deployment_type == DEPLOYMENT_TYPE_OTHER and data.update(
+            kubernetes_cluster_ca_certificate=base64.b64encode(
+                Path(self.kubernetes_cluster_ca_certificate).read_bytes()
+            ).decode(),
+            kubernetes_host=self.kubernetes_host,
+            kubernetes_token=self.kubernetes_token,
+        )
+        return data and {f"{self.service_slug}/cluster/{stack_slug}": data} or {}
+
+    def get_vault_environment_secrets(self, env_slug, extra_secrets=None):
+        """Return the environment secrets to store on Vault."""
+        data = extra_secrets and extra_secrets.copy() or {}
+        data.update(
+            basic_auth_username=self.project_slug,
+            basic_auth_password=secrets.token_urlsafe(12),
+        )
+        self.digitalocean_token and data.update(
+            digitalocean_token=self.digitalocean_token
+        )
+        self.deployment_type == DEPLOYMENT_TYPE_OTHER and data.update(
+            kubernetes_cluster_ca_certificate=base64.b64encode(
+                Path(self.kubernetes_cluster_ca_certificate).read_bytes()
+            ).decode(),
+            kubernetes_host=self.kubernetes_host,
+            kubernetes_token=self.kubernetes_token,
+        )
+        "s3" in self.media_storage and data.update(
+            s3_access_id=self.s3_access_id,
+            s3_secret_key=self.s3_secret_key,
+        )
+        return data and {f"{self.service_slug}/environment/{env_slug}": data} or {}
+
+    def get_vault_secrets(self):
+        """Return secrets to storeon Vault."""
+        data = self.get_vault_ci_jobs_secrets()
+        regcred = None
+        if gitlab_terraform_outputs := self.terraform_outputs.get("gitlab"):
+            regcred = dict(
+                registry_username=gitlab_terraform_outputs["registry_username"],
+                registry_password=gitlab_terraform_outputs["registry_password"],
+            )
+        for stack_slug, stack_envs in self.stacks_environments.items():
+            data.update(self.get_vault_base_secrets(stack_slug))
+            data.update(self.get_vault_cluster_secrets(stack_slug))
+            for env_slug in stack_envs:
+                data.update(self.get_vault_environment_secrets(env_slug, regcred))
+        return data
 
     def init_gitlab(self):
         """Initialize the GitLab resources."""
         click.echo(info("...creating the GitLab resources with Terraform"))
-        group_variables, project_variables = self.get_gitlab_variables()
         env = dict(
             TF_VAR_gitlab_token=self.gitlab_private_token,
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
@@ -535,20 +584,20 @@ class Runner:
     def init_terraform_cloud(self):
         """Initialize the Terraform Cloud resources."""
         click.echo(info("...creating the Terraform Cloud resources with Terraform"))
-        stacks_environments = {
-            k: list(v.keys()) for k, v in self.stacks_environments.items()
-        }
         env = dict(
             TF_VAR_admin_email=self.terraform_cloud_admin_email,
             TF_VAR_create_organization=self.terraform_cloud_organization_create
             and "true"
             or "false",
+            TF_VAR_environments=json.dumps(
+                [i for j in self.stacks_environments.values() for i in j]
+            ),
             TF_VAR_hostname=self.terraform_cloud_hostname,
             TF_VAR_organization_name=self.terraform_cloud_organization,
             TF_VAR_project_name=self.project_name,
             TF_VAR_project_slug=self.project_slug,
-            TF_VAR_service_slug="orchestrator",
-            TF_VAR_stacks=json.dumps(list(stacks_environments.keys())),
+            TF_VAR_service_slug=self.service_slug,
+            TF_VAR_stacks=json.dumps(list(self.stacks_environments)),
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
         )
         self.run_terraform("terraform-cloud", env)
@@ -556,30 +605,18 @@ class Runner:
     def init_vault(self):
         """Initialize the Vault resources."""
         click.echo(info("...creating the Vault resources with Terraform"))
-        common_secrets, service_secrets = self.get_vault_secrets()
-        envs = [
-            j["name"] for i in self.stacks_environments.values() for j in i.values()
-        ]
         env = dict(
             TF_VAR_project_name=self.project_name,
-            TF_VAR_project_slug=self.gitlab_group_slug,
-            TF_VAR_service_slug="orchestrator",
+            TF_VAR_project_slug=self.gitlab_group_slug or self.project_slug,
+            TF_VAR_service_slug=self.service_slug,
             VAULT_ADDR=self.vault_address,
             VAULT_TOKEN=self.vault_token,
         )
-        if gitlab_terraform_outputs := self.terraform_outputs.get("gitlab"):
-            common_secrets.update(
-                registry_username=gitlab_terraform_outputs["registry_username"],
-                registry_password=gitlab_terraform_outputs["registry_password"],
-            )
-        common_secrets and env.update(
-            TF_VAR_common_secrets=json.dumps({i: common_secrets for i in envs})
+        if secrets_data := self.get_vault_secrets():
+            env.update(TF_VAR_secrets=json.dumps(secrets_data))
+        self.terraform_backend == TERRAFORM_BACKEND_TFC and env.update(
+            TF_VAR_terraform_cloud_token=self.terraform_cloud_token
         )
-        service_secrets and env.update(
-            TF_VAR_service_secrets=json.dumps({i: service_secrets for i in envs}),
-        )
-        if self.terraform_backend == TERRAFORM_BACKEND_TFC:
-            env.update(TF_VAR_terraform_cloud_token=self.terraform_cloud_token)
         self.run_terraform("vault", env)
 
     def run_terraform(self, module_name, env, outputs=None):
