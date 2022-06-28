@@ -3,6 +3,12 @@ variable "namespace" {
   type        = string
 }
 
+variable "regcred_secret" {
+  description = "The regcred secret."
+  type        = string
+  sensitive   = true
+}
+
 variable "s3_access_id" {
   description = "The S3 bucket access key ID."
   type        = string

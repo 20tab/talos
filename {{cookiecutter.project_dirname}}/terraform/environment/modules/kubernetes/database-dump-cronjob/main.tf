@@ -48,6 +48,9 @@ resource "kubernetes_cron_job_v1" "main" {
         template {
           metadata {}
           spec {
+            image_pull_secrets {
+              name = var.regcred_secret.name
+            }
             container {
               name    = "postgresql-dump-to-s3"
               image   = "20tab/postgres-dump-restore-to-from-s3:latest"

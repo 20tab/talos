@@ -250,6 +250,8 @@ module "database_dump_cronjob" {
 
   namespace = local.namespace
 
+  regcred_secret = kubernetes_secret_v1.regcred
+
   s3_region      = var.s3_region
   s3_access_id   = var.s3_access_id
   s3_secret_key  = var.s3_secret_key
