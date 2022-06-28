@@ -13,6 +13,7 @@ from bootstrap.constants import (
     AWS_S3_REGION_DEFAULT,
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
+    DEFAULT_GITLAB_URL,
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DIGITALOCEAN,
     DEPLOYMENT_TYPE_OTHER,
@@ -101,6 +102,7 @@ def collect(
     s3_access_id,
     s3_secret_key,
     s3_bucket_name,
+    gitlab_url,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -245,6 +247,7 @@ def collect(
         pact_broker_url, pact_broker_username, pact_broker_password
     )
     (
+        gitlab_url,
         gitlab_group_slug,
         gitlab_private_token,
         gitlab_group_owners,
@@ -252,6 +255,7 @@ def collect(
         gitlab_group_developers,
     ) = clean_gitlab_group_data(
         project_slug,
+        gitlab_url,
         gitlab_group_slug,
         gitlab_private_token,
         gitlab_group_owners,
@@ -344,6 +348,7 @@ def collect(
         "s3_access_id": s3_access_id,
         "s3_secret_key": s3_secret_key,
         "s3_bucket_name": s3_bucket_name,
+        "gitlab_url": gitlab_url,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
@@ -891,6 +896,7 @@ def clean_media_storage(media_storage):
 
 def clean_gitlab_group_data(
     project_slug,
+    gitlab_url,
     gitlab_group_slug,
     gitlab_private_token,
     gitlab_group_owners,
@@ -899,10 +905,13 @@ def clean_gitlab_group_data(
     quiet=False,
 ):
     """Return GitLab group data."""
-    if gitlab_group_slug or (
-        gitlab_group_slug is None
+    if gitlab_url or (
+        gitlab_url is None
         and click.confirm(warning("Do you want to use GitLab?"), default=True)
     ):
+        gitlab_url = validate_or_prompt_url(
+            "GitLab URL", gitlab_url, default=DEFAULT_GITLAB_URL
+        )
         gitlab_group_slug = slugify(
             gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
         )
@@ -932,12 +941,14 @@ def clean_gitlab_group_data(
             else click.prompt("Comma-separated GitLab group developers", default="")
         )
     else:
+        gitlab_url = None
         gitlab_group_slug = None
         gitlab_private_token = None
         gitlab_group_owners = None
         gitlab_group_maintainers = None
         gitlab_group_developers = None
     return (
+        gitlab_url,
         gitlab_group_slug,
         gitlab_private_token,
         gitlab_group_owners,

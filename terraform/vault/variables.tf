@@ -4,6 +4,24 @@ variable "common_secrets" {
   default     = {}
 }
 
+variable "gitlab_group_slug" {
+  description = "The GitLab group slug."
+  type        = string
+  default     = ""
+}
+
+variable "gitlab_jwt_auth_token_explicit_max_ttl" {
+  description = "The GitLab auth token explicit max TTL."
+  type        = number
+  default     = 60
+}
+
+variable "gitlab_url" {
+  description = "The GitLab url."
+  type        = string
+  default     = ""
+}
+
 variable "project_name" {
   description = "The project name."
   type        = string

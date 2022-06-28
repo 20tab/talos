@@ -18,6 +18,7 @@ from pydantic import validate_arguments
 
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
+    DEFAULT_GITLAB_URL,
     DEPLOYMENT_TYPE_OTHER,
     DEV_ENV_NAME,
     DEV_ENV_SLUG,
@@ -113,6 +114,7 @@ class Runner:
     s3_access_id: str | None = None
     s3_secret_key: str | None = None
     s3_bucket_name: str | None = None
+    gitlab_url: str | None = None
     gitlab_private_token: str | None = None
     gitlab_group_slug: str | None = None
     gitlab_group_owners: str | None = None
@@ -132,6 +134,7 @@ class Runner:
     def __post_init__(self):
         """Finalize initialization."""
         self.service_slug = ORCHESTRATOR_SERVICE_SLUG
+        self.gitlab_url = self.gitlab_url.rstrip("/")
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
@@ -578,6 +581,9 @@ class Runner:
             TF_VAR_project_variables=self.render_gitlab_variables_to_string("project"),
             TF_VAR_vault_enabled=self.vault_address and "true" or "false",
         )
+        self.gitlab_url != DEFAULT_GITLAB_URL and env.update(
+            GITLAB_BASE_URL=f"{self.gitlab_url}/api/v4/"
+        )
         self.run_terraform(
             "gitlab", env, outputs=["registry_password", "registry_username"]
         )
@@ -608,10 +614,14 @@ class Runner:
         click.echo(info("...creating the Vault resources with Terraform"))
         env = dict(
             TF_VAR_project_name=self.project_name,
-            TF_VAR_project_slug=self.gitlab_group_slug or self.project_slug,
+            TF_VAR_project_slug=self.project_slug,
             TF_VAR_service_slug=self.service_slug,
             VAULT_ADDR=self.vault_address,
             VAULT_TOKEN=self.vault_token,
+        )
+        self.gitlab_url and env.update(
+            TF_VAR_gitlab_group_slug=self.gitlab_group_slug,
+            TF_VAR_gitlab_url=self.gitlab_url,
         )
         if secrets_data := self.get_vault_secrets():
             env.update(TF_VAR_secrets=json.dumps(secrets_data))
