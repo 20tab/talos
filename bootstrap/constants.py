@@ -44,7 +44,7 @@ SUBREPOS_DIR = Path(__file__).parent.parent / ".subrepos"
 
 # Services type
 
-ORCHESTRATOR_SERVICE_SLUG = "orchestrator"
+SERVICE_SLUG_DEFAULT = "orchestrator"
 
 EMPTY_SERVICE_TYPE = "none"
 

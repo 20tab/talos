@@ -1,16 +1,11 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 if [ "${DEBUG_OUTPUT}" == "true" ]; then
     set -x
 fi
 
-export TF_VAR_env_slug="${ENV_SLUG}"
-export TF_VAR_project_slug="${PROJECT_SLUG}"
-export TF_VAR_stack_slug="${STACK_SLUG}"
-
 plan_cache="plan.cache"
 plan_json="plan.json"
-var_file="${TERRAFORM_VARS_DIR}/.tfvars"
 
 JQ_PLAN='
   (
@@ -22,13 +17,25 @@ JQ_PLAN='
   }
 '
 
+export TF_VAR_env_slug="${ENV_SLUG}"
+export TF_VAR_project_slug="${PROJECT_SLUG}"
+export TF_VAR_stack_slug="${STACK_SLUG}"
+
+var_file="${TERRAFORM_VARS_DIR}/.tfvars"
+
+if [ "${TERRAFORM_EXTRA_VAR_FILE}" != "" ]; then
+  extra_var_file="${TERRAFORM_VARS_DIR}/${TERRAFORM_EXTRA_VAR_FILE}"
+  touch ${extra_var_file}
+  var_files="-var-file=${var_file} -var-file=${extra_var_file}"
+else
+  var_files="-var-file=${var_file}"
+fi
+
 if [ "${VAULT_ADDR}" != "" ]; then
-  curl https://releases.hashicorp.com/vault/${VAULT_VERSION:=1.11.0}/vault_${VAULT_VERSION}_linux_386.zip --output vault.zip
-  unzip vault.zip
-  export VAULT_TOKEN="$(./vault write -field=token auth/gitlab-jwt/login role=${PROJECT_SLUG} jwt=${CI_JOB_JWT_V2})"
-  if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
-    export TFC_TOKEN="$(./vault read -field=token ${PROJECT_SLUG}-tfc/creds/default)"
-  fi
+  TERRAFORM_SECRETS_VAR_FILE=${TERRAFORM_VARS_DIR}/secrets.json
+  source vault.sh
+  var_files="${var_files} -var-file=${TERRAFORM_SECRETS_VAR_FILE}"
+  cat ${TERRAFORM_SECRETS_VAR_FILE}
 fi
 
 case "${TERRAFORM_BACKEND}" in
@@ -77,14 +84,6 @@ case "${TERRAFORM_BACKEND}" in
 EOF
   ;;
 esac
-
-if [ "${TERRAFORM_EXTRA_VAR_FILE}" != "" ]; then
-  extra_var_file="${TERRAFORM_VARS_DIR}/${TERRAFORM_EXTRA_VAR_FILE}"
-  touch ${extra_var_file}
-  var_files="-var-file=${var_file} -var-file=${extra_var_file}"
-else
-  var_files="-var-file=${var_file}"
-fi
 
 # Use terraform automation mode (will remove some verbose unneeded messages)
 export TF_IN_AUTOMATION=true

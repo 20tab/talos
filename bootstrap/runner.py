@@ -27,9 +27,9 @@ from bootstrap.constants import (
     GITLAB_URL_DEFAULT,
     MAIN_STACK_SLUG,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
-    ORCHESTRATOR_SERVICE_SLUG,
     PROD_ENV_NAME,
     PROD_ENV_SLUG,
+    SERVICE_SLUG_DEFAULT,
     STAGE_ENV_NAME,
     STAGE_ENV_SLUG,
     STAGE_STACK_SLUG,
@@ -133,7 +133,7 @@ class Runner:
 
     def __post_init__(self):
         """Finalize initialization."""
-        self.service_slug = ORCHESTRATOR_SERVICE_SLUG
+        self.service_slug = SERVICE_SLUG_DEFAULT
         self.gitlab_url = self.gitlab_url.rstrip("/")
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
@@ -328,6 +328,7 @@ class Runner:
                 "project_dirname": self.project_dirname,
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
+                "service_slug": self.service_slug,
                 "stacks": self.stacks_environments,
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,

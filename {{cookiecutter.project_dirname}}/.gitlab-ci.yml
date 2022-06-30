@@ -62,8 +62,9 @@ services:
       -e TF_VAR_tls_certificate_key="${TLS_CERTIFICATE_KEY}"{% endif %}{% if cookiecutter.terraform_backend != "gitlab" %}
       -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" and not cookiecutter.vault_enabled %}
       -e TFC_TOKEN{% endif %}{% if cookiecutter.vault_enabled %}
-      -e VAULT_ADDR{% endif %}
-      registry.gitlab.com/gitlab-org/terraform-images/stable:latest sh -c "${TERRAFORM_CMD}"
+      -e VAULT_ADDR
+      -e VAULT_SECRET_NAME{% endif %}
+      registry.gitlab.com/gitlab-org/terraform-images/stable:latest sh ${TERRAFORM_CMD}
 
 .init:
   extends:
@@ -107,7 +108,8 @@ services:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/base/vars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: stack_{{ stack_slug }}_base{% else %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}_orchestrator_base_{{ stack_slug }}{% endif %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_base_{{ stack_slug }}{% endif %}{% if cookiecutter.vault_enabled %}
+    VAULT_SECRET_NAME: {{ cookiecutter.project_slug }}/{{ cookiecutter.service_slug }}/base/{{ stack_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-base
     paths:
@@ -156,7 +158,8 @@ stack_{{ stack_slug }}_base_apply:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/cluster/vars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: stack_{{ stack_slug }}_cluster{% else %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}_orchestrator_cluster_{{ stack_slug }}{% endif %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_cluster_{{ stack_slug }}{% endif %}{% if cookiecutter.vault_enabled %}
+    VAULT_SECRET_NAME: {{ cookiecutter.project_slug }}/{{ cookiecutter.service_slug }}/cluster/{{ stack_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-cluster
     paths:
@@ -213,7 +216,8 @@ stack_{{ stack_slug }}_cluster_apply:
     ENV_SLUG: {{ env_slug }}
     TERRAFORM_EXTRA_VAR_FILE: {{ env_slug }}.tfvars{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: env_{{ env_slug }}{% else %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}_orchestrator_environment_{{ env_slug }}{% endif %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_environment_{{ env_slug }}{% endif %}{% if cookiecutter.vault_enabled %}
+    VAULT_SECRET_NAME: {{ cookiecutter.project_slug }}/{{ cookiecutter.service_slug }}/environment/{{ env_slug }}{% endif %}
   cache:
     key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}
     paths:
