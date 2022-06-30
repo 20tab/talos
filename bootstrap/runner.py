@@ -18,13 +18,13 @@ from pydantic import validate_arguments
 
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
-    DEFAULT_GITLAB_URL,
     DEPLOYMENT_TYPE_OTHER,
     DEV_ENV_NAME,
     DEV_ENV_SLUG,
     DEV_STACK_SLUG,
     DUMPS_DIR,
     FRONTEND_TEMPLATE_URLS,
+    GITLAB_URL_DEFAULT,
     MAIN_STACK_SLUG,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
     ORCHESTRATOR_SERVICE_SLUG,
@@ -72,7 +72,7 @@ class Runner:
     terraform_cloud_organization_create: bool | None = None
     terraform_cloud_admin_email: str | None = None
     vault_token: str | None = None
-    vault_address: str | None = None
+    vault_url: str | None = None
     digitalocean_token: str | None = None
     kubernetes_cluster_ca_certificate: str | None = None
     kubernetes_host: str | None = None
@@ -332,7 +332,7 @@ class Runner:
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,
                 "tfvars": self.tfvars,
-                "vault_enabled": bool(self.vault_address),
+                "vault_enabled": bool(self.vault_url),
             },
             output_dir=self.output_dir,
             no_input=True,
@@ -391,7 +391,7 @@ class Runner:
             "terraform_dir": str(self.terraform_dir.resolve()),
             "uid": self.uid,
             "use_redis": self.use_redis,
-            "vault_address": self.vault_address,
+            "vault_url": self.vault_url,
             "vault_token": self.vault_token,
             **kwargs,
         }
@@ -414,7 +414,7 @@ class Runner:
             self.add_gitlab_group_variables(("PACT_ENABLED", "true", False, False))
         if self.vault_token:
             self.add_gitlab_group_variables(
-                ("VAULT_ADDR", self.vault_address, False, False)
+                ("VAULT_ADDR", self.vault_url, False, False)
             )
         else:
             self.set_gitlab_variables_secrets()
@@ -579,9 +579,9 @@ class Runner:
             TF_VAR_project_name=self.service_slug.title(),
             TF_VAR_project_slug=self.service_slug,
             TF_VAR_project_variables=self.render_gitlab_variables_to_string("project"),
-            TF_VAR_vault_enabled=self.vault_address and "true" or "false",
+            TF_VAR_vault_enabled=self.vault_url and "true" or "false",
         )
-        self.gitlab_url != DEFAULT_GITLAB_URL and env.update(
+        self.gitlab_url != GITLAB_URL_DEFAULT and env.update(
             GITLAB_BASE_URL=f"{self.gitlab_url}/api/v4/"
         )
         self.run_terraform(
@@ -614,14 +614,9 @@ class Runner:
         click.echo(info("...creating the Vault resources with Terraform"))
         env = dict(
             TF_VAR_project_name=self.project_name,
-            TF_VAR_project_slug=self.project_slug,
-            TF_VAR_service_slug=self.service_slug,
-            VAULT_ADDR=self.vault_address,
+            TF_VAR_project_path=self.gitlab_group_slug or self.project_slug,
+            VAULT_ADDR=self.vault_url,
             VAULT_TOKEN=self.vault_token,
-        )
-        self.gitlab_url and env.update(
-            TF_VAR_gitlab_group_slug=self.gitlab_group_slug,
-            TF_VAR_gitlab_url=self.gitlab_url,
         )
         if secrets_data := self.get_vault_secrets():
             env.update(TF_VAR_secrets=json.dumps(secrets_data))

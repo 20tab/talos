@@ -13,7 +13,6 @@ from bootstrap.constants import (
     AWS_S3_REGION_DEFAULT,
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
-    DEFAULT_GITLAB_URL,
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DIGITALOCEAN,
     DEPLOYMENT_TYPE_OTHER,
@@ -27,6 +26,7 @@ from bootstrap.constants import (
     ENVIRONMENT_DISTRIBUTION_PROMPT,
     FRONTEND_TYPE_CHOICES,
     FRONTEND_TYPE_DEFAULT,
+    GITLAB_URL_DEFAULT,
     MEDIA_STORAGE_AWS_S3,
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
@@ -60,7 +60,7 @@ def collect(
     terraform_cloud_organization_create,
     terraform_cloud_admin_email,
     vault_token,
-    vault_address,
+    vault_url,
     digitalocean_token,
     kubernetes_cluster_ca_certificate,
     kubernetes_host,
@@ -148,7 +148,7 @@ def collect(
         terraform_cloud_organization_create,
         terraform_cloud_admin_email,
     )
-    vault_token, vault_address = clean_vault_data(vault_token, vault_address, quiet)
+    vault_token, vault_url = clean_vault_data(vault_token, vault_url, quiet)
     environment_distribution = clean_environment_distribution(
         environment_distribution, deployment_type
     )
@@ -263,7 +263,7 @@ def collect(
         gitlab_group_developers,
         quiet,
     )
-    if (gitlab_group_slug or vault_address) and "s3" in media_storage:
+    if (gitlab_url or vault_url) and "s3" in media_storage:
         (
             digitalocean_token,
             s3_region,
@@ -302,7 +302,7 @@ def collect(
         "terraform_cloud_organization_create": terraform_cloud_organization_create,
         "terraform_cloud_admin_email": terraform_cloud_admin_email,
         "vault_token": vault_token,
-        "vault_address": vault_address,
+        "vault_url": vault_url,
         "digitalocean_token": digitalocean_token,
         "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
         "kubernetes_host": kubernetes_host,
@@ -554,7 +554,7 @@ def clean_terraform_backend(
     )
 
 
-def clean_vault_data(vault_token, vault_address, quiet=False):
+def clean_vault_data(vault_token, vault_url, quiet=False):
     """Return the Vault data, if applicable."""
     if vault_token or (
         vault_token is None
@@ -570,11 +570,11 @@ def clean_vault_data(vault_token, vault_address, quiet=False):
             ),
             abort=True,
         )
-        vault_address = validate_or_prompt_url("Vault address", vault_address)
+        vault_url = validate_or_prompt_url("Vault address", vault_url)
     else:
         vault_token = None
-        vault_address = None
-    return vault_token, vault_address
+        vault_url = None
+    return vault_token, vault_url
 
 
 def clean_environment_distribution(environment_distribution, deployment_type):
@@ -910,7 +910,7 @@ def clean_gitlab_group_data(
         and click.confirm(warning("Do you want to use GitLab?"), default=True)
     ):
         gitlab_url = validate_or_prompt_url(
-            "GitLab URL", gitlab_url, default=DEFAULT_GITLAB_URL
+            "GitLab URL", gitlab_url, default=GITLAB_URL_DEFAULT
         )
         gitlab_group_slug = slugify(
             gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
