@@ -29,16 +29,18 @@ services:
       -w ${PWD}{% if cookiecutter.terraform_backend == "gitlab" %}
       -e CI_API_V4_URL
       -e CI_COMMIT_SHA
-      -e CI_JOB_ID
+      -e CI_JOB_ID{% if cookiecutter.vault_enabled %}
+      -e CI_JOB_JWT_V2{% endif %}
       -e CI_JOB_STAGE
       -e CI_JOB_TOKEN
-      -e CI_PROJECT_DIR
       -e CI_PROJECT_ID
       -e CI_PROJECT_NAME
       -e CI_PROJECT_NAMESPACE
       -e CI_PROJECT_PATH
-      -e CI_PROJECT_URL{% endif %}
+      -e CI_PROJECT_URL{% elif cookiecutter.vault_enabled %}
+      -e CI_JOB_JWT_V2{% endif %}
       -e ENV_SLUG
+      -e PROJECT_DIR=${CI_PROJECT_DIR}
       -e PROJECT_SLUG={{ cookiecutter.project_slug }}
       -e STACK_SLUG
       -e TERRAFORM_BACKEND={{ cookiecutter.terraform_backend }}
@@ -63,8 +65,9 @@ services:
       -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" and not cookiecutter.vault_enabled %}
       -e TFC_TOKEN{% endif %}{% if cookiecutter.vault_enabled %}
       -e VAULT_ADDR
-      -e VAULT_SECRET_NAME{% endif %}
-      registry.gitlab.com/gitlab-org/terraform-images/stable:latest sh ${TERRAFORM_CMD}
+      -e VAULT_SECRET_NAME
+      -e VAULT_VERSION{% endif %}
+      registry.gitlab.com/gitlab-org/terraform-images/stable:latest sh -c "${TERRAFORM_CMD}"
 
 .init:
   extends:
