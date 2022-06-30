@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 curl https://releases.hashicorp.com/vault/${VAULT_VERSION:=1.11.0}/vault_${VAULT_VERSION}_linux_386.zip --output vault.zip
 unzip vault.zip

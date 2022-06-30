@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 if [ "${DEBUG_OUTPUT}" == "true" ]; then
     set -x
@@ -33,7 +33,7 @@ fi
 
 if [ "${VAULT_ADDR}" != "" ]; then
   TERRAFORM_SECRETS_VAR_FILE=${TERRAFORM_VARS_DIR}/secrets.json
-  source vault.sh
+  . ./vault.sh
   var_files="${var_files} -var-file=${TERRAFORM_SECRETS_VAR_FILE}"
   cat ${TERRAFORM_SECRETS_VAR_FILE}
 fi
