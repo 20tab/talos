@@ -22,6 +22,15 @@ JQ_PLAN='
   }
 '
 
+if [ "${VAULT_ADDR}" != "" ]; then
+  curl https://releases.hashicorp.com/vault/${VAULT_VERSION:=1.11.0}/vault_${VAULT_VERSION}_linux_386.zip --output vault.zip
+  unzip vault.zip
+  export VAULT_TOKEN="$(./vault write -field=token auth/gitlab-jwt/login role=${PROJECT_SLUG} jwt=${CI_JOB_JWT_V2})"
+  if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
+    export TFC_TOKEN="$(./vault read -field=token ${PROJECT_SLUG}-tfc/creds/default)"
+  fi
+fi
+
 case "${TERRAFORM_BACKEND}" in
   "gitlab")
     # If TF_USERNAME is unset then default to GITLAB_USER_LOGIN
@@ -53,6 +62,7 @@ case "${TERRAFORM_BACKEND}" in
     export TF_VAR_CI_PROJECT_NAME="${TF_VAR_CI_PROJECT_NAME:-${CI_PROJECT_NAME}}"
     export TF_VAR_CI_PROJECT_NAMESPACE="${TF_VAR_CI_PROJECT_NAMESPACE:-${CI_PROJECT_NAMESPACE}}"
     export TF_VAR_CI_PROJECT_PATH="${TF_VAR_CI_PROJECT_PATH:-${CI_PROJECT_PATH}}"
+    export TF_VAR_CI_PROJECT_URL="${TF_VAR_CI_PROJECT_URL:-${CI_PROJECT_URL}}"
   ;;
   "terraform-cloud")
     export TF_CLI_CONFIG_FILE="${TF_ROOT}/cloud.tfc"
