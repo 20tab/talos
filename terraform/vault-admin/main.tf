@@ -12,53 +12,83 @@ provider "vault" {
 
 /* GitLab JWT Auth */
 
-data "vault_auth_backend" "gitlab_jwt" {
-  count = var.gitlab_jwt_auth_path != "" ? 1 : 0
-
-  path = var.gitlab_jwt_auth_path
+resource "vault_jwt_auth_backend" "gitlab_jwt" {
+  description  = "Demonstration of the Terraform JWT auth backend"
+  path         = "gitlab-jwt-${var.project_path}"
+  jwks_url     = format("%s/-/jwks", trimsuffix(var.gitlab_url, "/"))
+  bound_issuer = var.gitlab_url
 }
 
-resource "vault_policy" "gitlab_jwt_read" {
-  count = var.gitlab_jwt_auth_path != "" ? 1 : 0
+resource "vault_policy" "gitlab_jwt_stacks" {
+  for_each = var.stacks_environments
 
-  name = "gitlab-jwt-${var.project_path}-read"
+  name = "gitlab-jwt-${var.project_path}-stacks-${each.key}"
 
   policy = <<EOF
-# Read-only permission for GitLab CI jobs on project "${var.project_name}" secrets
+# Read-only permission for GitLab CI jobs on project "${var.project_name}" ${each.key} stack secrets
 
-path "{{identity.entity.aliases.${data.vault_auth_backend.gitlab_jwt[0].accessor}.metadata.project_path}}/*" {
+path "${var.project_path}/stacks/${each.key}/*" {
   capabilities = [ "read" ]
 }
 
-path "{{identity.entity.aliases.${data.vault_auth_backend.gitlab_jwt[0].accessor}.metadata.project_slug}}/ci-jobs" {
-  capabilities = [ "read" ]
-}
-
-path "{{identity.entity.aliases.${data.vault_auth_backend.gitlab_jwt[0].accessor}.metadata.project_slug}}-tfc/creds/default" {
+path "${var.project_path}-tfc/creds/default" {
   capabilities = [ "read" ]
 }
 EOF
 }
 
-resource "vault_jwt_auth_backend_role" "main" {
-  count = var.gitlab_jwt_auth_path != "" ? 1 : 0
+resource "vault_jwt_auth_backend_role" "gitlab_jwt_stacks" {
+  for_each = vault_policy.gitlab_jwt_stacks
 
-  backend = data.vault_auth_backend.gitlab_jwt[0].path
+  backend = vault_jwt_auth_backend.gitlab_jwt.path
 
-  role_name = var.project_path
+  role_name = each.value.name
   role_type = "jwt"
 
   token_explicit_max_ttl = var.gitlab_jwt_auth_token_explicit_max_ttl
-  token_policies         = [vault_policy.gitlab_jwt_read[0].name]
+  token_policies         = [each.value.name]
 
   user_claim = "user_email"
 
-  bound_claims_type = "glob"
   bound_claims      = { namespace_path = var.project_path }
-  claim_mappings = {
-    namespace_path = "project_slug",
-    project_path   = "project_path",
-  }
+}
+
+resource "vault_policy" "gitlab_jwt_envs" {
+  for_each = transpose({ for k, v in var.stacks_environments : k => keys(v) })
+
+  name = "gitlab-jwt-${var.project_path}-envs-${each.key}"
+
+  policy = <<EOF
+# Read-only permission for GitLab CI jobs on project "${var.project_name}" ${each.key} stack secrets
+
+path "${var.project_path}/stacks/${each.value[0]}/*" {
+  capabilities = [ "read" ]
+}
+
+path "${var.project_path}/envs/${each.key}/*" {
+  capabilities = [ "read" ]
+}
+
+path "${var.project_path}-tfc/creds/default" {
+  capabilities = [ "read" ]
+}
+EOF
+}
+
+resource "vault_jwt_auth_backend_role" "envs" {
+  for_each = vault_policy.gitlab_jwt_envs
+
+  backend = vault_jwt_auth_backend.gitlab_jwt.path
+
+  role_name = each.value.name
+  role_type = "jwt"
+
+  token_explicit_max_ttl = var.gitlab_jwt_auth_token_explicit_max_ttl
+  token_policies         = [each.value.name]
+
+  user_claim = "user_email"
+
+  bound_claims      = { namespace_path = var.project_path }
 }
 
 /* GitLab OIDC Auth */
