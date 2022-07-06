@@ -126,12 +126,12 @@ class Runner:
     logs_dir: Path | None = None
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
-    vault_project_path: str = field(init=False, default="")
     stacks_environments: dict = field(init=False, default_factory=dict)
     gitlab_variables: dict = field(init=False, default_factory=dict)
+    tfvars: dict = field(init=False, default_factory=dict)
+    vault_project_path: str = field(init=False, default="")
     vault_secrets: dict = field(init=False, default_factory=dict)
     terraform_outputs: dict = field(init=False, default_factory=dict)
-    tfvars: dict = field(init=False, default_factory=dict)
 
     def __post_init__(self):
         """Finalize initialization."""
@@ -190,14 +190,14 @@ class Runner:
     def register_gitlab_variable(
         self, level, var_name, var_value=None, masked=False, protected=True
     ):
-        """Register a GitLab variable at the given local registry level."""
+        """Register a GitLab variable at the given level."""
         vars_dict = self.gitlab_variables.setdefault(level, {})
         if var_value is None:
             var_value = getattr(self, var_name)
         vars_dict[var_name] = format_gitlab_variable(var_value, masked, protected)
 
     def register_gitlab_variables(self, level, *vars):
-        """Register one or more GitLab variable at the given local registry level."""
+        """Register one or more GitLab variable at the given level."""
         [
             self.register_gitlab_variable(level, *((i,) if isinstance(i, str) else i))
             for i in vars
@@ -210,6 +210,78 @@ class Runner:
     def register_gitlab_project_variables(self, *vars):
         """Register one or more GitLab project variable."""
         self.register_gitlab_variables("project", *vars)
+
+    def collect_gitlab_variables(self):
+        """Collect the GitLab group and project variables."""
+        if self.pact_broker_url:
+            self.register_gitlab_group_variables(("PACT_ENABLED", "true", False, False))
+        if self.vault_token:
+            self.register_gitlab_group_variables(
+                ("VAULT_ADDR", self.vault_url, False, False)
+            )
+        else:
+            self.collect_gitlab_variables_secrets()
+
+    def collect_gitlab_variables_secrets(self):
+        """Collect secrets as GitLab group and project variables."""
+        self.register_gitlab_group_variables(
+            ("BASIC_AUTH_USERNAME", self.project_slug),
+            ("BASIC_AUTH_PASSWORD", secrets.token_urlsafe(12), True),
+        )
+        self.sentry_org and self.register_gitlab_group_variables(
+            "SENTRY_AUTH_TOKEN", self.sentry_auth_token, True
+        )
+        if self.pact_broker_url:
+            pact_broker_url = self.pact_broker_url
+            pact_broker_username = self.pact_broker_username
+            pact_broker_password = self.pact_broker_password
+            pact_broker_auth_url = re.sub(
+                r"^(https?)://(.*)$",
+                rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
+                pact_broker_url,
+            )
+            self.register_gitlab_group_variables(
+                ("PACT_BROKER_BASE_URL", pact_broker_url, False, False),
+                ("PACT_BROKER_USERNAME", pact_broker_username, False, False),
+                ("PACT_BROKER_PASSWORD", pact_broker_password, True, False),
+                ("PACT_BROKER_AUTH_URL", pact_broker_auth_url, True, False),
+            )
+        if self.terraform_backend == TERRAFORM_BACKEND_TFC:
+            self.register_gitlab_group_variables(
+                ("TFC_TOKEN", self.terraform_cloud_token, True)
+            )
+        if self.subdomain_monitoring:
+            self.register_gitlab_project_variables(
+                ("GRAFANA_PASSWORD", secrets.token_urlsafe(12), True)
+            )
+        self.digitalocean_token and self.register_gitlab_group_variables(
+            ("DIGITALOCEAN_TOKEN", self.digitalocean_token, True)
+        )
+        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
+            self.register_gitlab_group_variables(
+                (
+                    "KUBERNETES_CLUSTER_CA_CERTIFICATE",
+                    base64.b64encode(
+                        Path(self.kubernetes_cluster_ca_certificate).read_bytes()
+                    ).decode(),
+                    True,
+                ),
+                ("KUBERNETES_HOST", self.kubernetes_host),
+                ("KUBERNETES_TOKEN", self.kubernetes_token, True),
+            )
+        if "s3" in self.media_storage:
+            self.register_gitlab_group_variables(
+                ("S3_ACCESS_ID", self.s3_access_id, True),
+                ("S3_REGION", self.s3_region),
+                ("S3_SECRET_KEY", self.s3_secret_key, True),
+            )
+            self.s3_bucket_name and self.register_gitlab_group_variables(
+                ("S3_BUCKET_NAME", self.s3_bucket_name)
+            )
+            (
+                self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3
+                and self.register_gitlab_group_variables(("S3_HOST", self.s3_host))
+            )
 
     def render_gitlab_variables_to_string(self, level):
         """Return the given level GitLab variables rendered to string."""
@@ -302,15 +374,11 @@ class Runner:
                 "postgres_persistent_volume_host_path",
             )
             self.use_redis and self.register_environment_tfvars("redis_image")
-        if "s3" in self.media_storage:
-            self.register_base_tfvars("s3_region")
-            self.register_environment_tfvars("s3_region")
         if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
             self.register_base_tfvars(("create_s3_bucket", True, "bool"))
             self.register_environment_tfvars(
-                "s3_host", ("digitalocean_spaces_bucket_available", True, "bool")
+                ("digitalocean_spaces_bucket_available", True, "bool")
             )
-        self.s3_bucket_name and self.register_environment_tfvars("s3_bucket_name")
         for stack_slug, stack_envs in self.stacks_environments.items():
             for env_slug, _env_data in stack_envs.items():
                 self.register_environment_tfvars(
@@ -319,169 +387,6 @@ class Runner:
                     ("subdomains", [getattr(self, f"subdomain_{env_slug}")], "list"),
                     env_slug=env_slug,
                 )
-
-    def init_service(self):
-        """Initialize the service."""
-        click.echo(info("...cookiecutting the service"))
-        cookiecutter(
-            os.path.dirname(os.path.dirname(__file__)),
-            extra_context={
-                "backend_service_port": self.backend_service_port,
-                "backend_service_slug": self.backend_service_slug,
-                "backend_type": self.backend_type,
-                "deployment_type": self.deployment_type,
-                "environment_distribution": self.environment_distribution,
-                "frontend_service_port": self.frontend_service_port,
-                "frontend_service_slug": self.frontend_service_slug,
-                "frontend_type": self.frontend_type,
-                "media_storage": self.media_storage,
-                "pact_enabled": bool(self.pact_broker_url),
-                "project_dirname": self.project_dirname,
-                "project_name": self.project_name,
-                "project_slug": self.project_slug,
-                "service_slug": self.service_slug,
-                "stacks": self.stacks_environments,
-                "terraform_backend": self.terraform_backend,
-                "terraform_cloud_organization": self.terraform_cloud_organization,
-                "tfvars": self.tfvars,
-                "vault_project_path": self.vault_project_path,
-            },
-            output_dir=self.output_dir,
-            no_input=True,
-        )
-
-    def create_env_file(self):
-        """Create the final env file from its template."""
-        click.echo(info("...generating the .env file"))
-        env_path = self.service_dir / ".env_template"
-        env_text = (
-            env_path.read_text()
-            .replace("__SECRETKEY__", secrets.token_urlsafe(40))
-            .replace("__PASSWORD__", secrets.token_urlsafe(8))
-        )
-        (self.service_dir / ".env").write_text(env_text)
-
-    def init_subrepo(self, service_slug, template_url, **kwargs):
-        """Initialize a subrepo using the given template and options."""
-        subrepo_dir = str((SUBREPOS_DIR / service_slug).resolve())
-        shutil.rmtree(subrepo_dir, ignore_errors=True)
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                "feature/vault",
-                template_url,
-                subrepo_dir,
-                "-q",
-            ]
-        )
-        options = {
-            "deployment_type": self.deployment_type,
-            "environment_distribution": self.environment_distribution,
-            "gid": self.gid,
-            "gitlab_group_slug": self.gitlab_group_slug,
-            "gitlab_private_token": self.gitlab_private_token,
-            "logs_dir": str(self.logs_dir.resolve()),
-            "output_dir": str(self.service_dir.resolve()),
-            "project_dirname": service_slug,
-            "project_name": self.project_name,
-            "project_slug": self.project_slug,
-            "project_url_dev": self.project_url_dev,
-            "project_url_prod": self.project_url_prod,
-            "project_url_stage": self.project_url_stage,
-            "sentry_org": self.sentry_org,
-            "sentry_url": self.sentry_url,
-            "service_dir": str((self.service_dir / service_slug).resolve()),
-            "service_slug": service_slug,
-            "terraform_backend": self.terraform_backend,
-            "terraform_cloud_admin_email": self.terraform_cloud_admin_email,
-            "terraform_cloud_hostname": self.terraform_cloud_hostname,
-            "terraform_cloud_organization_create": False,
-            "terraform_cloud_organization": self.terraform_cloud_organization,
-            "terraform_cloud_token": self.terraform_cloud_token,
-            "terraform_dir": str(self.terraform_dir.resolve()),
-            "uid": self.uid,
-            "use_redis": self.use_redis,
-            "vault_url": self.vault_url,
-            "vault_token": self.vault_token,
-            **kwargs,
-        }
-        subprocess.run(
-            ["python", "-m", "pip", "install", "-r", "requirements/common.txt"],
-            cwd=subrepo_dir,
-        )
-        subprocess.run(
-            [
-                "python",
-                "-c",
-                f"from bootstrap.runner import Runner; Runner(**{options}).run()",
-            ],
-            cwd=subrepo_dir,
-        )
-
-    def collect_gitlab_variables(self):
-        """Collect the GitLab group and project variables."""
-        if self.pact_broker_url:
-            self.register_gitlab_group_variables(("PACT_ENABLED", "true", False, False))
-        if self.vault_token:
-            self.register_gitlab_group_variables(
-                ("VAULT_ADDR", self.vault_url, False, False)
-            )
-        else:
-            self.set_gitlab_variables_secrets()
-
-    def set_gitlab_variables_secrets(self):
-        """Set secrets as GitLab group and project variables."""
-        self.register_gitlab_group_variables(
-            ("BASIC_AUTH_USERNAME", self.project_slug),
-            ("BASIC_AUTH_PASSWORD", secrets.token_urlsafe(12), True),
-        )
-        self.sentry_org and self.register_gitlab_group_variables(
-            "SENTRY_AUTH_TOKEN", self.sentry_auth_token, True
-        )
-        if self.pact_broker_url:
-            pact_broker_url = self.pact_broker_url
-            pact_broker_username = self.pact_broker_username
-            pact_broker_password = self.pact_broker_password
-            pact_broker_auth_url = re.sub(
-                r"^(https?)://(.*)$",
-                rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
-                pact_broker_url,
-            )
-            self.register_gitlab_group_variables(
-                ("PACT_BROKER_BASE_URL", pact_broker_url, False, False),
-                ("PACT_BROKER_USERNAME", pact_broker_username, False, False),
-                ("PACT_BROKER_PASSWORD", pact_broker_password, True, False),
-                ("PACT_BROKER_AUTH_URL", pact_broker_auth_url, True, False),
-            )
-        if self.terraform_backend == TERRAFORM_BACKEND_TFC:
-            self.register_gitlab_group_variables(
-                ("TFC_TOKEN", self.terraform_cloud_token, True)
-            )
-        if self.subdomain_monitoring:
-            self.register_gitlab_project_variables(
-                ("GRAFANA_PASSWORD", secrets.token_urlsafe(12), True)
-            )
-        self.digitalocean_token and self.register_gitlab_group_variables(
-            ("DIGITALOCEAN_TOKEN", self.digitalocean_token, True)
-        )
-        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            self.register_gitlab_group_variables(
-                (
-                    "KUBERNETES_CLUSTER_CA_CERTIFICATE",
-                    base64.b64encode(
-                        Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                    ).decode(),
-                    True,
-                ),
-                ("KUBERNETES_HOST", self.kubernetes_host),
-                ("KUBERNETES_TOKEN", self.kubernetes_token, True),
-            )
-        "s3" in self.media_storage and self.register_gitlab_group_variables(
-            ("S3_ACCESS_ID", self.s3_access_id, True),
-            ("S3_SECRET_KEY", self.s3_secret_key, True),
-        )
 
     def register_vault_stack_secret(self, stack_slug, name, data):
         """Register a Vault stack secret locally."""
@@ -496,14 +401,17 @@ class Runner:
         self.digitalocean_token and self.register_vault_stack_secret(
             stack_slug, "digitalocean", dict(digitalocean_token=self.digitalocean_token)
         )
-        "s3" in self.media_storage and self.register_vault_stack_secret(
-            stack_slug,
-            "s3",
-            dict(
+        if "s3" in self.media_storage:
+            s3_secret = dict(
+                s3_region=self.s3_region,
                 s3_access_id=self.s3_access_id,
                 s3_secret_key=self.s3_secret_key,
-            ),
-        )
+            )
+            self.s3_bucket_name and s3_secret.update(s3_bucket_name=self.s3_bucket_name)
+            self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and s3_secret.update(
+                s3_host=self.s3_host
+            )
+            self.register_vault_stack_secret(stack_slug, "s3", s3_secret)
         (
             self.subdomain_monitoring
             and stack_slug == MAIN_STACK_SLUG
@@ -577,6 +485,47 @@ class Runner:
                 regcred and self.register_vault_environment_secret(
                     env_slug, "regcred", regcred
                 )
+
+    def init_service(self):
+        """Initialize the service."""
+        click.echo(info("...cookiecutting the service"))
+        cookiecutter(
+            os.path.dirname(os.path.dirname(__file__)),
+            extra_context={
+                "backend_service_port": self.backend_service_port,
+                "backend_service_slug": self.backend_service_slug,
+                "backend_type": self.backend_type,
+                "deployment_type": self.deployment_type,
+                "environment_distribution": self.environment_distribution,
+                "frontend_service_port": self.frontend_service_port,
+                "frontend_service_slug": self.frontend_service_slug,
+                "frontend_type": self.frontend_type,
+                "media_storage": self.media_storage,
+                "pact_enabled": bool(self.pact_broker_url),
+                "project_dirname": self.project_dirname,
+                "project_name": self.project_name,
+                "project_slug": self.project_slug,
+                "service_slug": self.service_slug,
+                "stacks": self.stacks_environments,
+                "terraform_backend": self.terraform_backend,
+                "terraform_cloud_organization": self.terraform_cloud_organization,
+                "tfvars": self.tfvars,
+                "vault_project_path": self.vault_project_path,
+            },
+            output_dir=self.output_dir,
+            no_input=True,
+        )
+
+    def create_env_file(self):
+        """Create the final env file from its template."""
+        click.echo(info("...generating the .env file"))
+        env_path = self.service_dir / ".env_template"
+        env_text = (
+            env_path.read_text()
+            .replace("__SECRETKEY__", secrets.token_urlsafe(40))
+            .replace("__PASSWORD__", secrets.token_urlsafe(8))
+        )
+        (self.service_dir / ".env").write_text(env_text)
 
     def init_gitlab(self):
         """Initialize the GitLab resources."""
@@ -739,6 +688,65 @@ class Runner:
                 )
             )
             raise BootstrapError
+
+    def init_subrepo(self, service_slug, template_url, **kwargs):
+        """Initialize a subrepo using the given template and options."""
+        subrepo_dir = str((SUBREPOS_DIR / service_slug).resolve())
+        shutil.rmtree(subrepo_dir, ignore_errors=True)
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "--branch",
+                "feature/vault",
+                template_url,
+                subrepo_dir,
+                "-q",
+            ]
+        )
+        options = {
+            "deployment_type": self.deployment_type,
+            "environment_distribution": self.environment_distribution,
+            "gid": self.gid,
+            "gitlab_group_slug": self.gitlab_group_slug,
+            "gitlab_private_token": self.gitlab_private_token,
+            "logs_dir": str(self.logs_dir.resolve()),
+            "output_dir": str(self.service_dir.resolve()),
+            "project_dirname": service_slug,
+            "project_name": self.project_name,
+            "project_slug": self.project_slug,
+            "project_url_dev": self.project_url_dev,
+            "project_url_prod": self.project_url_prod,
+            "project_url_stage": self.project_url_stage,
+            "sentry_org": self.sentry_org,
+            "sentry_url": self.sentry_url,
+            "service_dir": str((self.service_dir / service_slug).resolve()),
+            "service_slug": service_slug,
+            "terraform_backend": self.terraform_backend,
+            "terraform_cloud_admin_email": self.terraform_cloud_admin_email,
+            "terraform_cloud_hostname": self.terraform_cloud_hostname,
+            "terraform_cloud_organization_create": False,
+            "terraform_cloud_organization": self.terraform_cloud_organization,
+            "terraform_cloud_token": self.terraform_cloud_token,
+            "terraform_dir": str(self.terraform_dir.resolve()),
+            "uid": self.uid,
+            "use_redis": self.use_redis,
+            "vault_url": self.vault_url,
+            "vault_token": self.vault_token,
+            **kwargs,
+        }
+        subprocess.run(
+            ["python", "-m", "pip", "install", "-r", "requirements/common.txt"],
+            cwd=subrepo_dir,
+        )
+        subprocess.run(
+            [
+                "python",
+                "-c",
+                f"from bootstrap.runner import Runner; Runner(**{options}).run()",
+            ],
+            cwd=subrepo_dir,
+        )
 
     def change_output_owner(self):
         """Change the owner of the output directory recursively."""
