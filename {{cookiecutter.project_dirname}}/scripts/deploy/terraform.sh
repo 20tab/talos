@@ -17,33 +17,6 @@ JQ_PLAN='
   }
 '
 
-export TF_VAR_env_slug="${ENV_SLUG}"
-export TF_VAR_project_slug="${PROJECT_SLUG}"
-export TF_VAR_stack_slug="${STACK_SLUG}"
-
-var_file="${TERRAFORM_VARS_DIR}/.tfvars"
-
-if [ "${TERRAFORM_EXTRA_VAR_FILE}" != "" ]; then
-  extra_var_file="${TERRAFORM_VARS_DIR}/${TERRAFORM_EXTRA_VAR_FILE}"
-  touch ${extra_var_file}
-  var_files="-var-file=${var_file} -var-file=${extra_var_file}"
-else
-  var_files="-var-file=${var_file}"
-fi
-
-if [ "${VAULT_ADDR}" != "" ]; then
-  . ${PROJECT_DIR}/scripts/vault.sh
-fi
-
-case "${TERRAFORM_BACKEND}" in
-  "gitlab")
-    . ${PROJECT_DIR}/scripts/gitlab.sh
-  ;;
-  "terraform-cloud")
-    . ${PROJECT_DIR}/scripts/terraform-cloud.sh
-  ;;
-esac
-
 # Use terraform automation mode (will remove some verbose unneeded messages)
 export TF_IN_AUTOMATION=true
 
@@ -63,7 +36,7 @@ case "${1}" in
   ;;
   "destroy")
     init
-    terraform "${@}" ${var_files} -auto-approve
+    terraform "${@}" ${TERRAFORM_VAR_FILE_ARGS} -auto-approve
   ;;
   "fmt")
     terraform "${@}" -check -diff -recursive
@@ -75,11 +48,11 @@ case "${1}" in
   ;;
   "plan")
     init
-    terraform "${@}" ${var_files} -input=false -out="${plan_cache}"
+    terraform "${@}" ${TERRAFORM_VAR_FILE_ARGS} -input=false -out="${plan_cache}"
   ;;
   "plan-json")
     init
-    terraform plan ${var_files} -input=false -out="${plan_cache}"
+    terraform plan ${TERRAFORM_VAR_FILE_ARGS} -input=false -out="${plan_cache}"
     terraform show -json "${plan_cache}" | \
       jq -r "${JQ_PLAN}" \
       > "${plan_json}"

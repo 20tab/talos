@@ -78,19 +78,19 @@ services:
   extends:
     - .terraform
   variables:
-    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/terraform.sh init
+    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/deploy.sh init
 
 .validate:
   extends:
     - .terraform
   variables:
-    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/terraform.sh validate
+    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/deploy.sh validate
 
 .plan:
   extends:
     - .terraform
   variables:
-    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/terraform.sh plan-json
+    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/deploy.sh plan-json
   artifacts:
     name: plan
     paths:
@@ -102,7 +102,7 @@ services:
   extends:
     - .terraform
   variables:
-    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/terraform.sh apply -auto-approve
+    TERRAFORM_CMD: ${CI_PROJECT_DIR}/scripts/deploy.sh apply -auto-approve
 
 {% if cookiecutter.deployment_type == "digitalocean-k8s" %}### BASE STAGE ###
 
