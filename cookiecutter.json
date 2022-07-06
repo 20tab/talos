@@ -13,7 +13,7 @@
   "terraform_cloud_organization": "",
   "media_storage": ["digitalocean-s3", "aws-s3", "local", "none"],
   "pact_enabled": false,
-  "vault_enabled": false,
+  "vault_project_path": "{{ cookiecutter.project_slug }}",
   "stacks": {
     "main": {
       "dev": {

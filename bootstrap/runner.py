@@ -126,6 +126,7 @@ class Runner:
     logs_dir: Path | None = None
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
+    vault_project_path: str = field(init=False, default="")
     stacks_environments: dict = field(init=False, default_factory=dict)
     gitlab_variables: dict = field(init=False, default_factory=dict)
     vault_secrets: dict = field(init=False, default_factory=dict)
@@ -139,9 +140,15 @@ class Runner:
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
+        self.set_vault_project_path()
         self.set_stacks_environments()
         self.collect_tfvars()
         self.collect_gitlab_variables()
+
+    def set_vault_project_path(self):
+        """Set the Vault project path."""
+        if self.vault_url:
+            self.vault_project_path = self.gitlab_group_slug or self.project_slug
 
     def set_stacks_environments(self):
         """Set the environments distribution per stack."""
@@ -337,7 +344,7 @@ class Runner:
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,
                 "tfvars": self.tfvars,
-                "vault_enabled": bool(self.vault_url),
+                "vault_project_path": self.vault_project_path,
             },
             output_dir=self.output_dir,
             no_input=True,
@@ -625,7 +632,7 @@ class Runner:
         self.collect_vault_secrets()
         env = dict(
             TF_VAR_project_name=self.project_name,
-            TF_VAR_project_path=self.gitlab_group_slug or self.project_slug,
+            TF_VAR_project_path=self.vault_project_path,
             TF_VAR_secrets=json.dumps(self.vault_secrets),
             VAULT_ADDR=self.vault_url,
             VAULT_TOKEN=self.vault_token,

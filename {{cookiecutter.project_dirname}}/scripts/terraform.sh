@@ -32,9 +32,7 @@ else
 fi
 
 if [ "${VAULT_ADDR}" != "" ]; then
-  TERRAFORM_SECRETS_VAR_FILE=${TERRAFORM_VARS_DIR}/secrets.json
   . ${PROJECT_DIR}/scripts/vault.sh
-  var_files="${var_files} -var-file=${TERRAFORM_SECRETS_VAR_FILE}"
 fi
 
 case "${TERRAFORM_BACKEND}" in
