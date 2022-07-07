@@ -716,7 +716,7 @@ class Runner:
             TF_LOG="INFO",
         )
         self.run_terraform_init(cwd, env, logs_dir, terraform_dir / "state.tfstate")
-        self.run_terraform_apply(cwd, env, logs_dir, outputs)
+        self.run_terraform_apply(cwd, env, logs_dir)
         outputs and self.terraform_outputs.update(
             {module_name: self.get_terraform_outputs(cwd, env, outputs)}
         )
