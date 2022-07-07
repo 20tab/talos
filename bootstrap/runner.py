@@ -592,12 +592,18 @@ class Runner:
         )
         self.run_terraform("vault", env)
 
-    def get_terraform_module_dirs(self, module_name):
-        """Return Terraform directories for the given module."""
+    def get_terraform_module_params(self, module_name, env):
+        """Return Terraform parameters for the given module."""
         return (
             Path(__file__).parent.parent / "terraform" / module_name,
             self.logs_dir / self.service_slug / "terraform" / module_name,
-            self.terraform_dir / self.service_slug / module_name,
+            terraform_dir := self.terraform_dir / self.service_slug / module_name,
+            {
+                **env,
+                "PATH": os.environ.get("PATH"),
+                "TF_DATA_DIR": str((terraform_dir / "data").resolve()),
+                "TF_LOG": "INFO",
+            },
         )
 
     def run_terraform_init(self, cwd, env, logs_dir, state_path):
@@ -651,7 +657,7 @@ class Runner:
                     f"(check {apply_stderr_path} and {apply_log_path})"
                 )
             )
-            self.reset_terraform(env)
+            self.reset_terraform()
             raise BootstrapError
 
     def run_terraform_destroy(self, cwd, env, logs_dir):
@@ -696,26 +702,24 @@ class Runner:
             for output_name in outputs
         }
 
-    def reset_terraform(self, env):
+    def reset_terraform(self):
         """Destroy all Terraform modules resources."""
-        for module_name in self.terraform_run_modules:
+        for module_name, env in self.terraform_run_modules:
             click.echo(warning(f"Destroying Terraform {module_name} resources."))
-            cwd, logs_dir, _terraform_dir = self.get_terraform_module_dirs(module_name)
+            cwd, logs_dir, _terraform_dir, env = self.get_terraform_module_params(
+                module_name, env
+            )
             self.run_terraform_destroy(cwd, env, logs_dir)
 
     def run_terraform(self, module_name, env, outputs=None):
         """Initialize the Terraform controlled resources."""
-        self.terraform_run_modules.append(module_name)
-        cwd, logs_dir, terraform_dir = self.get_terraform_module_dirs(module_name)
+        self.terraform_run_modules.append((module_name, env))
+        cwd, logs_dir, terraform_dir, env = self.get_terraform_module_params(
+            module_name, env
+        )
         os.makedirs(terraform_dir, exist_ok=True)
         os.makedirs(logs_dir)
-        env = dict(
-            **env,
-            PATH=os.environ.get("PATH"),
-            TF_DATA_DIR=str((terraform_dir / "data").resolve()),
-            TF_LOG="INFO",
-        )
-        self.run_terraform_init(cwd, env, logs_dir, terraform_dir / "state.tfstate")
+        self.run_terraform_init(cwd, env, logs_dir, terraform_dir / "terraform.tfstate")
         self.run_terraform_apply(cwd, env, logs_dir)
         outputs and self.terraform_outputs.update(
             {module_name: self.get_terraform_outputs(cwd, env, outputs)}
