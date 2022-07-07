@@ -685,8 +685,8 @@ class Runner:
 
     def get_terraform_outputs(self, cwd, env, outputs):
         """Get Terraform outputs."""
-        return [
-            subprocess.run(
+        return {
+            output_name: subprocess.run(
                 ["terraform", "output", "-raw", output_name],
                 capture_output=True,
                 cwd=cwd,
@@ -694,7 +694,7 @@ class Runner:
                 text=True,
             ).stdout
             for output_name in outputs
-        ]
+        }
 
     def reset_terraform(self, env):
         """Destroy all Terraform modules resources."""
