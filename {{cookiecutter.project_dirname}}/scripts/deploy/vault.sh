@@ -17,11 +17,11 @@ load_secrets()
 }
 
 if [ "${STACK_SLUG}" != "" ] && [ "${VAULT_STACK_SECRETS}" != "" ]; then
-    load_secrets "stacks" ${STACK_SLUG} ${VAULT_STACK_SECRETS}
+    load_secrets "stacks" ${STACK_SLUG} "${VAULT_STACK_SECRETS}"
 fi
 
 if [ "${ENV_SLUG}" != "" ] && [ "${VAULT_ENV_SECRETS}" != "" ]; then
-    load_secrets "envs" ${ENV_SLUG} ${VAULT_ENV_SECRETS}
+    load_secrets "envs" ${ENV_SLUG} "${VAULT_ENV_SECRETS}"
 fi
 
 if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
