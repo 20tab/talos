@@ -131,6 +131,7 @@ class Runner:
     tfvars: dict = field(init=False, default_factory=dict)
     vault_project_path: str = field(init=False, default="")
     vault_secrets: dict = field(init=False, default_factory=dict)
+    terraform_run_modules: list = field(init=False, default_factory=list)
     terraform_outputs: dict = field(init=False, default_factory=dict)
 
     def __post_init__(self):
@@ -591,19 +592,16 @@ class Runner:
         )
         self.run_terraform("vault", env)
 
-    def run_terraform(self, module_name, env, outputs=None):
-        """Initialize the Terraform controlled resources."""
-        cwd = Path(__file__).parent.parent / "terraform" / module_name
-        terraform_dir = self.terraform_dir / self.service_slug / module_name
-        os.makedirs(terraform_dir, exist_ok=True)
-        env.update(
-            PATH=os.environ.get("PATH"),
-            TF_DATA_DIR=str((terraform_dir / "data").resolve()),
-            TF_LOG="INFO",
+    def get_terraform_module_dirs(self, module_name):
+        """Return Terraform directories for the given module."""
+        return (
+            Path(__file__).parent.parent / "terraform" / module_name,
+            self.logs_dir / self.service_slug / "terraform" / module_name,
+            self.terraform_dir / self.service_slug / module_name,
         )
-        state_path = terraform_dir / "state.tfstate"
-        logs_dir = self.logs_dir / self.service_slug / "terraform" / module_name
-        os.makedirs(logs_dir)
+
+    def run_terraform_init(self, cwd, env, logs_dir, state_path):
+        """Run Terraform init."""
         init_log_path = logs_dir / "init.log"
         init_stdout_path = logs_dir / "init-stdout.log"
         init_stderr_path = logs_dir / "init-stderr.log"
@@ -622,74 +620,106 @@ class Runner:
             text=True,
         )
         init_stdout_path.write_text(init_process.stdout)
-        if init_process.returncode == 0:
-            apply_log_path = logs_dir / "apply.log"
-            apply_stdout_path = logs_dir / "apply-stdout.log"
-            apply_stderr_path = logs_dir / "apply-stderr.log"
-            apply_process = subprocess.run(
-                ["terraform", "apply", "-auto-approve", "-input=false", "-no-color"],
-                capture_output=True,
-                cwd=cwd,
-                env=dict(**env, TF_LOG_PATH=str(apply_log_path.resolve())),
-                text=True,
-            )
-            apply_stdout_path.write_text(apply_process.stdout)
-            for output_name in outputs or []:
-                output_process = subprocess.run(
-                    ["terraform", "output", "-raw", output_name],
-                    capture_output=True,
-                    cwd=cwd,
-                    env=env,
-                    text=True,
-                )
-                self.terraform_outputs.setdefault(module_name, {})[
-                    output_name
-                ] = output_process.stdout
-            if apply_process.returncode != 0:
-                apply_stderr_path.write_text(apply_process.stderr)
-                click.echo(
-                    error(
-                        f"Error applying {module_name} Terraform configuration "
-                        f"(check {apply_stderr_path} and {apply_log_path})"
-                    )
-                )
-                destroy_log_path = logs_dir / "destroy.log"
-                destroy_stdout_path = logs_dir / "destroy-stdout.log"
-                destroy_stderr_path = logs_dir / "destroy-stderr.log"
-                destroy_process = subprocess.run(
-                    [
-                        "terraform",
-                        "destroy",
-                        "-auto-approve",
-                        "-input=false",
-                        "-no-color",
-                    ],
-                    capture_output=True,
-                    cwd=cwd,
-                    env=dict(**env, TF_LOG_PATH=str(destroy_log_path.resolve())),
-                    text=True,
-                )
-                destroy_stdout_path.write_text(destroy_process.stdout)
-                if destroy_process.returncode != 0:
-                    destroy_stderr_path.write_text(destroy_process.stderr)
-                    click.echo(
-                        error(
-                            f"Error performing {module_name} Terraform destroy "
-                            f"(check {destroy_stderr_path} and {destroy_log_path})"
-                        )
-                    )
-                else:
-                    click.echo(info("Successfully destroyed resources created so far."))
-                raise BootstrapError
-        else:
+        if init_process.returncode != 0:
             init_stderr_path.write_text(init_process.stderr)
             click.echo(
                 error(
-                    f"Error performing {module_name} Terraform init "
+                    "Terraform init failed "
                     f"(check {init_stderr_path} and {init_log_path})"
                 )
             )
             raise BootstrapError
+
+    def run_terraform_apply(self, cwd, env, logs_dir):
+        """Run Terraform apply."""
+        apply_log_path = logs_dir / "apply.log"
+        apply_stdout_path = logs_dir / "apply-stdout.log"
+        apply_stderr_path = logs_dir / "apply-stderr.log"
+        apply_process = subprocess.run(
+            ["terraform", "apply", "-auto-approve", "-input=false", "-no-color"],
+            capture_output=True,
+            cwd=cwd,
+            env=dict(**env, TF_LOG_PATH=str(apply_log_path.resolve())),
+            text=True,
+        )
+        apply_stdout_path.write_text(apply_process.stdout)
+        if apply_process.returncode != 0:
+            apply_stderr_path.write_text(apply_process.stderr)
+            click.echo(
+                error(
+                    "Terraform apply failed ",
+                    f"(check {apply_stderr_path} and {apply_log_path})",
+                )
+            )
+            self.reset_terraform(env)
+            raise BootstrapError
+
+    def run_terraform_destroy(self, cwd, env, logs_dir):
+        """Run Terraform destroy."""
+        destroy_log_path = logs_dir / "destroy.log"
+        destroy_stdout_path = logs_dir / "destroy-stdout.log"
+        destroy_stderr_path = logs_dir / "destroy-stderr.log"
+        destroy_process = subprocess.run(
+            [
+                "terraform",
+                "destroy",
+                "-auto-approve",
+                "-input=false",
+                "-no-color",
+            ],
+            capture_output=True,
+            cwd=cwd,
+            env=dict(**env, TF_LOG_PATH=str(destroy_log_path.resolve())),
+            text=True,
+        )
+        destroy_stdout_path.write_text(destroy_process.stdout)
+        if destroy_process.returncode != 0:
+            destroy_stderr_path.write_text(destroy_process.stderr)
+            click.echo(
+                error(
+                    "Terraform destroy failed "
+                    f"(check {destroy_stderr_path} and {destroy_log_path})"
+                )
+            )
+            raise BootstrapError
+
+    def get_terraform_outputs(self, cwd, env, outputs):
+        """Get Terraform outputs."""
+        return [
+            subprocess.run(
+                ["terraform", "output", "-raw", output_name],
+                capture_output=True,
+                cwd=cwd,
+                env=env,
+                text=True,
+            ).stdout
+            for output_name in outputs
+        ]
+
+    def reset_terraform(self, env):
+        """Destroy all Terraform modules resources."""
+        for module_name in self.terraform_run_modules:
+            click.echo(warning(f"Destroying Terraform {module_name} resources."))
+            cwd, logs_dir, _terraform_dir = self.get_terraform_module_dirs(module_name)
+            self.run_terraform_destroy(cwd, env, logs_dir)
+
+    def run_terraform(self, module_name, env, outputs=None):
+        """Initialize the Terraform controlled resources."""
+        self.terraform_run_modules.append(module_name)
+        cwd, logs_dir, terraform_dir = self.get_terraform_module_dirs(module_name)
+        os.makedirs(terraform_dir, exist_ok=True)
+        os.makedirs(logs_dir)
+        env = dict(
+            **env,
+            PATH=os.environ.get("PATH"),
+            TF_DATA_DIR=str((terraform_dir / "data").resolve()),
+            TF_LOG="INFO",
+        )
+        self.run_terraform_init(cwd, env, logs_dir, terraform_dir / "state.tfstate")
+        self.run_terraform_apply(cwd, env, logs_dir, outputs)
+        outputs and self.terraform_outputs.update(
+            {module_name: self.get_terraform_outputs(cwd, env, outputs)}
+        )
 
     def init_subrepo(self, service_slug, template_url, **kwargs):
         """Initialize a subrepo using the given template and options."""

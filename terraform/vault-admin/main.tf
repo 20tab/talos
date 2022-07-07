@@ -148,7 +148,7 @@ EOF
 resource "vault_identity_group" "gitlab_oidc" {
   count = var.gitlab_oidc_auth_path != "" ? 1 : 0
 
-  name     = "gitlab-oidc-${var.project_path}"
+  name     = var.project_path
   type     = "external"
   policies = [vault_policy.gitlab_oidc[0].name]
 }
@@ -156,7 +156,7 @@ resource "vault_identity_group" "gitlab_oidc" {
 resource "vault_identity_group_alias" "gitlab_oidc" {
   count = var.gitlab_oidc_auth_path != "" ? 1 : 0
 
-  name           = "gitlab-oidc-${var.project_path}"
+  name           = var.project_path
   mount_accessor = data.vault_auth_backend.gitlab_oidc[0].accessor
   canonical_id   = vault_identity_group.gitlab_oidc[0].id
 }
