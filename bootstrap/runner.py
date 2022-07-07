@@ -321,6 +321,7 @@ class Runner:
 
     def collect_tfvars(self):
         """Collect the base, cluster and environment Terraform variables."""
+        self.register_environment_tfvars(("registry_server", "registry.gitlab.com"))
         backend_service_paths = ["/"]
         frontend_service_paths = ["/"]
         if self.frontend_service_slug:

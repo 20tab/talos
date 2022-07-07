@@ -61,7 +61,6 @@ services:
       -e TF_VAR_basic_auth_username="${BASIC_AUTH_USERNAME}"
       -e TF_VAR_grafana_password="${GRAFANA_PASSWORD}"
       -e TF_VAR_registry_password="${REGISTRY_PASSWORD}"
-      -e TF_VAR_registry_server="${REGISTRY_SERVER:-registry.gitlab.com}"
       -e TF_VAR_registry_username="${REGISTRY_USERNAME}"
       -e TF_VAR_tls_certificate_crt="${TLS_CERTIFICATE_CRT}"
       -e TF_VAR_tls_certificate_key="${TLS_CERTIFICATE_KEY}"{% endif %}{% if cookiecutter.terraform_backend != "gitlab" %}
@@ -236,6 +235,7 @@ stack_{{ stack_slug }}_cluster_apply:
     - .environment_stage
   variables:
     ENV_SLUG: {{ env_slug }}
+    STACK_SLUG: {{ stack_slug }}
     TERRAFORM_EXTRA_VAR_FILE: {{ env_slug }}.tfvars{% if cookiecutter.terraform_backend == "gitlab" %}
     TF_STATE_NAME: env_{{ env_slug }}{% else %}
     TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_environment_{{ env_slug }}{% endif %}
