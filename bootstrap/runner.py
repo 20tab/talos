@@ -678,6 +678,8 @@ class Runner:
                             f"(check {destroy_stderr_path} and {destroy_log_path})"
                         )
                     )
+                else:
+                    click.echo(info("Successfully destroyed resources created so far."))
                 raise BootstrapError
         else:
             init_stderr_path.write_text(init_process.stderr)
