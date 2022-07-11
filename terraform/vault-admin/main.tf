@@ -116,12 +116,12 @@ path "sys/mounts/${var.project_path}" {
   capabilities = [ "create", "delete", "update" ]
 }
 
-path "${var.project_path}" {                                                                                                                                                 
-  capabilities = [ "list" ]                                                                                                                                  
+path "${var.project_path}" {
+  capabilities = [ "list" ]
 }
 
-path "${var.project_path}/*" {                                                                                                                                                 
-  capabilities = [ "create", "delete", "list", "read", "update" ]                                                                                                                                  
+path "${var.project_path}/*" {
+  capabilities = [ "create", "delete", "list", "read", "update" ]
 }
 
 # Manage TFC secrets
@@ -129,18 +129,18 @@ path "sys/mounts/${var.project_path}-tfc" {
   capabilities = [ "create", "delete", "update" ]
 }
 
-path "${var.project_path}-tfc" {                                                                                                                                                 
-  capabilities = [ "list" ]                                                                                                                             
+path "${var.project_path}-tfc" {
+  capabilities = [ "list" ]
 }
 
-path "${var.project_path}-tfc/*" {                                                                                                                                                 
-  capabilities = [ "create", "delete", "list", "read", "update" ]                                                                                                                                 
+path "${var.project_path}-tfc/*" {
+  capabilities = [ "create", "delete", "list", "read", "update" ]
 }
 
 # Enable child token generation for the Terraform Vault provider
 # https://registry.terraform.io/providers/hashicorp/vault/latest/docs#token
-path "auth/token/create" {                                                                                                                                                 
-  capabilities = [ "update" ]                                                                                                                                  
+path "auth/token/create" {
+  capabilities = [ "update" ]
 }
 EOF
 }
