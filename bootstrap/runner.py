@@ -137,7 +137,7 @@ class Runner:
     def __post_init__(self):
         """Finalize initialization."""
         self.service_slug = SERVICE_SLUG_DEFAULT
-        self.gitlab_url = self.gitlab_url.rstrip("/")
+        self.gitlab_url = self.gitlab_url and self.gitlab_url.rstrip("/")
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
@@ -230,7 +230,7 @@ class Runner:
             ("BASIC_AUTH_PASSWORD", secrets.token_urlsafe(12), True),
         )
         self.sentry_org and self.register_gitlab_group_variables(
-            "SENTRY_AUTH_TOKEN", self.sentry_auth_token, True
+            ("SENTRY_AUTH_TOKEN", self.sentry_auth_token, True)
         )
         if self.pact_broker_url:
             pact_broker_url = self.pact_broker_url
