@@ -99,7 +99,7 @@ resource "vault_policy" "gitlab_jwt_pact" {
   policy = <<EOF
 # Read-only permission for GitLab CI jobs on project "${var.project_name}" Pact secrets
 
-path "${var.project_path}/pact/*" {
+path "${var.project_path}/pact" {
   capabilities = [ "read" ]
 }
 EOF
