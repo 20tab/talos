@@ -50,7 +50,7 @@ resource "vault_jwt_auth_backend_role" "gitlab_jwt_stacks" {
 
   user_claim = "user_email"
 
-  bound_claims      = { namespace_path = var.project_path }
+  bound_claims = { namespace_path = var.project_path }
 }
 
 resource "vault_policy" "gitlab_jwt_envs" {
@@ -88,7 +88,37 @@ resource "vault_jwt_auth_backend_role" "envs" {
 
   user_claim = "user_email"
 
-  bound_claims      = { namespace_path = var.project_path }
+  bound_claims = { namespace_path = var.project_path }
+}
+
+resource "vault_policy" "gitlab_jwt_pact" {
+  count = var.pact_enabled ? 1 : 0
+
+  name = "gitlab-jwt-${var.project_path}-pact"
+
+  policy = <<EOF
+# Read-only permission for GitLab CI jobs on project "${var.project_name}" Pact secrets
+
+path "${var.project_path}/pact/*" {
+  capabilities = [ "read" ]
+}
+EOF
+}
+
+resource "vault_jwt_auth_backend_role" "gitlab_jwt_pact" {
+  count = var.pact_enabled ? 1 : 0
+
+  backend = vault_jwt_auth_backend.gitlab_jwt.path
+
+  role_name = vault_policy.gitlab_jwt_pact[0].name
+  role_type = "jwt"
+
+  token_explicit_max_ttl = var.gitlab_jwt_auth_token_explicit_max_ttl
+  token_policies         = [vault_policy.gitlab_jwt_pact[0].name]
+
+  user_claim = "user_email"
+
+  bound_claims = { namespace_path = var.project_path }
 }
 
 /* GitLab OIDC Auth */
