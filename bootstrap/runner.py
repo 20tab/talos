@@ -448,29 +448,28 @@ class Runner:
                 basic_auth_password=secrets.token_urlsafe(12),
             ),
         )
-        # Sentry and Pact env vars are used by the GitLab CI/CD
+        # Sentry secrets are used by the GitLab CI/CD
         self.sentry_org and self.register_vault_environment_secret(
             env_slug, "sentry", dict(sentry_auth_token=self.sentry_auth_token)
         )
-        if self.pact_broker_url:
-            pact_broker_url = self.pact_broker_url
-            pact_broker_username = self.pact_broker_username
-            pact_broker_password = self.pact_broker_password
-            pact_broker_auth_url = re.sub(
-                r"^(https?)://(.*)$",
-                rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
-                pact_broker_url,
-            )
-            self.register_vault_environment_secret(
-                env_slug,
-                "pact",
-                dict(
-                    pact_broker_base_url=pact_broker_url,
-                    pact_broker_username=pact_broker_username,
-                    pact_broker_password=pact_broker_password,
-                    pact_broker_auth_url=pact_broker_auth_url,
-                ),
-            )
+
+    def collect_vault_pact_secrets(self):
+        """Collect the Vault secrets for Pact."""
+        # Pact secrets are used by the GitLab CI/CD
+        pact_broker_url = self.pact_broker_url
+        pact_broker_username = self.pact_broker_username
+        pact_broker_password = self.pact_broker_password
+        pact_broker_auth_url = re.sub(
+            r"^(https?)://(.*)$",
+            rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
+            pact_broker_url,
+        )
+        self.vault_secrets["pact"] = dict(
+            pact_broker_base_url=pact_broker_url,
+            pact_broker_username=pact_broker_username,
+            pact_broker_password=pact_broker_password,
+            pact_broker_auth_url=pact_broker_auth_url,
+        )
 
     def collect_vault_secrets(self):
         """Collect Vault secrets."""
@@ -487,6 +486,7 @@ class Runner:
                 regcred and self.register_vault_environment_secret(
                     env_slug, "regcred", regcred
                 )
+        self.pact_broker_url and self.collect_vault_pact_secrets()
 
     def init_service(self):
         """Initialize the service."""
