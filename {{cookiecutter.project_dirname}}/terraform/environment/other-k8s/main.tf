@@ -117,7 +117,7 @@ module "routing" {
 /* Metrics */
 
 module "metrics" {
-  count = var.stack_slug == "main" ? 1 : 0
+  count = var.stack_slug == "main" && var.env_slug == "prod" ? 1 : 0
 
   source = "../modules/kubernetes/metrics"
 
