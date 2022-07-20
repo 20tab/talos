@@ -16,6 +16,12 @@ variable "gitlab_url" {
   default     = "https://gitlab.com"
 }
 
+variable "pact_enabled" {
+  description = "Tell if Pact is enabled."
+  type        = bool
+  default     = false
+}
+
 variable "project_name" {
   description = "The project name."
   type        = string
