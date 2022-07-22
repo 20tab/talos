@@ -734,8 +734,6 @@ class Runner:
             [
                 "git",
                 "clone",
-                "--branch",
-                "feature/vault",
                 template_url,
                 subrepo_dir,
                 "-q",
