@@ -26,6 +26,7 @@ from bootstrap.constants import (
     ENVIRONMENT_DISTRIBUTION_PROMPT,
     FRONTEND_TYPE_CHOICES,
     FRONTEND_TYPE_DEFAULT,
+    GITLAB_URL_DEFAULT,
     MEDIA_STORAGE_AWS_S3,
     MEDIA_STORAGE_CHOICES,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
@@ -58,6 +59,8 @@ def collect(
     terraform_cloud_organization,
     terraform_cloud_organization_create,
     terraform_cloud_admin_email,
+    vault_token,
+    vault_url,
     digitalocean_token,
     kubernetes_cluster_ca_certificate,
     kubernetes_host,
@@ -99,6 +102,7 @@ def collect(
     s3_access_id,
     s3_secret_key,
     s3_bucket_name,
+    gitlab_url,
     gitlab_private_token,
     gitlab_group_slug,
     gitlab_group_owners,
@@ -144,6 +148,7 @@ def collect(
         terraform_cloud_organization_create,
         terraform_cloud_admin_email,
     )
+    vault_token, vault_url = clean_vault_data(vault_token, vault_url, quiet)
     environment_distribution = clean_environment_distribution(
         environment_distribution, deployment_type
     )
@@ -242,6 +247,7 @@ def collect(
         pact_broker_url, pact_broker_username, pact_broker_password
     )
     (
+        gitlab_url,
         gitlab_group_slug,
         gitlab_private_token,
         gitlab_group_owners,
@@ -249,6 +255,7 @@ def collect(
         gitlab_group_developers,
     ) = clean_gitlab_group_data(
         project_slug,
+        gitlab_url,
         gitlab_group_slug,
         gitlab_private_token,
         gitlab_group_owners,
@@ -256,8 +263,7 @@ def collect(
         gitlab_group_developers,
         quiet,
     )
-    # TODO: change when moving secrets to Vault
-    if gitlab_group_slug and "s3" in media_storage:
+    if (gitlab_url or vault_url) and "s3" in media_storage:
         (
             digitalocean_token,
             s3_region,
@@ -295,6 +301,8 @@ def collect(
         "terraform_cloud_organization": terraform_cloud_organization,
         "terraform_cloud_organization_create": terraform_cloud_organization_create,
         "terraform_cloud_admin_email": terraform_cloud_admin_email,
+        "vault_token": vault_token,
+        "vault_url": vault_url,
         "digitalocean_token": digitalocean_token,
         "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
         "kubernetes_host": kubernetes_host,
@@ -340,6 +348,7 @@ def collect(
         "s3_access_id": s3_access_id,
         "s3_secret_key": s3_secret_key,
         "s3_bucket_name": s3_bucket_name,
+        "gitlab_url": gitlab_url,
         "gitlab_private_token": gitlab_private_token,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
@@ -491,7 +500,7 @@ def clean_terraform_backend(
     terraform_cloud_organization_create,
     terraform_cloud_admin_email,
 ):
-    """Return the terraform backend and the Terraform Cloud data, if applicable."""
+    """Return the Terraform backend and the Terraform Cloud data, if applicable."""
     terraform_backend = (
         terraform_backend
         if terraform_backend in TERRAFORM_BACKEND_CHOICES
@@ -543,6 +552,29 @@ def clean_terraform_backend(
         terraform_cloud_organization_create,
         terraform_cloud_admin_email,
     )
+
+
+def clean_vault_data(vault_token, vault_url, quiet=False):
+    """Return the Vault data, if applicable."""
+    if vault_token or (
+        vault_token is None
+        and click.confirm(
+            "Do you want to use Vault for secrets management?",
+        )
+    ):
+        vault_token = validate_or_prompt_password("Vault token", vault_token)
+        quiet or click.confirm(
+            warning(
+                "Make sure the Vault token has enough permissions to enable the "
+                "project secrets backends and manage the project secrets. Continue?"
+            ),
+            abort=True,
+        )
+        vault_url = validate_or_prompt_url("Vault address", vault_url)
+    else:
+        vault_token = None
+        vault_url = None
+    return vault_token, vault_url
 
 
 def clean_environment_distribution(environment_distribution, deployment_type):
@@ -864,6 +896,7 @@ def clean_media_storage(media_storage):
 
 def clean_gitlab_group_data(
     project_slug,
+    gitlab_url,
     gitlab_group_slug,
     gitlab_private_token,
     gitlab_group_owners,
@@ -872,10 +905,13 @@ def clean_gitlab_group_data(
     quiet=False,
 ):
     """Return GitLab group data."""
-    if gitlab_group_slug or (
-        gitlab_group_slug is None
+    if gitlab_url or (
+        gitlab_url is None
         and click.confirm(warning("Do you want to use GitLab?"), default=True)
     ):
+        gitlab_url = validate_or_prompt_url(
+            "GitLab URL", gitlab_url, default=GITLAB_URL_DEFAULT
+        )
         gitlab_group_slug = slugify(
             gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
         )
@@ -905,12 +941,14 @@ def clean_gitlab_group_data(
             else click.prompt("Comma-separated GitLab group developers", default="")
         )
     else:
+        gitlab_url = None
         gitlab_group_slug = None
         gitlab_private_token = None
         gitlab_group_owners = None
         gitlab_group_maintainers = None
         gitlab_group_developers = None
     return (
+        gitlab_url,
         gitlab_group_slug,
         gitlab_private_token,
         gitlab_group_owners,

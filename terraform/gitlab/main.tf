@@ -34,7 +34,7 @@ terraform {
   required_providers {
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "~> 3.13"
+      version = "~> 3.16"
     }
   }
 }
@@ -184,6 +184,8 @@ resource "gitlab_group_variable" "vars" {
 }
 
 resource "gitlab_group_variable" "registry_password" {
+  count = var.vault_enabled ? 0 : 1
+
   group     = data.gitlab_group.group.id
   key       = "REGISTRY_PASSWORD"
   value     = gitlab_deploy_token.regcred.token
@@ -192,6 +194,8 @@ resource "gitlab_group_variable" "registry_password" {
 }
 
 resource "gitlab_group_variable" "registry_username" {
+  count = var.vault_enabled ? 0 : 1
+
   group     = data.gitlab_group.group.id
   key       = "REGISTRY_USERNAME"
   value     = gitlab_deploy_token.regcred.username

@@ -26,6 +26,7 @@ from bootstrap.collector import (
     clean_sentry_org,
     clean_service_dir,
     clean_terraform_backend,
+    clean_vault_data,
 )
 
 
@@ -146,6 +147,32 @@ class TestBootstrapCollector(TestCase):
                     "",
                 ),
             )
+
+    def test_clean_vault_data(self):
+        """Test cleaning the Vault data ."""
+        self.assertEqual(
+            clean_vault_data("v4UlTtok3N", "https://vault.test.com", True),
+            ("v4UlTtok3N", "https://vault.test.com"),
+        )
+        with input("y", {"hidden": "v4UlTtok3N"}, "https://vault.test.com"):
+            self.assertEqual(
+                clean_vault_data(None, None, True),
+                ("v4UlTtok3N", "https://vault.test.com"),
+            )
+        with input("y", {"hidden": "v4UlTtok3N"}, "y", "https://vault.test.com"):
+            self.assertEqual(
+                clean_vault_data(None, None, False),
+                ("v4UlTtok3N", "https://vault.test.com"),
+            )
+        with input(
+            "y", {"hidden": "v4UlTtok3N"}, "y", "bad_address", "https://vault.test.com"
+        ):
+            self.assertEqual(
+                clean_vault_data(None, None, False),
+                ("v4UlTtok3N", "https://vault.test.com"),
+            )
+        with input("n"):
+            self.assertEqual(clean_vault_data(None, None, True), (None, None))
 
     def test_clean_environment_distribution(self):
         """Test cleaning the environment distribution."""
@@ -447,6 +474,7 @@ class TestBootstrapCollector(TestCase):
             self.assertEqual(
                 clean_gitlab_group_data(
                     "my-project",
+                    "https://gitlab.com/",
                     "my-gitlab-group",
                     "mYV4l1DT0k3N",
                     "owner, owner.other",
@@ -454,6 +482,7 @@ class TestBootstrapCollector(TestCase):
                     "developer, developer.other",
                 ),
                 (
+                    "https://gitlab.com",
                     "my-gitlab-group",
                     "mYV4l1DT0k3N",
                     "owner, owner.other",
@@ -461,10 +490,11 @@ class TestBootstrapCollector(TestCase):
                     "developer, developer.other",
                 ),
             )
-        with input("Y", "my-gitlab-group", "Y"):
+        with input("Y", "", "my-gitlab-group", "Y"):
             self.assertEqual(
                 clean_gitlab_group_data(
                     "my-project",
+                    None,
                     None,
                     "mYV4l1DT0k3N",
                     "owner, owner.other",
@@ -472,6 +502,7 @@ class TestBootstrapCollector(TestCase):
                     "developer, developer.other",
                 ),
                 (
+                    "https://gitlab.com",
                     "my-gitlab-group",
                     "mYV4l1DT0k3N",
                     "owner, owner.other",
@@ -481,6 +512,7 @@ class TestBootstrapCollector(TestCase):
             )
         with input(
             "Y",
+            "https://my-custom-gitlab.com/",
             "my-gitlab-group",
             "Y",
             {"hidden": "mYV4l1DT0k3N"},
@@ -489,8 +521,11 @@ class TestBootstrapCollector(TestCase):
             "developer, developer.other",
         ):
             self.assertEqual(
-                clean_gitlab_group_data("my-project", None, None, None, None, None),
+                clean_gitlab_group_data(
+                    "my-project", None, None, None, None, None, None
+                ),
                 (
+                    "https://my-custom-gitlab.com",
                     "my-gitlab-group",
                     "mYV4l1DT0k3N",
                     "owner, owner.other",
@@ -499,8 +534,8 @@ class TestBootstrapCollector(TestCase):
                 ),
             )
         self.assertEqual(
-            clean_gitlab_group_data("my-project", "", "", "", "", ""),
-            (None, None, None, None, None),
+            clean_gitlab_group_data("my-project", "", "", "", "", "", ""),
+            (None, None, None, None, None, None),
         )
 
     def test_clean_s3_media_storage_data(self):

@@ -30,7 +30,7 @@ pip: pip_update  ## Compile requirements
 
 .PHONY: pip_update
 pip_update:  ## Update requirements and dependencies
-	python3 -m pip install -q -U pip~=22.0.0 pip-tools~=6.5.0 setuptools~=60.10.0 wheel~=0.37.0
+	python3 -m pip install -q -U pip~=22.1.0 pip-tools~=6.6.0 setuptools~=60.10.0 wheel~=0.37.0
 
 .PHONY: precommit
 precommit:  ## Fix code formatting, linting and sorting imports

@@ -11,9 +11,8 @@ variable "create_organization" {
 }
 
 variable "environments" {
-  description = "The list of environment slugs."
+  description = "The list of environments slugs."
   type        = list(string)
-  default     = ["dev", "stage", "prod"]
 }
 
 variable "hostname" {
@@ -43,7 +42,7 @@ variable "service_slug" {
 }
 
 variable "stacks" {
-  description = "The list of stack slugs."
+  description = "The list of stacks slugs."
   type        = list(string)
 }
 

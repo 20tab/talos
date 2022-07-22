@@ -13,8 +13,8 @@ locals {
             tags = [
               "project:${var.project_slug}",
               "service:${var.service_slug}",
-              "stage:${stage}",
               "stack:${stack}",
+              "stage:${stage}",
             ]
           }
         ]
@@ -26,10 +26,10 @@ locals {
         name        = "${var.project_slug}_${var.service_slug}_environment_${env}"
         description = "${var.project_name} project, ${var.service_slug} service, ${env} environment"
         tags = [
+          "env:${env}",
           "project:${var.project_slug}",
           "service:${var.service_slug}",
           "stage:environment",
-          "env:${env}",
         ]
       }
     ]
@@ -43,7 +43,7 @@ terraform {
   required_providers {
     tfe = {
       source  = "hashicorp/tfe"
-      version = "~> 0.30"
+      version = "~> 0.32"
     }
   }
 }

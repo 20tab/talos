@@ -3,6 +3,16 @@
 from slugify import slugify
 
 
+def format_gitlab_variable(value, masked=False, protected=True):
+    """Format the given value to be used as a Terraform variable."""
+    return (
+        f'{{ value = "{value}"'
+        + (masked and ", masked = true" or "")
+        + (not protected and ", protected = false" or "")
+        + "}"
+    )
+
+
 def format_tfvar(value, value_type=None):
     """Format the given value to be used as a Terraform variable."""
     if value_type == "list":

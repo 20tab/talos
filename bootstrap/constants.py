@@ -4,6 +4,28 @@ from pathlib import Path
 
 DUMPS_DIR = Path(__file__).parent.parent / ".dumps"
 
+# Stacks
+
+DEV_STACK_SLUG = "dev"
+
+STAGE_STACK_SLUG = "stage"
+
+MAIN_STACK_SLUG = "main"
+
+# Environments
+
+DEV_ENV_NAME = "development"
+
+DEV_ENV_SLUG = "dev"
+
+STAGE_ENV_NAME = "staging"
+
+STAGE_ENV_SLUG = "stage"
+
+PROD_ENV_NAME = "production"
+
+PROD_ENV_SLUG = "prod"
+
 # Env vars
 
 GITLAB_TOKEN_ENV_VAR = "GITLAB_PRIVATE_TOKEN"
@@ -18,11 +40,11 @@ FRONTEND_TEMPLATE_URLS = {
     "nextjs": "https://github.com/20tab/nextjs-continuous-delivery"
 }
 
-SUBREPOS_DIR = ".subrepos"
+SUBREPOS_DIR = Path(__file__).parent.parent / ".subrepos"
 
 # Services type
 
-ORCHESTRATOR_SERVICE_SLUG = "orchestrator"
+SERVICE_SLUG_DEFAULT = "orchestrator"
 
 EMPTY_SERVICE_TYPE = "none"
 
@@ -86,3 +108,7 @@ TERRAFORM_BACKEND_GITLAB = "gitlab"
 TERRAFORM_BACKEND_TFC = "terraform-cloud"
 
 TERRAFORM_BACKEND_CHOICES = [TERRAFORM_BACKEND_TFC, TERRAFORM_BACKEND_GITLAB]
+
+# GitLab
+
+GITLAB_URL_DEFAULT = "https://gitlab.com"

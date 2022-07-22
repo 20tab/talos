@@ -195,10 +195,10 @@ The following arguments can be appended to the Docker and shell commands
 
 #### Frontend type
 
-| Value  | Description                                           | Argument                 |
-| ------ | ----------------------------------------------------- | ------------------------ |
+| Value  | Description                                         | Argument                 |
+| ------ | --------------------------------------------------- | ------------------------ |
 | nextjs | https://github.com/20tab/nextjs-continuous-delivery | `--frontend-type=nextjs` |
-| none   | the frontend service will not be initialized          | `--frontend-type=none`   |
+| none   | the frontend service will not be initialized        | `--frontend-type=none`   |
 
 #### Frontend service slug
 

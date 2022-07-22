@@ -1,6 +1,6 @@
 # {{ cookiecutter.project_name }} <!-- omit in toc -->
 
-This is the "{{ cookiecutter.project_name }}" orchestrator.
+This is the "{{ cookiecutter.project_name }}" {{ cookiecutter.service_slug }}.
 
 ## Index <!-- omit in toc -->
 
@@ -27,7 +27,7 @@ This is the "{{ cookiecutter.project_name }}" orchestrator.
 
 ## Provisioning
 
-The first run is manual, made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/orchestrator/-/pipelines/new).
+The first run is manual, made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/{{ cookiecutter.service_slug }}/-/pipelines/new).
 
 To create all the terraform resources, run the pipeline with the following variable:
 
@@ -84,10 +84,10 @@ This section explains the steps you need to clone and work with this project.
 
 #### Clone
 
-Clone the orchestrator and services repositories:
+Clone the {{ cookiecutter.service_slug }} and services repositories:
 
 ```console
-git clone git@gitlab.com:{{ cookiecutter.project_slug }}/orchestrator.git {{ cookiecutter.project_dirname }}
+git clone git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.service_slug }}.git {{ cookiecutter.project_dirname }}
 cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
 git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
 git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
@@ -98,7 +98,7 @@ cd ..
 
 ### Environment variables
 
-In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the orchestrator directory. For ease of use, a `.env_template` template is provided.
+In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the {{ cookiecutter.service_slug }} directory. For ease of use, a `.env_template` template is provided.
 
 Enter the newly created **project** directory and create the `.env` file copying from `.env_template`:
 
@@ -109,7 +109,7 @@ $ cp .env_template .env
 
 ### Docker
 
-All the following Docker commands are supposed to be run from the orchestrator directory.
+All the following Docker commands are supposed to be run from the {{ cookiecutter.service_slug }} directory.
 
 #### Build
 
@@ -181,11 +181,10 @@ $ make rebuild s=backend
 
 Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certificate:
 
-#### Firefox 
+#### Firefox
 
-- Settings > Privacy & Security > Manage Certificates > View Certificates... > Authorities > Import
+-   Settings > Privacy & Security > Manage Certificates > View Certificates... > Authorities > Import
 
 #### Chrome
 
-- Settings > Security > Certificates > Authorities > Import  
-
+-   Settings > Security > Certificates > Authorities > Import

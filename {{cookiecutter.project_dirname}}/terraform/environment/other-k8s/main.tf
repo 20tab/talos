@@ -8,7 +8,7 @@ locals {
       var.s3_region != "",
       var.s3_access_id != "",
       var.s3_secret_key != "",
-      var.s3_host != "" || var.s3_bucket_name != "",
+      var.s3_bucket_name != "",
     ]
   )
 }
@@ -17,11 +17,11 @@ terraform {
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "2.9.0"
+      version = "~> 2.12"
     }
     random = {
       source  = "hashicorp/random"
-      version = "~> 3.1"
+      version = "~> 3.3"
     }
   }
 }
@@ -117,7 +117,7 @@ module "routing" {
 /* Metrics */
 
 module "metrics" {
-  count = var.stack_slug == "main" ? 1 : 0
+  count = var.stack_slug == "main" && var.env_slug == "prod" ? 1 : 0
 
   source = "../modules/kubernetes/metrics"
 

@@ -2,6 +2,7 @@
   "project_name": null,
   "project_slug": "{{ cookiecutter.project_name | slugify() }}",
   "project_dirname": "{{ cookiecutter.project_slug | slugify(separator='') }}",
+  "service_slug": "orchestrator",
   "backend_type": ["django", "none"],
   "backend_service_slug": "backend",
   "backend_service_port": "8000",
@@ -12,17 +13,17 @@
   "terraform_cloud_organization": "",
   "media_storage": ["digitalocean-s3", "aws-s3", "local", "none"],
   "pact_enabled": false,
-  "project_domain": "",
+  "vault_project_path": "{{ cookiecutter.project_slug }}",
   "stacks": {
     "main": {
       "dev": {
-        "name": "Development"
+        "name": "development"
       },
       "stage": {
-        "name": "Staging"
+        "name": "staging"
       },
       "prod": {
-        "name": "Production"
+        "name": "production"
       }
     }
   },
