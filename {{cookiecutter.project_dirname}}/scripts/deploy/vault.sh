@@ -25,5 +25,5 @@ if [ "${ENV_SLUG}" != "" ] && [ "${VAULT_ENV_SECRETS}" != "" ]; then
 fi
 
 if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
-    export TFC_TOKEN="$(./vault read -field=token ${PROJECT_SLUG}-tfc/creds/default)"
+    export TFC_TOKEN="$(./vault read -field=token ${VAULT_PROJECT_PATH}-tfc/creds/default)"
 fi
