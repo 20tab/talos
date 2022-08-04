@@ -49,6 +49,13 @@ endif
 simpletest:
 	python3 -m unittest $(simpletestargs)
 
+.PHONY: test # Run full test and coverage
+test:
+	python3 -m coverage run -m unittest
+	python3 -m coverage combine
+	python3 -m coverage html
+	python3 -m coverage report
+
 .PHONY: update
 update: pip precommit_update ## Run update
 
