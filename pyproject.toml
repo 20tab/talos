@@ -8,3 +8,22 @@ profile = "black"
 [tool.mypy]
 ignore_missing_imports = true
 python_version = "3.10"
+
+[tool.coverage.html]
+title = "Talos - Coverage"
+show_contexts = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+dynamic_context = "test_function"
+concurrency = ["multiprocessing"]
+data_file = ".coverages/.coverage"
+disable_warnings = ["no-data-collected"]
+omit = [
+    ".venv/*",
+    "venv/*",
+]
+source = ["."]
