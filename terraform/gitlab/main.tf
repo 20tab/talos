@@ -54,7 +54,7 @@ data "gitlab_group" "group" {
 }
 
 data "http" "user_info" {
-  url = "https://gitlab.com/api/v4/user"
+  url = "${var.gitlab_url}/api/v4/user"
 
   request_headers = {
     Accept        = "application/json"
