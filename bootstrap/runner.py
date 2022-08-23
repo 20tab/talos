@@ -533,6 +533,7 @@ class Runner:
         """Initialize the GitLab resources."""
         click.echo(info("...creating the GitLab resources with Terraform"))
         env = dict(
+            TF_VAR_gitlab_url=self.gitlab_url,
             TF_VAR_gitlab_token=self.gitlab_private_token,
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
             TF_VAR_group_name=self.project_name,

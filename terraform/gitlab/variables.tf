@@ -1,3 +1,8 @@
+variable "gitlab_url" {
+  description = "The GitLab url"
+  type        = string
+}
+
 variable "gitlab_token" {
   description = "The GitLab token."
   type        = string
