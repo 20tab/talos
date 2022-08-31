@@ -43,11 +43,11 @@ Environment stage will create the other resource for each of it.
 
 | Value                                                              | Description                                                                                                                                   |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| {% if cookiecutter.deployment_type == "digitalocean-k8s" %}C`base` | Base stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster |
+| {% if cookiecutter.deployment_type == "digitalocean-k8s" %}`base` | Base stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster |
 | {% endif %}`cluster`                                               | Cluster stage will create Ingress, Certificate and Monitoring if enabled.                                                                     |
 | `environment`                                                      | Environment stage will create the other resource for each of it.                                                                              |
 
-`ENABLED_STAGE` = `{% if cookiecutter.deployment_type == "digitalocean-k8s" %}base, {% endif %}cluster, environment`
+`ENABLED_STAGES` = `{% if cookiecutter.deployment_type == "digitalocean-k8s" %}base, {% endif %}cluster, environment`
 
 ### Stacks
 
