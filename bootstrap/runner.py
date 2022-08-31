@@ -744,6 +744,7 @@ class Runner:
             "deployment_type": self.deployment_type,
             "environment_distribution": self.environment_distribution,
             "gid": self.gid,
+            "gitlab_url": self.gitlab_url,
             "gitlab_group_slug": self.gitlab_group_slug,
             "gitlab_private_token": self.gitlab_private_token,
             "logs_dir": str(self.logs_dir.resolve()),
