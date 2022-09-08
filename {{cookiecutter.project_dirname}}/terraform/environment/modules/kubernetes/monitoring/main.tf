@@ -10,7 +10,7 @@ terraform {
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.12"
+      version = "~> 2.13"
     }
   }
 }
@@ -37,7 +37,7 @@ resource "helm_release" "loki" {
   namespace  = local.namespace
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
-  version    = "2.5.1"
+  version    = "2.6.1"
 
   dynamic "set" {
     for_each = {

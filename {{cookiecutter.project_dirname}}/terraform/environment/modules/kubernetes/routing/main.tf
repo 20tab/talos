@@ -25,7 +25,7 @@ terraform {
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.12"
+      version = "~> 2.13"
     }
   }
 }
@@ -164,7 +164,7 @@ resource "kubernetes_manifest" "certificate" {
 
 /* Traefik Ingress Route */
 
-resource "kubernetes_manifest" "traefik_ingress_route" {
+resource "kubernetes_manifest" "main_ingress_route" {
   manifest = {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
@@ -210,20 +210,44 @@ resource "kubernetes_manifest" "traefik_ingress_route" {
               ]
             }
           ],
-          # monitoring rule
-          local.monitoring_domain != "" ? [
-            {
-              kind  = "Rule"
-              match = "Host(`${local.monitoring_domain}`) && PathPrefix(`/`)"
-              services = [
-                {
-                  name = "grafana"
-                  port = 80
-                }
-              ]
-            }
-          ] : []
         )
+      },
+      local.tls_enabled ? {
+        tls = {
+          secretName = local.tls_secret_name
+        }
+      } : {}
+    )
+  }
+}
+
+/* Monitoring Ingress Route */
+
+resource "kubernetes_manifest" "monitoring_ingress_route" {
+  count = local.monitoring_domain != "" ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.containo.us/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "monitoring"
+      namespace = "log-storage"
+    }
+    spec = merge(
+      {
+        entryPoints = local.tls_enabled ? ["websecure"] : ["web"]
+        routes = [
+          {
+            kind  = "Rule"
+            match = "Host(`${local.monitoring_domain}`)"
+            services = [
+              {
+                name = "grafana"
+                port = 80
+              }
+            ]
+          }
+        ]
       },
       local.tls_enabled ? {
         tls = {

@@ -26,11 +26,15 @@ terraform {
   required_providers {
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "~> 2.21"
+      version = "~> 2.22"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.6"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.12"
+      version = "~> 2.13"
     }
   }
 }
@@ -42,6 +46,16 @@ provider "digitalocean" {
 
   spaces_access_id  = var.s3_access_id
   spaces_secret_key = var.s3_secret_key
+}
+
+provider "helm" {
+  kubernetes {
+    host  = data.digitalocean_kubernetes_cluster.main.endpoint
+    token = data.digitalocean_kubernetes_cluster.main.kube_config[0].token
+    cluster_ca_certificate = base64decode(
+      data.digitalocean_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate
+    )
+  }
 }
 
 provider "kubernetes" {

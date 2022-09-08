@@ -17,11 +17,15 @@ terraform {
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.12"
+      version = "~> 2.13"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.6"
     }
     random = {
       source  = "hashicorp/random"
-      version = "~> 3.3"
+      version = "~> 3.4"
     }
   }
 }
@@ -32,6 +36,14 @@ provider "kubernetes" {
   host                   = var.kubernetes_host
   token                  = var.kubernetes_token
   cluster_ca_certificate = base64decode(var.kubernetes_cluster_ca_certificate)
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = var.kubernetes_host
+    token                  = var.kubernetes_token
+    cluster_ca_certificate = base64decode(var.kubernetes_cluster_ca_certificate)
+  }
 }
 
 /* Namespace */
