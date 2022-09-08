@@ -122,7 +122,7 @@ variable "grafana_user" {
 variable "grafana_version" {
   description = "The Grafana version."
   type        = string
-  default     = "8.4.2"
+  default     = "9.1.3"
 }
 
 variable "letsencrypt_certificate_email" {
