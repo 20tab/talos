@@ -59,7 +59,7 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
-      name      = "metrics-ingress-route"
+      name      = "metrics"
       namespace = "kube-system"
     }
     spec = merge(
