@@ -164,7 +164,7 @@ stack_{{ stack_slug }}_base_apply:
   stage: Cluster
   variables:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/cluster/vars{% if cookiecutter.vault_project_path %}
-    VAULT_STACK_SECRETS: "digitalocean k8s monitoring"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+    VAULT_STACK_SECRETS: "digitalocean k8s"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
 # {{ stack_slug|title }} Stack (Cluster Stage) #
 
@@ -224,7 +224,7 @@ stack_{{ stack_slug }}_cluster_apply:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/environment/vars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}{% if cookiecutter.vault_project_path %}
     VAULT_ENV_SECRETS: "basic_auth regcred tls"
-    VAULT_STACK_SECRETS: "digitalocean k8s s3"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+    VAULT_STACK_SECRETS: "digitalocean k8s monitoring s3"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
 ## {{ stack_slug|title }} Stack (Environment Stage) ##{% for env_slug, env_conf in stack_envs.items() %}
 
