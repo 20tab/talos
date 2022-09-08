@@ -160,4 +160,5 @@ module "database_dump_cronjob" {
   s3_secret_key  = var.s3_secret_key
   s3_host        = var.s3_host
   s3_bucket_name = var.s3_bucket_name
+  database_url   = module.postgres.database_url
 }
