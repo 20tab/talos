@@ -1,3 +1,8 @@
+variable "database_url" {
+  description = "The database url."
+  type        = string
+}
+
 variable "namespace" {
   description = "The namespace for Kubernetes resources."
   type        = string
