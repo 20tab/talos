@@ -4,3 +4,4 @@
 # basic_auth_enabled=false
 # backend_service_extra_traefik_middlewares=[]
 # frontend_service_extra_traefik_middlewares=[]
+# use_postgis=true

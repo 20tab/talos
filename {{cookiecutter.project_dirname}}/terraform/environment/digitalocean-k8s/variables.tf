@@ -227,6 +227,12 @@ variable "tls_certificate_key" {
   default     = ""
 }
 
+variable "use_postgis" {
+  description = "Tell if the Postgres postgis extension is used."
+  type        = bool
+  default     = false
+}
+
 variable "use_redis" {
   description = "Tell if a Redis service is used."
   type        = bool

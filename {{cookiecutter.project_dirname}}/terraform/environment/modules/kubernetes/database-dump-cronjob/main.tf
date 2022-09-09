@@ -16,6 +16,7 @@ resource "kubernetes_secret_v1" "main" {
   data = {
     AWS_ACCESS_KEY_ID     = var.s3_access_id
     AWS_SECRET_ACCESS_KEY = var.s3_secret_key
+    DATABASE_URL          = var.database_url
   }
 }
 
@@ -60,11 +61,6 @@ resource "kubernetes_cron_job_v1" "main" {
               env_from {
                 secret_ref {
                   name = kubernetes_secret_v1.main.metadata[0].name
-                }
-              }
-              env_from {
-                secret_ref {
-                  name = "database-url"
                 }
               }
             }

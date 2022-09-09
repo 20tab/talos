@@ -1,9 +1,3 @@
-variable "key_prefix" {
-  description = "The key prefix."
-  type        = string
-  default     = ""
-}
-
 variable "namespace" {
   description = "The namespace for Kubernetes resources."
   type        = string

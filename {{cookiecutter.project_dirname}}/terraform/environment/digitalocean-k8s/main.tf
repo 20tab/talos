@@ -5,7 +5,7 @@ locals {
 
   domain_id = var.create_dns_records ? var.create_domain ? digitalocean_domain.main[0].id : data.digitalocean_domain.main[0].id : ""
 
-  s3_host        = var.digitalocean_spaces_bucket_available ? "https://${var.s3_region}.digitaloceanspaces.com" : var.s3_host
+  s3_host        = var.digitalocean_spaces_bucket_available ? "${var.s3_region}.digitaloceanspaces.com" : var.s3_host
   s3_bucket_name = var.digitalocean_spaces_bucket_available ? "${local.base_resource_name_prefix}-s3-bucket" : var.s3_bucket_name
 
   postgres_dump_enabled = alltrue(
@@ -240,7 +240,7 @@ resource "kubernetes_secret_v1" "database_url" {
     namespace = local.namespace
   }
   data = {
-    DATABASE_URL = digitalocean_database_connection_pool.postgres.private_uri
+    DATABASE_URL = replace(digitalocean_database_connection_pool.postgres.private_uri, "/^postgresql:///", var.use_postgis ? "postgis://" : "postgresql://")
   }
 }
 
@@ -270,4 +270,6 @@ module "database_dump_cronjob" {
   s3_secret_key  = var.s3_secret_key
   s3_host        = local.s3_host
   s3_bucket_name = local.s3_bucket_name
+
+  database_url = digitalocean_database_connection_pool.postgres.private_uri
 }

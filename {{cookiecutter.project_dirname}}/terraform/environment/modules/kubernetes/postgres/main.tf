@@ -150,15 +150,3 @@ resource "kubernetes_service_v1" "main" {
   }
   depends_on = [kubernetes_deployment_v1.main]
 }
-
-/* Secrets */
-
-resource "kubernetes_secret_v1" "database_url" {
-  metadata {
-    name      = "database-url"
-    namespace = var.namespace
-  }
-  data = {
-    DATABASE_URL = "postgres://${var.database_user}:${random_password.main.result}@${kubernetes_service_v1.main.metadata[0].name}:5432/${var.database_name}"
-  }
-}
