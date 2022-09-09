@@ -170,7 +170,7 @@ path "${var.project_path}-tfc/*" {
 # Enable child token generation for the Terraform Vault provider
 # https://registry.terraform.io/providers/hashicorp/vault/latest/docs#token
 path "auth/token/create" {
-  capabilities = [ "update" ]
+  capabilities = [ "create", "update" ]
 }
 EOF
 }
