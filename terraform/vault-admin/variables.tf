@@ -1,7 +1,7 @@
 variable "gitlab_jwt_auth_token_explicit_max_ttl" {
   description = "The GitLab auth token explicit max TTL."
   type        = number
-  default     = 900
+  default     = 1800
 }
 
 variable "gitlab_oidc_auth_path" {
