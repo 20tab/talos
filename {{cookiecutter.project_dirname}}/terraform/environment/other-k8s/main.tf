@@ -79,7 +79,6 @@ module "redis" {
   namespace = local.namespace
 
   redis_image = var.redis_image
-  key_prefix  = var.env_slug
 }
 
 /* Monitoring */
@@ -158,6 +157,28 @@ resource "kubernetes_secret_v1" "regcred" {
   type = "kubernetes.io/dockerconfigjson"
 }
 
+resource "kubernetes_secret_v1" "database_url" {
+  metadata {
+    name      = "database-url"
+    namespace = local.namespace
+  }
+  data = {
+    DATABASE_URL = module.postgres.database_url
+  }
+}
+
+resource "kubernetes_secret_v1" "cache_url" {
+  count = var.use_redis ? 1 : 0
+
+  metadata {
+    name      = "cache-url"
+    namespace = local.namespace
+  }
+  data = {
+    CACHE_URL = "${module.redis[0].cache_url}?key_prefix=${var.env_slug}"
+  }
+}
+
 /* Cron Jobs */
 
 module "database_dump_cronjob" {
@@ -172,5 +193,6 @@ module "database_dump_cronjob" {
   s3_secret_key  = var.s3_secret_key
   s3_host        = var.s3_host
   s3_bucket_name = var.s3_bucket_name
-  database_url   = module.postgres.database_url
+
+  database_url = module.postgres.database_url
 }

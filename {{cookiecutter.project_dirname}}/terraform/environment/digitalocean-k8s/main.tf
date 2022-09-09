@@ -19,7 +19,6 @@ locals {
       local.s3_host != "",
     ]
   )
-  database_url = var.use_postgis ? replace(digitalocean_database_connection_pool.postgres.private_uri, "postgresql://", "postgis://") : digitalocean_database_connection_pool.postgres.private_uri
 }
 
 terraform {
@@ -241,7 +240,7 @@ resource "kubernetes_secret_v1" "database_url" {
     namespace = local.namespace
   }
   data = {
-    DATABASE_URL = local.database_url
+    DATABASE_URL = replace(digitalocean_database_connection_pool.postgres.private_uri, "/^postgresql:///", var.use_postgis ? "postgis://" : "postgresql://")
   }
 }
 
@@ -271,5 +270,6 @@ module "database_dump_cronjob" {
   s3_secret_key  = var.s3_secret_key
   s3_host        = local.s3_host
   s3_bucket_name = local.s3_bucket_name
-  database_url   = digitalocean_database_connection_pool.postgres.private_uri
+
+  database_url = digitalocean_database_connection_pool.postgres.private_uri
 }

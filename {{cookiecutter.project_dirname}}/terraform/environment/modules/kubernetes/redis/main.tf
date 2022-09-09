@@ -97,18 +97,3 @@ resource "kubernetes_service_v1" "main" {
 
   }
 }
-
-/* Secrets */
-
-resource "kubernetes_secret_v1" "main" {
-  metadata {
-    name      = "cache-url"
-    namespace = var.namespace
-  }
-  data = {
-    CACHE_URL = join("", [
-      "redis://:${random_password.main.result}@${kubernetes_service_v1.main.metadata[0].name}:6379",
-      var.key_prefix != "" ? "?key_prefix=${var.key_prefix}" : ""
-    ])
-  }
-}

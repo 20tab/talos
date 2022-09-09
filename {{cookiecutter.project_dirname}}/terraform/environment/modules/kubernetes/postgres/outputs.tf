@@ -1,4 +1,5 @@
 output "database_url" {
-  description = "The postgres database url."
-  value       = kubernetes_secret_v1.database_url.data.DATABASE_URL
+  description = "The Postgres database url."
+  value       = "postgres://${var.database_user}:${random_password.main.result}@${kubernetes_service_v1.main.metadata[0].name}:5432/${var.database_name}"
+  sensitive   = true
 }

@@ -1,6 +1,7 @@
 variable "database_url" {
   description = "The database url."
   type        = string
+  sensitive   = true
 }
 
 variable "namespace" {
