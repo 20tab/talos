@@ -1,6 +1,7 @@
 """Collect options to initialize a template based web project."""
 
 import json
+import re
 from functools import partial
 from shutil import rmtree
 from time import time
@@ -104,6 +105,7 @@ def collect(
     s3_bucket_name,
     gitlab_url,
     gitlab_private_token,
+    gitlab_group_path,
     gitlab_group_slug,
     gitlab_group_owners,
     gitlab_group_maintainers,
@@ -248,16 +250,18 @@ def collect(
     )
     (
         gitlab_url,
-        gitlab_group_slug,
         gitlab_private_token,
+        gitlab_group_path,
+        gitlab_group_slug,
         gitlab_group_owners,
         gitlab_group_maintainers,
         gitlab_group_developers,
-    ) = clean_gitlab_group_data(
+    ) = clean_gitlab_data(
         project_slug,
         gitlab_url,
-        gitlab_group_slug,
         gitlab_private_token,
+        gitlab_group_path,
+        gitlab_group_slug,
         gitlab_group_owners,
         gitlab_group_maintainers,
         gitlab_group_developers,
@@ -350,6 +354,7 @@ def collect(
         "s3_bucket_name": s3_bucket_name,
         "gitlab_url": gitlab_url,
         "gitlab_private_token": gitlab_private_token,
+        "gitlab_group_path": gitlab_group_path,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
         "gitlab_group_maintainers": gitlab_group_maintainers,
@@ -389,19 +394,6 @@ def validate_or_prompt_email(message, value=None, default=None, required=True):
     return validate_or_prompt_email(message, None, default, required)
 
 
-def validate_or_prompt_url(message, value=None, default=None, required=True):
-    """Validate the given URL or prompt until a valid value is provided."""
-    if value is None:
-        value = click.prompt(message, default=default)
-    try:
-        if not required and value == "" or validators.url(value):
-            return value.strip("/")
-    except validators.ValidationFailure:
-        pass
-    click.echo(error("Please type a valid URL!"))
-    return validate_or_prompt_url(message, None, default, required)
-
-
 def validate_or_prompt_password(message, value=None, default=None, required=True):
     """Validate the given password or prompt until a valid value is provided."""
     if value is None:
@@ -413,6 +405,41 @@ def validate_or_prompt_password(message, value=None, default=None, required=True
         pass
     click.echo(error("Please type at least 8 chars!"))
     return validate_or_prompt_password(message, None, default, required)
+
+
+def validate_or_prompt_path(message, value=None, default=None, required=True):
+    """Validate the given path or prompt until a valid path is provided."""
+    if value is None:
+        value = click.prompt(message, default=default)
+    try:
+        if (
+            not required
+            and value == ""
+            or re.match(r"^(?:[\w_\-]+)(?:\/[\w_\-]+)*\/?$", value)
+        ):
+            return value.rstrip("/")
+    except validators.ValidationFailure:
+        pass
+    click.echo(
+        error(
+            "Please type a valid slash-separated path containing letters, digits, "
+            "dashes and underscores!"
+        )
+    )
+    return validate_or_prompt_path(message, None, default, required)
+
+
+def validate_or_prompt_url(message, value=None, default=None, required=True):
+    """Validate the given URL or prompt until a valid value is provided."""
+    if value is None:
+        value = click.prompt(message, default=default)
+    try:
+        if not required and value == "" or validators.url(value):
+            return value.rstrip("/")
+    except validators.ValidationFailure:
+        pass
+    click.echo(error("Please type a valid URL!"))
+    return validate_or_prompt_url(message, None, default, required)
 
 
 def clean_project_slug(project_name, project_slug):
@@ -894,17 +921,18 @@ def clean_media_storage(media_storage):
     )
 
 
-def clean_gitlab_group_data(
+def clean_gitlab_data(
     project_slug,
     gitlab_url,
-    gitlab_group_slug,
     gitlab_private_token,
+    gitlab_group_path,
+    gitlab_group_slug,
     gitlab_group_owners,
     gitlab_group_maintainers,
     gitlab_group_developers,
     quiet=False,
 ):
-    """Return GitLab group data."""
+    """Return GitLab data."""
     if gitlab_url or (
         gitlab_url is None
         and click.confirm(warning("Do you want to use GitLab?"), default=True)
@@ -912,18 +940,28 @@ def clean_gitlab_group_data(
         gitlab_url = validate_or_prompt_url(
             "GitLab URL", gitlab_url, default=GITLAB_URL_DEFAULT
         )
+        gitlab_private_token = gitlab_private_token or click.prompt(
+            "GitLab private token (with API scope enabled)", hide_input=True
+        )
+        gitlab_group_path = validate_or_prompt_path(
+            "GitLab parent group path (leave blank for a root level group)",
+            gitlab_group_path,
+            default="",
+            required=False,
+        )
         gitlab_group_slug = slugify(
             gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
         )
-        quiet or click.confirm(
-            warning(
-                f'Make sure the GitLab "{gitlab_group_slug}" group exists '
-                "before proceeding. Continue?"
-            ),
-            abort=True,
-        )
-        gitlab_private_token = gitlab_private_token or click.prompt(
-            "GitLab private token (with API scope enabled)", hide_input=True
+        quiet or (
+            gitlab_group_path == ""
+            and gitlab_url == GITLAB_URL_DEFAULT
+            and click.confirm(
+                warning(
+                    f'Make sure the GitLab "{gitlab_group_slug}" group exists '
+                    "before proceeding. Continue?"
+                ),
+                abort=True,
+            )
         )
         gitlab_group_owners = (
             gitlab_group_owners
@@ -942,15 +980,17 @@ def clean_gitlab_group_data(
         )
     else:
         gitlab_url = None
-        gitlab_group_slug = None
         gitlab_private_token = None
+        gitlab_group_path = None
+        gitlab_group_slug = None
         gitlab_group_owners = None
         gitlab_group_maintainers = None
         gitlab_group_developers = None
     return (
         gitlab_url,
-        gitlab_group_slug,
         gitlab_private_token,
+        gitlab_group_path,
+        gitlab_group_slug,
         gitlab_group_owners,
         gitlab_group_maintainers,
         gitlab_group_developers,

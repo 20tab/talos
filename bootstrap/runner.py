@@ -116,6 +116,7 @@ class Runner:
     s3_bucket_name: str | None = None
     gitlab_url: str | None = None
     gitlab_private_token: str | None = None
+    gitlab_group_path: str | None = None
     gitlab_group_slug: str | None = None
     gitlab_group_owners: str | None = None
     gitlab_group_maintainers: str | None = None
@@ -531,6 +532,7 @@ class Runner:
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
             TF_VAR_group_name=self.project_name,
             TF_VAR_group_owners=self.gitlab_group_owners,
+            TF_VAR_group_path=self.gitlab_group_path,
             TF_VAR_group_slug=self.gitlab_group_slug,
             TF_VAR_group_variables=self.render_gitlab_variables_to_string("group"),
             TF_VAR_local_repository_dir=self.service_dir,
@@ -546,7 +548,16 @@ class Runner:
             GITLAB_BASE_URL=f"{self.gitlab_url}/api/v4/"
         )
         self.run_terraform(
-            "gitlab", env, outputs=["registry_password", "registry_username"]
+            "gitlab",
+            env,
+            outputs=["registry_password", "registry_username", "ssh_url_to_repo"],
+        )
+        self.make_sed(
+            "README.md",
+            "__VCS_BASE_SSH_URL__",
+            self.terraform_outputs["gitlab"]["ssh_url_to_repo"]
+            .replace(f"/{self.service_slug}.git", "")
+            .replace("/", "\\/"),
         )
 
     def init_terraform_cloud(self):
@@ -720,6 +731,17 @@ class Runner:
             {module_name: self.get_terraform_outputs(cwd, env, outputs)}
         )
 
+    def make_sed(self, file_path, placeholder, replace_value):
+        """Replace a placeholder value with a given one in a given file."""
+        subprocess.run(
+            [
+                "sed",
+                "-i",
+                f"s/{placeholder}/{replace_value}/",
+                str(self.output_dir / self.project_dirname / file_path),
+            ]
+        )
+
     def init_subrepo(self, service_slug, template_url, **kwargs):
         """Initialize a subrepo using the given template and options."""
         subrepo_dir = str((SUBREPOS_DIR / service_slug).resolve())
@@ -738,6 +760,7 @@ class Runner:
             "environment_distribution": self.environment_distribution,
             "gid": self.gid,
             "gitlab_url": self.gitlab_url,
+            "gitlab_group_path": self.gitlab_group_path,
             "gitlab_group_slug": self.gitlab_group_slug,
             "gitlab_private_token": self.gitlab_private_token,
             "logs_dir": str(self.logs_dir.resolve()),
@@ -792,9 +815,9 @@ class Runner:
 
     def cleanup(self):
         """Clean up after a successful execution."""
-        shutil.rmtree(DUMPS_DIR)
-        shutil.rmtree(SUBREPOS_DIR)
-        shutil.rmtree(self.terraform_dir)
+        shutil.rmtree(DUMPS_DIR, ignore_errors=True)
+        shutil.rmtree(SUBREPOS_DIR, ignore_errors=True)
+        shutil.rmtree(self.terraform_dir, ignore_errors=True)
 
     def run(self):
         """Run the bootstrap."""

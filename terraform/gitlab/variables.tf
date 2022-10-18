@@ -31,6 +31,12 @@ variable "group_owners" {
   type        = string
 }
 
+variable "group_path" {
+  description = "The GitLab group namespace path (leave blank for root groups)."
+  type        = string
+  default     = ""
+}
+
 variable "group_slug" {
   description = "The GitLab group slug."
   type        = string

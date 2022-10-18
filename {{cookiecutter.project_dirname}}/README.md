@@ -87,10 +87,10 @@ This section explains the steps you need to clone and work with this project.
 Clone the {{ cookiecutter.service_slug }} and services repositories:
 
 ```console
-git clone git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.service_slug }}.git {{ cookiecutter.project_dirname }}
+git clone __VCS_BASE_SSH_URL__/{{ cookiecutter.service_slug }}.git {{ cookiecutter.project_dirname }}
 cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
-git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-git clone -b develop git@gitlab.com:{{ cookiecutter.project_slug }}/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
+git clone -b develop __VCS_BASE_SSH_URL__/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+git clone -b develop __VCS_BASE_SSH_URL__/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
 cd ..
 ```
 
