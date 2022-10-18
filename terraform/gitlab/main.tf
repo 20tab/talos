@@ -184,7 +184,7 @@ resource "gitlab_group_variable" "vars" {
 }
 
 resource "gitlab_group_variable" "registry_password" {
-  count = var.vault_enabled ? 0 : 1
+  count = var.use_vault ? 0 : 1
 
   group     = data.gitlab_group.group.id
   key       = "REGISTRY_PASSWORD"
@@ -194,7 +194,7 @@ resource "gitlab_group_variable" "registry_password" {
 }
 
 resource "gitlab_group_variable" "registry_username" {
-  count = var.vault_enabled ? 0 : 1
+  count = var.use_vault ? 0 : 1
 
   group     = data.gitlab_group.group.id
   key       = "REGISTRY_USERNAME"

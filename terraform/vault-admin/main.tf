@@ -1,3 +1,8 @@
+locals {
+  auth_slug = "gitlab-jwt-${var.project_slug}"
+}
+
+
 terraform {
   required_providers {
     vault = {
@@ -14,7 +19,7 @@ provider "vault" {
 
 resource "vault_jwt_auth_backend" "gitlab_jwt" {
   description  = "Demonstration of the Terraform JWT auth backend"
-  path         = "gitlab-jwt-${var.project_path}"
+  path         = local.auth_slug
   jwks_url     = format("%s/-/jwks", trimsuffix(var.gitlab_url, "/"))
   bound_issuer = var.gitlab_url
 }
@@ -22,16 +27,16 @@ resource "vault_jwt_auth_backend" "gitlab_jwt" {
 resource "vault_policy" "gitlab_jwt_stacks" {
   for_each = var.stacks_environments
 
-  name = "gitlab-jwt-${var.project_path}-stacks-${each.key}"
+  name = "${local.auth_slug}-stacks-${each.key}"
 
   policy = <<EOF
 # Read-only permission for GitLab CI jobs on project "${var.project_name}" ${each.key} stack secrets
 
-path "${var.project_path}/stacks/${each.key}/*" {
+path "${var.project_slug}/stacks/${each.key}/*" {
   capabilities = [ "read" ]
 }
 
-path "${var.project_path}-tfc/creds/default" {
+path "${var.project_slug}-tfc/creds/default" {
   capabilities = [ "read" ]
 }
 EOF
@@ -42,7 +47,7 @@ resource "vault_jwt_auth_backend_role" "gitlab_jwt_stacks" {
 
   backend = vault_jwt_auth_backend.gitlab_jwt.path
 
-  role_name = each.value.name
+  role_name = trimprefix(each.value.name, "${local.auth_slug}-")
   role_type = "jwt"
 
   token_explicit_max_ttl = var.gitlab_jwt_auth_token_explicit_max_ttl
@@ -50,26 +55,26 @@ resource "vault_jwt_auth_backend_role" "gitlab_jwt_stacks" {
 
   user_claim = "user_email"
 
-  bound_claims = { namespace_path = var.project_path }
+  bound_claims = { namespace_path = var.project_namespace_path }
 }
 
 resource "vault_policy" "gitlab_jwt_envs" {
   for_each = transpose({ for k, v in var.stacks_environments : k => keys(v) })
 
-  name = "gitlab-jwt-${var.project_path}-envs-${each.key}"
+  name = "${local.auth_slug}-envs-${each.key}"
 
   policy = <<EOF
 # Read-only permission for GitLab CI jobs on project "${var.project_name}" ${each.key} stack secrets
 
-path "${var.project_path}/stacks/${each.value[0]}/*" {
+path "${var.project_slug}/stacks/${each.value[0]}/*" {
   capabilities = [ "read" ]
 }
 
-path "${var.project_path}/envs/${each.key}/*" {
+path "${var.project_slug}/envs/${each.key}/*" {
   capabilities = [ "read" ]
 }
 
-path "${var.project_path}-tfc/creds/default" {
+path "${var.project_slug}-tfc/creds/default" {
   capabilities = [ "read" ]
 }
 EOF
@@ -80,7 +85,7 @@ resource "vault_jwt_auth_backend_role" "envs" {
 
   backend = vault_jwt_auth_backend.gitlab_jwt.path
 
-  role_name = each.value.name
+  role_name = trimprefix(each.value.name, "${local.auth_slug}-")
   role_type = "jwt"
 
   token_explicit_max_ttl = var.gitlab_jwt_auth_token_explicit_max_ttl
@@ -88,29 +93,29 @@ resource "vault_jwt_auth_backend_role" "envs" {
 
   user_claim = "user_email"
 
-  bound_claims = { namespace_path = var.project_path }
+  bound_claims = { namespace_path = var.project_namespace_path }
 }
 
 resource "vault_policy" "gitlab_jwt_pact" {
-  count = var.pact_enabled ? 1 : 0
+  count = var.use_pact ? 1 : 0
 
-  name = "gitlab-jwt-${var.project_path}-pact"
+  name = "${local.auth_slug}-pact"
 
   policy = <<EOF
 # Read-only permission for GitLab CI jobs on project "${var.project_name}" Pact secrets
 
-path "${var.project_path}/pact" {
+path "${var.project_slug}/pact" {
   capabilities = [ "read" ]
 }
 EOF
 }
 
 resource "vault_jwt_auth_backend_role" "gitlab_jwt_pact" {
-  count = var.pact_enabled ? 1 : 0
+  count = var.use_pact ? 1 : 0
 
   backend = vault_jwt_auth_backend.gitlab_jwt.path
 
-  role_name = vault_policy.gitlab_jwt_pact[0].name
+  role_name = "pact"
   role_type = "jwt"
 
   token_explicit_max_ttl = var.gitlab_jwt_auth_token_explicit_max_ttl
@@ -118,7 +123,7 @@ resource "vault_jwt_auth_backend_role" "gitlab_jwt_pact" {
 
   user_claim = "user_email"
 
-  bound_claims = { namespace_path = var.project_path }
+  bound_claims = { namespace_path = var.project_namespace_path }
 }
 
 /* GitLab OIDC Auth */
@@ -132,7 +137,7 @@ data "vault_auth_backend" "gitlab_oidc" {
 resource "vault_policy" "gitlab_oidc" {
   count = var.gitlab_oidc_auth_path != "" ? 1 : 0
 
-  name = "gitlab-oidc-${var.project_path}"
+  name = "gitlab-oidc-${var.project_slug}"
 
   policy = <<EOF
 # Full permission for GitLab group members on project "${var.project_name}" secrets
@@ -142,28 +147,28 @@ path "sys/mounts" {
 }
 
 # Manage KV secrets
-path "sys/mounts/${var.project_path}" {
+path "sys/mounts/${var.project_slug}" {
   capabilities = [ "create", "delete", "update" ]
 }
 
-path "${var.project_path}" {
+path "${var.project_slug}" {
   capabilities = [ "list" ]
 }
 
-path "${var.project_path}/*" {
+path "${var.project_slug}/*" {
   capabilities = [ "create", "delete", "list", "read", "update" ]
 }
 
 # Manage TFC secrets
-path "sys/mounts/${var.project_path}-tfc" {
+path "sys/mounts/${var.project_slug}-tfc" {
   capabilities = [ "create", "delete", "update" ]
 }
 
-path "${var.project_path}-tfc" {
+path "${var.project_slug}-tfc" {
   capabilities = [ "list" ]
 }
 
-path "${var.project_path}-tfc/*" {
+path "${var.project_slug}-tfc/*" {
   capabilities = [ "create", "delete", "list", "read", "update" ]
 }
 
@@ -178,7 +183,7 @@ EOF
 resource "vault_identity_group" "gitlab_oidc" {
   count = var.gitlab_oidc_auth_path != "" ? 1 : 0
 
-  name     = var.project_path
+  name     = var.project_slug
   type     = "external"
   policies = [vault_policy.gitlab_oidc[0].name]
 }
@@ -186,7 +191,7 @@ resource "vault_identity_group" "gitlab_oidc" {
 resource "vault_identity_group_alias" "gitlab_oidc" {
   count = var.gitlab_oidc_auth_path != "" ? 1 : 0
 
-  name           = var.project_path
+  name           = var.project_namespace_path
   mount_accessor = data.vault_auth_backend.gitlab_oidc[0].accessor
   canonical_id   = vault_identity_group.gitlab_oidc[0].id
 }

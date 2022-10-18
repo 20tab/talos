@@ -3,8 +3,8 @@ variable "project_name" {
   type        = string
 }
 
-variable "project_path" {
-  description = "The project path."
+variable "project_slug" {
+  description = "The project slug."
   type        = string
 }
 

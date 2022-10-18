@@ -7,11 +7,11 @@ load_secrets()
 {
     secrets_prefix=$1
     secrets_slug=$2
-    export VAULT_TOKEN="$(./vault write -field=token auth/gitlab-jwt-${VAULT_PROJECT_PATH}/login role=gitlab-jwt-${VAULT_PROJECT_PATH}-${secrets_prefix}-${secrets_slug} jwt=${CI_JOB_JWT_V2})"
+    export VAULT_TOKEN="$(./vault write -field=token auth/gitlab-jwt-${PROJECT_SLUG}/login role=${secrets_prefix}-${secrets_slug} jwt=${CI_JOB_JWT_V2})"
     for secret_name in $3
     do
         secret_var_file=${TERRAFORM_VARS_DIR}/${secret_name}.json
-        (./vault kv get -format='json' -field=data ${VAULT_PROJECT_PATH}/${secrets_prefix}/${secrets_slug}/${secret_name} 2> /dev/null || echo {}) > ${secret_var_file}
+        (./vault kv get -format='json' -field=data ${PROJECT_SLUG}/${secrets_prefix}/${secrets_slug}/${secret_name} 2> /dev/null || echo {}) > ${secret_var_file}
         var_files="${var_files} -var-file=${secret_var_file}"
     done
 }
@@ -25,5 +25,5 @@ if [ "${ENV_SLUG}" != "" ] && [ "${VAULT_ENV_SECRETS}" != "" ]; then
 fi
 
 if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
-    export TFC_TOKEN="$(./vault read -field=token ${VAULT_PROJECT_PATH}-tfc/creds/default)"
+    export TFC_TOKEN="$(./vault read -field=token ${PROJECT_SLUG}-tfc/creds/default)"
 fi

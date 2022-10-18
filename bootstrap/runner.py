@@ -129,7 +129,6 @@ class Runner:
     stacks_environments: dict = field(init=False, default_factory=dict)
     gitlab_variables: dict = field(init=False, default_factory=dict)
     tfvars: dict = field(init=False, default_factory=dict)
-    vault_project_path: str = field(init=False, default="")
     vault_secrets: dict = field(init=False, default_factory=dict)
     terraform_run_modules: list = field(init=False, default_factory=list)
     terraform_outputs: dict = field(init=False, default_factory=dict)
@@ -141,15 +140,9 @@ class Runner:
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
-        self.set_vault_project_path()
         self.set_stacks_environments()
         self.collect_tfvars()
         self.collect_gitlab_variables()
-
-    def set_vault_project_path(self):
-        """Set the Vault project path."""
-        if self.vault_url:
-            self.vault_project_path = self.gitlab_group_slug or self.project_slug
 
     def set_stacks_environments(self):
         """Set the environments distribution per stack."""
@@ -216,7 +209,7 @@ class Runner:
         """Collect the GitLab group and project variables."""
         if self.pact_broker_url:
             self.register_gitlab_group_variables(("PACT_ENABLED", "true", False, False))
-        if self.vault_token:
+        if self.vault_url:
             self.register_gitlab_group_variables(
                 ("VAULT_ADDR", self.vault_url, False, False)
             )
@@ -503,7 +496,6 @@ class Runner:
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
                 "media_storage": self.media_storage,
-                "pact_enabled": bool(self.pact_broker_url),
                 "project_dirname": self.project_dirname,
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
@@ -512,7 +504,8 @@ class Runner:
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,
                 "tfvars": self.tfvars,
-                "vault_project_path": self.vault_project_path,
+                "use_pact": bool(self.pact_broker_url),
+                "use_vault": bool(self.vault_url),
             },
             output_dir=self.output_dir,
             no_input=True,
@@ -547,7 +540,7 @@ class Runner:
             TF_VAR_project_name=self.service_slug.title(),
             TF_VAR_project_slug=self.service_slug,
             TF_VAR_project_variables=self.render_gitlab_variables_to_string("project"),
-            TF_VAR_vault_enabled=self.vault_url and "true" or "false",
+            TF_VAR_use_vault=self.vault_url and "true" or "false",
         )
         self.gitlab_url != GITLAB_URL_DEFAULT and env.update(
             GITLAB_BASE_URL=f"{self.gitlab_url}/api/v4/"
@@ -584,7 +577,7 @@ class Runner:
         self.collect_vault_secrets()
         env = dict(
             TF_VAR_project_name=self.project_name,
-            TF_VAR_project_path=self.vault_project_path,
+            TF_VAR_project_slug=self.project_slug,
             TF_VAR_secrets=json.dumps(self.vault_secrets),
             VAULT_ADDR=self.vault_url,
             VAULT_TOKEN=self.vault_token,
@@ -812,7 +805,7 @@ class Runner:
             self.init_gitlab()
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
             self.init_terraform_cloud()
-        if self.vault_token:
+        if self.vault_url:
             self.init_vault()
         frontend_template_url = FRONTEND_TEMPLATE_URLS.get(self.frontend_type)
         if frontend_template_url:

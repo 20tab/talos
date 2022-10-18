@@ -68,7 +68,7 @@ variable "project_variables" {
   default     = {}
 }
 
-variable "vault_enabled" {
+variable "use_vault" {
   description = "Tell if Vault is enabled."
   type        = bool
   default     = false
