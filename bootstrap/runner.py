@@ -116,7 +116,7 @@ class Runner:
     s3_bucket_name: str | None = None
     gitlab_url: str | None = None
     gitlab_private_token: str | None = None
-    gitlab_group_path: str | None = None
+    gitlab_namespace_path: str | None = None
     gitlab_group_slug: str | None = None
     gitlab_group_owners: str | None = None
     gitlab_group_maintainers: str | None = None
@@ -531,8 +531,8 @@ class Runner:
             TF_VAR_gitlab_token=self.gitlab_private_token,
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
             TF_VAR_group_name=self.project_name,
+            TF_VAR_group_namespace_path=self.gitlab_namespace_path,
             TF_VAR_group_owners=self.gitlab_group_owners,
-            TF_VAR_group_path=self.gitlab_group_path,
             TF_VAR_group_slug=self.gitlab_group_slug,
             TF_VAR_group_variables=self.render_gitlab_variables_to_string("group"),
             TF_VAR_local_repository_dir=self.service_dir,
@@ -760,8 +760,9 @@ class Runner:
             "environment_distribution": self.environment_distribution,
             "gid": self.gid,
             "gitlab_url": self.gitlab_url,
-            "gitlab_group_path": self.gitlab_group_path,
-            "gitlab_group_slug": self.gitlab_group_slug,
+            "gitlab_group_path": str(
+                Path(self.gitlab_namespace_path) / self.gitlab_group_slug
+            ),
             "gitlab_private_token": self.gitlab_private_token,
             "logs_dir": str(self.logs_dir.resolve()),
             "output_dir": str(self.service_dir.resolve()),

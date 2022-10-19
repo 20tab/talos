@@ -105,7 +105,7 @@ def collect(
     s3_bucket_name,
     gitlab_url,
     gitlab_private_token,
-    gitlab_group_path,
+    gitlab_namespace_path,
     gitlab_group_slug,
     gitlab_group_owners,
     gitlab_group_maintainers,
@@ -251,7 +251,7 @@ def collect(
     (
         gitlab_url,
         gitlab_private_token,
-        gitlab_group_path,
+        gitlab_namespace_path,
         gitlab_group_slug,
         gitlab_group_owners,
         gitlab_group_maintainers,
@@ -260,7 +260,7 @@ def collect(
         project_slug,
         gitlab_url,
         gitlab_private_token,
-        gitlab_group_path,
+        gitlab_namespace_path,
         gitlab_group_slug,
         gitlab_group_owners,
         gitlab_group_maintainers,
@@ -354,7 +354,7 @@ def collect(
         "s3_bucket_name": s3_bucket_name,
         "gitlab_url": gitlab_url,
         "gitlab_private_token": gitlab_private_token,
-        "gitlab_group_path": gitlab_group_path,
+        "gitlab_namespace_path": gitlab_namespace_path,
         "gitlab_group_slug": gitlab_group_slug,
         "gitlab_group_owners": gitlab_group_owners,
         "gitlab_group_maintainers": gitlab_group_maintainers,
@@ -925,7 +925,7 @@ def clean_gitlab_data(
     project_slug,
     gitlab_url,
     gitlab_private_token,
-    gitlab_group_path,
+    gitlab_namespace_path,
     gitlab_group_slug,
     gitlab_group_owners,
     gitlab_group_maintainers,
@@ -943,9 +943,9 @@ def clean_gitlab_data(
         gitlab_private_token = gitlab_private_token or click.prompt(
             "GitLab private token (with API scope enabled)", hide_input=True
         )
-        gitlab_group_path = validate_or_prompt_path(
+        gitlab_namespace_path = validate_or_prompt_path(
             "GitLab parent group path (leave blank for a root level group)",
-            gitlab_group_path,
+            gitlab_namespace_path,
             default="",
             required=False,
         )
@@ -953,7 +953,7 @@ def clean_gitlab_data(
             gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
         )
         quiet or (
-            gitlab_group_path == ""
+            gitlab_namespace_path == ""
             and gitlab_url == GITLAB_URL_DEFAULT
             and click.confirm(
                 warning(
@@ -981,7 +981,7 @@ def clean_gitlab_data(
     else:
         gitlab_url = None
         gitlab_private_token = None
-        gitlab_group_path = None
+        gitlab_namespace_path = None
         gitlab_group_slug = None
         gitlab_group_owners = None
         gitlab_group_maintainers = None
@@ -989,7 +989,7 @@ def clean_gitlab_data(
     return (
         gitlab_url,
         gitlab_private_token,
-        gitlab_group_path,
+        gitlab_namespace_path,
         gitlab_group_slug,
         gitlab_group_owners,
         gitlab_group_maintainers,

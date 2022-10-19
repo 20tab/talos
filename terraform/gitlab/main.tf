@@ -1,5 +1,5 @@
 locals {
-  create_group = length(regexall("^https\\://(?:www\\.)?gitlab\\.com/?", var.gitlab_url)) == 0 || var.group_path != ""
+  create_group = length(regexall("^https\\://(?:www\\.)?gitlab\\.com/?", var.gitlab_url)) == 0 || var.group_namespace_path != ""
   group_id     = local.create_group ? gitlab_group.main[0].id : data.gitlab_group.main[0].id
 
   user_data = jsondecode(data.http.user_info.response_body)
@@ -68,9 +68,9 @@ data "gitlab_group" "main" {
 }
 
 data "gitlab_group" "parent" {
-  count = var.group_path != "" && local.create_group ? 1 : 0
+  count = var.group_namespace_path != "" && local.create_group ? 1 : 0
 
-  full_path = var.group_path
+  full_path = var.group_namespace_path
 }
 
 resource "gitlab_group" "main" {
@@ -78,7 +78,7 @@ resource "gitlab_group" "main" {
 
   name             = var.group_name
   path             = var.group_slug
-  parent_id        = var.group_path == "" ? 0 : data.gitlab_group.parent[0].id
+  parent_id        = var.group_namespace_path == "" ? 0 : data.gitlab_group.parent[0].id
   visibility_level = "private"
 }
 
