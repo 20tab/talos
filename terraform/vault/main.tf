@@ -28,7 +28,7 @@ data "http" "tfc_user_info" {
 /* Secrets Engines */
 
 resource "vault_mount" "main" {
-  path = var.project_path
+  path = var.project_slug
 
   description = "The ${var.project_name} project secrets."
 
@@ -41,7 +41,7 @@ resource "vault_mount" "main" {
 resource "vault_terraform_cloud_secret_backend" "main" {
   count = var.terraform_cloud_token != "" ? 1 : 0
 
-  backend = "${var.project_path}-tfc"
+  backend = "${var.project_slug}-tfc"
 
   description = "The ${var.project_name} project Terraform Cloud secrets engine."
 

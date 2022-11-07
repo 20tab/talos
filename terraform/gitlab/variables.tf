@@ -31,6 +31,12 @@ variable "group_owners" {
   type        = string
 }
 
+variable "group_namespace_path" {
+  description = "The GitLab group namespace path (leave blank for root groups)."
+  type        = string
+  default     = ""
+}
+
 variable "group_slug" {
   description = "The GitLab group slug."
   type        = string
@@ -68,7 +74,7 @@ variable "project_variables" {
   default     = {}
 }
 
-variable "vault_enabled" {
+variable "use_vault" {
   description = "Tell if Vault is enabled."
   type        = bool
   default     = false

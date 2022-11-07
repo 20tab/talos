@@ -16,23 +16,28 @@ variable "gitlab_url" {
   default     = "https://gitlab.com"
 }
 
-variable "pact_enabled" {
-  description = "Tell if Pact is enabled."
-  type        = bool
-  default     = false
-}
-
 variable "project_name" {
   description = "The project name."
   type        = string
 }
 
-variable "project_path" {
-  description = "The project path."
+variable "project_namespace_path" {
+  description = "The GitLab namespace path of the project (e.g. '20tab/my-project')."
+  type        = string
+}
+
+variable "project_slug" {
+  description = "The GitLab project slug."
   type        = string
 }
 
 variable "stacks_environments" {
   description = "The list of stacks slugs."
   type        = map(map(map(string)))
+}
+
+variable "use_pact" {
+  description = "Tell if Pact is enabled."
+  type        = bool
+  default     = false
 }

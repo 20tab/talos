@@ -16,7 +16,7 @@ from bootstrap.collector import (
     clean_frontend_sentry_dsn,
     clean_frontend_service_slug,
     clean_frontend_type,
-    clean_gitlab_group_data,
+    clean_gitlab_data,
     clean_kubernetes_credentials,
     clean_media_storage,
     clean_other_k8s_options,
@@ -468,43 +468,53 @@ class TestBootstrapCollector(TestCase):
         with input("local"):
             self.assertEqual(clean_media_storage(""), "local")
 
-    def test_clean_gitlab_group_data(self):
+    def test_clean_gitlab_data(self):
         """Test cleaning the GitLab group data."""
         with input("Y"):
             self.assertEqual(
-                clean_gitlab_group_data(
+                clean_gitlab_data(
                     "my-project",
                     "https://gitlab.com/",
-                    "my-gitlab-group",
                     "mYV4l1DT0k3N",
+                    "test/namespace/path",
+                    "my-gitlab-group",
                     "owner, owner.other",
                     "maintainer, maintainer.other",
                     "developer, developer.other",
                 ),
                 (
                     "https://gitlab.com",
-                    "my-gitlab-group",
                     "mYV4l1DT0k3N",
+                    "test/namespace/path",
+                    "my-gitlab-group",
                     "owner, owner.other",
                     "maintainer, maintainer.other",
                     "developer, developer.other",
                 ),
             )
-        with input("Y", "", "my-gitlab-group", "Y"):
+        with input(
+            "Y",
+            "",
+            "/non-valid#path/BAD&/",
+            "_my/valid/path/",
+            "my-gitlab-group",
+        ):
             self.assertEqual(
-                clean_gitlab_group_data(
+                clean_gitlab_data(
                     "my-project",
                     None,
-                    None,
                     "mYV4l1DT0k3N",
+                    None,
+                    None,
                     "owner, owner.other",
                     "maintainer, maintainer.other",
                     "developer, developer.other",
                 ),
                 (
                     "https://gitlab.com",
-                    "my-gitlab-group",
                     "mYV4l1DT0k3N",
+                    "_my/valid/path",
+                    "my-gitlab-group",
                     "owner, owner.other",
                     "maintainer, maintainer.other",
                     "developer, developer.other",
@@ -513,29 +523,56 @@ class TestBootstrapCollector(TestCase):
         with input(
             "Y",
             "https://my-custom-gitlab.com/",
-            "my-gitlab-group",
-            "Y",
             {"hidden": "mYV4l1DT0k3N"},
+            "/non-valid#path/BAD&/",
+            "",
+            "my-gitlab-group",
             "owner, owner.other",
             "maintainer, maintainer.other",
             "developer, developer.other",
         ):
             self.assertEqual(
-                clean_gitlab_group_data(
-                    "my-project", None, None, None, None, None, None
+                clean_gitlab_data(
+                    "my-project", None, None, None, None, None, None, None
                 ),
                 (
                     "https://my-custom-gitlab.com",
-                    "my-gitlab-group",
                     "mYV4l1DT0k3N",
+                    "",
+                    "my-gitlab-group",
+                    "owner, owner.other",
+                    "maintainer, maintainer.other",
+                    "developer, developer.other",
+                ),
+            )
+        with input(
+            "Y",
+            "https://gitlab.com/",
+            {"hidden": "mYV4l1DT0k3N"},
+            "",
+            "my-gitlab-group",
+            "Y",
+            "owner, owner.other",
+            "maintainer, maintainer.other",
+            "developer, developer.other",
+        ):
+            self.assertEqual(
+                clean_gitlab_data(
+                    "my-project", None, None, None, None, None, None, None
+                ),
+                (
+                    "https://gitlab.com",
+                    "mYV4l1DT0k3N",
+                    "",
+                    "my-gitlab-group",
                     "owner, owner.other",
                     "maintainer, maintainer.other",
                     "developer, developer.other",
                 ),
             )
         self.assertEqual(
-            clean_gitlab_group_data("my-project", "", "", "", "", "", ""),
-            (None, None, None, None, None, None),
+            clean_gitlab_data("my-project", "", "", "", "", "", "", ""),
+            (None, None, None, None, None, None, None),
         )
 
     def test_clean_s3_media_storage_data(self):

@@ -9,3 +9,8 @@ output "registry_username" {
   sensitive   = true
   value       = gitlab_deploy_token.regcred.username
 }
+
+output "ssh_url_to_repo" {
+  description = "The SSH URL to the project repository."
+  value       = gitlab_project.main.ssh_url_to_repo
+}
