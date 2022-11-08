@@ -12,8 +12,8 @@
   "terraform_backend": "gitlab",
   "terraform_cloud_organization": "",
   "media_storage": ["digitalocean-s3", "aws-s3", "local", "none"],
-  "use_pact": false,
-  "use_vault": false,
+  "use_pact": "false",
+  "use_vault": "false",
   "stacks": {
     "main": {
       "dev": {
