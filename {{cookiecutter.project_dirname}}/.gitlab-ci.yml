@@ -29,7 +29,7 @@ services:
       -w ${PWD}{% if cookiecutter.terraform_backend == "gitlab" %}
       -e CI_API_V4_URL
       -e CI_COMMIT_SHA
-      -e CI_JOB_ID{% if cookiecutter.use_vault %}
+      -e CI_JOB_ID{% if cookiecutter.use_vault == "true" %}
       -e CI_JOB_JWT_V2{% endif %}
       -e CI_JOB_STAGE
       -e CI_JOB_TOKEN
@@ -37,7 +37,7 @@ services:
       -e CI_PROJECT_NAME
       -e CI_PROJECT_NAMESPACE
       -e CI_PROJECT_PATH
-      -e CI_PROJECT_URL{% elif cookiecutter.use_vault %}
+      -e CI_PROJECT_URL{% elif cookiecutter.use_vault == "true" %}
       -e CI_JOB_JWT_V2{% endif %}
       -e ENV_SLUG
       -e PROJECT_DIR=${CI_PROJECT_DIR}
@@ -47,7 +47,7 @@ services:
       -e TERRAFORM_EXTRA_VAR_FILE
       -e TERRAFORM_VARS_DIR
       -e TF_ROOT{% if cookiecutter.terraform_backend == "gitlab" %}
-      -e TF_STATE_NAME{% endif %}{% if not cookiecutter.use_vault %}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
+      -e TF_STATE_NAME{% endif %}{% if cookiecutter.use_vault == "false" %}{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
       -e TF_VAR_digitalocean_token="${DIGITALOCEAN_TOKEN}"{% elif cookiecutter.deployment_type == "other-k8s" %}
       -e TF_VAR_kubernetes_cluster_ca_certificate="${KUBERNETES_CLUSTER_CA_CERTIFICATE}"
       -e TF_VAR_kubernetes_host="${KUBERNETES_HOST}"
@@ -64,8 +64,8 @@ services:
       -e TF_VAR_registry_username="${REGISTRY_USERNAME}"
       -e TF_VAR_tls_certificate_crt="${TLS_CERTIFICATE_CRT}"
       -e TF_VAR_tls_certificate_key="${TLS_CERTIFICATE_KEY}"{% endif %}{% if cookiecutter.terraform_backend != "gitlab" %}
-      -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" and not cookiecutter.use_vault %}
-      -e TFC_TOKEN{% endif %}{% if cookiecutter.use_vault %}
+      -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" and cookiecutter.use_vault == "false" %}
+      -e TFC_TOKEN{% endif %}{% if cookiecutter.use_vault == "true" %}
       -e VAULT_ADDR
       -e VAULT_ENV_SECRETS
       -e VAULT_STACK_SECRETS
@@ -107,7 +107,7 @@ services:
 .base_stage:
   stage: Base
   variables:
-    TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/base/vars{% if cookiecutter.use_vault %}
+    TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/base/vars{% if cookiecutter.use_vault == "true" %}
     VAULT_STACK_SECRETS: "digitalocean s3"{% endif %}{% for stack_slug in cookiecutter.stacks %}
 
 # {{ stack_slug|title }} Stack (Base Stage) #
@@ -126,7 +126,7 @@ services:
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: Stack_{{ stack_slug|title }}/Stage_Base
+    name: stack-{{ stack_slug }}/base
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
@@ -162,7 +162,7 @@ stack_{{ stack_slug }}_base_apply:
 .cluster_stage:
   stage: Cluster
   variables:
-    TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/cluster/vars{% if cookiecutter.use_vault %}
+    TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/cluster/vars{% if cookiecutter.use_vault == "true" %}
     VAULT_STACK_SECRETS: "digitalocean k8s"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
 # {{ stack_slug|title }} Stack (Cluster Stage) #
@@ -181,7 +181,7 @@ stack_{{ stack_slug }}_base_apply:
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: Stack_{{ stack_slug|title }}/Stage_Cluster
+    name: stack-{{ stack_slug }}/cluster
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
@@ -221,7 +221,7 @@ stack_{{ stack_slug }}_cluster_apply:
   stage: Environment
   variables:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/environment/vars
-    TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}{% if cookiecutter.use_vault %}
+    TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}{% if cookiecutter.use_vault == "true" %}
     VAULT_ENV_SECRETS: "basic_auth regcred tls"
     VAULT_STACK_SECRETS: "digitalocean k8s monitoring s3"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
 
@@ -243,7 +243,7 @@ stack_{{ stack_slug }}_cluster_apply:
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: Stack_{{ stack_slug|title }}/Stage_Environment/Env_{{ env_conf.name }}
+    name: stack-{{ stack_slug }}/env-{{ env_slug }}
     url: {{ env_conf.url }}
   rules:
     - if: $ENABLED_ALL == "true"
