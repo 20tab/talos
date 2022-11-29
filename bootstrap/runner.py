@@ -395,26 +395,24 @@ class Runner:
             )
 
     def register_vault_stack_secret(
-        self, stack_name, stack_envs, secret_name, secret_data
+        self, stack_name, stack_envs_names, secret_name, secret_data
     ):
         """Register a Vault stack secret locally, optionally copying it to the envs."""
         self.vault_secrets[f"stacks/{stack_name}/{secret_name}"] = secret_data
         [
-            self.register_vault_environment_secret(
-                env["name"], secret_name, secret_data
-            )
-            for env in stack_envs
+            self.register_vault_environment_secret(i, secret_name, secret_data)
+            for i in stack_envs_names
         ]
 
     def register_vault_environment_secret(self, env_name, secret_name, secret_data):
         """Register a Vault environment secret locally."""
         self.vault_secrets[f"envs/{env_name}/{secret_name}"] = secret_data
 
-    def collect_vault_stack_secrets(self, stack_name, stack_envs):
+    def collect_vault_stack_secrets(self, stack_name, stack_envs_names):
         """Collect the Vault secrets for the given stack."""
         self.digitalocean_token and self.register_vault_stack_secret(
             stack_name,
-            stack_envs,
+            stack_envs_names,
             "digitalocean",
             dict(digitalocean_token=self.digitalocean_token),
         )
@@ -428,13 +426,15 @@ class Runner:
             self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and s3_secret.update(
                 s3_host=self.s3_host
             )
-            self.register_vault_stack_secret(stack_name, stack_envs, "s3", s3_secret)
+            self.register_vault_stack_secret(
+                stack_name, stack_envs_names, "s3", s3_secret
+            )
         (
             self.subdomain_monitoring
             and stack_name == MAIN_STACK_NAME
             and self.register_vault_stack_secret(
                 stack_name,
-                stack_envs,
+                stack_envs_names,
                 "monitoring",
                 dict(grafana_password=secrets.token_urlsafe(12)),
             )
@@ -458,7 +458,7 @@ class Runner:
         """Collect the Vault secrets for the given environment."""
         self.register_vault_environment_secret(
             env_name,
-            "basic_auth",
+            f"{self.service_slug}/basic_auth",
             dict(
                 basic_auth_username=self.project_slug,
                 basic_auth_password=secrets.token_urlsafe(12),
@@ -496,13 +496,15 @@ class Runner:
                 registry_password=gitlab_terraform_outputs["registry_password"],
             )
         for stack_name, stack_envs in groupby(self.envs, key=itemgetter("name")):
-            self.collect_vault_stack_secrets(stack_name, stack_envs)
+            stack_envs_names = []
             for env in stack_envs:
                 env_name = env["name"]
                 self.collect_vault_environment_secrets(env_name)
                 regcred and self.register_vault_environment_secret(
-                    env_name, "regcred", regcred
+                    env_name, f"{self.service_slug}/regcred", regcred
                 )
+                stack_envs_names.append(env_name)
+            self.collect_vault_stack_secrets(stack_name, stack_envs_names)
         self.pact_broker_url and self.collect_vault_pact_secrets()
 
     def init_service(self):
