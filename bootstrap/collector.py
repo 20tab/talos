@@ -60,7 +60,6 @@ def collect(
     terraform_cloud_organization,
     terraform_cloud_organization_create,
     terraform_cloud_admin_email,
-    vault_token,
     vault_url,
     digitalocean_token,
     kubernetes_cluster_ca_certificate,
@@ -150,7 +149,7 @@ def collect(
         terraform_cloud_organization_create,
         terraform_cloud_admin_email,
     )
-    vault_token, vault_url = clean_vault_data(vault_token, vault_url, quiet)
+    vault_url = clean_vault_data(vault_url, quiet)
     environment_distribution = clean_environment_distribution(
         environment_distribution, deployment_type
     )
@@ -305,7 +304,6 @@ def collect(
         "terraform_cloud_organization": terraform_cloud_organization,
         "terraform_cloud_organization_create": terraform_cloud_organization_create,
         "terraform_cloud_admin_email": terraform_cloud_admin_email,
-        "vault_token": vault_token,
         "vault_url": vault_url,
         "digitalocean_token": digitalocean_token,
         "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
@@ -581,27 +579,25 @@ def clean_terraform_backend(
     )
 
 
-def clean_vault_data(vault_token, vault_url, quiet=False):
+def clean_vault_data(vault_url, quiet=False):
     """Return the Vault data, if applicable."""
-    if vault_token or (
-        vault_token is None
+    if vault_url or (
+        vault_url is None
         and click.confirm(
             "Do you want to use Vault for secrets management?",
         )
     ):
-        vault_token = validate_or_prompt_password("Vault token", vault_token)
         quiet or click.confirm(
             warning(
-                "Make sure the Vault token has enough permissions to enable the "
+                "Make sure your Vault permissions allow to enable the "
                 "project secrets backends and manage the project secrets. Continue?"
             ),
             abort=True,
         )
         vault_url = validate_or_prompt_url("Vault address", vault_url)
     else:
-        vault_token = None
         vault_url = None
-    return vault_token, vault_url
+    return vault_url
 
 
 def clean_environment_distribution(environment_distribution, deployment_type):

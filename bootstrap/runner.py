@@ -9,6 +9,8 @@ import shutil
 import subprocess
 from dataclasses import dataclass, field
 from functools import partial
+from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
 from time import time
 
@@ -21,17 +23,22 @@ from bootstrap.constants import (
     DEPLOYMENT_TYPE_OTHER,
     DEV_ENV_NAME,
     DEV_ENV_SLUG,
+    DEV_ENV_STACK_CHOICES,
     DEV_STACK_SLUG,
     DUMPS_DIR,
     FRONTEND_TEMPLATE_URLS,
     GITLAB_URL_DEFAULT,
+    MAIN_STACK_NAME,
     MAIN_STACK_SLUG,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
     PROD_ENV_NAME,
     PROD_ENV_SLUG,
+    PROD_ENV_STACK_CHOICES,
     SERVICE_SLUG_DEFAULT,
+    STACKS_CHOICES,
     STAGE_ENV_NAME,
     STAGE_ENV_SLUG,
+    STAGE_ENV_STACK_CHOICES,
     STAGE_STACK_SLUG,
     SUBREPOS_DIR,
     TERRAFORM_BACKEND_TFC,
@@ -71,7 +78,6 @@ class Runner:
     terraform_cloud_organization: str | None = None
     terraform_cloud_organization_create: bool | None = None
     terraform_cloud_admin_email: str | None = None
-    vault_token: str | None = None
     vault_url: str | None = None
     digitalocean_token: str | None = None
     kubernetes_cluster_ca_certificate: str | None = None
@@ -127,7 +133,8 @@ class Runner:
     logs_dir: Path | None = None
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
-    stacks_environments: dict = field(init=False, default_factory=dict)
+    stacks: list = field(init=False, default_factory=list)
+    envs: list = field(init=False, default_factory=list)
     gitlab_variables: dict = field(init=False, default_factory=dict)
     tfvars: dict = field(init=False, default_factory=dict)
     vault_secrets: dict = field(init=False, default_factory=dict)
@@ -141,46 +148,49 @@ class Runner:
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
-        self.set_stacks_environments()
+        self.set_stacks()
+        self.set_envs()
         self.collect_tfvars()
         self.collect_gitlab_variables()
 
-    def set_stacks_environments(self):
-        """Set the environments distribution per stack."""
-        dev_env = {
-            "name": DEV_ENV_NAME,
-            "prefix": self.subdomain_dev,
-            "url": self.project_url_dev,
-        }
-        stage_env = {
-            "name": STAGE_ENV_NAME,
-            "prefix": self.subdomain_stage,
-            "url": self.project_url_stage,
-        }
-        prod_env = {
-            "name": PROD_ENV_NAME,
-            "prefix": self.subdomain_prod,
-            "url": self.project_url_prod,
-        }
-        if self.environment_distribution == "1":
-            self.stacks_environments = {
-                MAIN_STACK_SLUG: {
-                    DEV_ENV_SLUG: dev_env,
-                    STAGE_ENV_SLUG: stage_env,
-                    PROD_ENV_SLUG: prod_env,
-                }
-            }
-        elif self.environment_distribution == "2":
-            self.stacks_environments = {
-                DEV_STACK_SLUG: {DEV_ENV_SLUG: dev_env, STAGE_ENV_SLUG: stage_env},
-                MAIN_STACK_SLUG: {PROD_ENV_SLUG: prod_env},
-            }
-        elif self.environment_distribution == "3":
-            self.stacks_environments = {
-                DEV_STACK_SLUG: {DEV_ENV_SLUG: dev_env},
-                STAGE_STACK_SLUG: {STAGE_ENV_SLUG: stage_env},
-                MAIN_STACK_SLUG: {PROD_ENV_SLUG: prod_env},
-            }
+    def set_stacks(self):
+        """Set the stacks."""
+        self.stacks = STACKS_CHOICES[self.environment_distribution]
+
+    def set_envs(self):
+        """Set the envs."""
+        self.envs = [
+            {
+                "basic_auth_enabled": True,
+                "name": DEV_ENV_NAME,
+                "prefix": self.subdomain_dev,
+                "slug": DEV_ENV_SLUG,
+                "stack_slug": DEV_ENV_STACK_CHOICES.get(
+                    self.environment_distribution, DEV_STACK_SLUG
+                ),
+                "url": self.project_url_dev,
+            },
+            {
+                "basic_auth_enabled": True,
+                "name": STAGE_ENV_NAME,
+                "prefix": self.subdomain_stage,
+                "slug": STAGE_ENV_SLUG,
+                "stack_slug": STAGE_ENV_STACK_CHOICES.get(
+                    self.environment_distribution, STAGE_STACK_SLUG
+                ),
+                "url": self.project_url_stage,
+            },
+            {
+                "basic_auth_enabled": False,
+                "name": PROD_ENV_NAME,
+                "prefix": self.subdomain_prod,
+                "slug": PROD_ENV_SLUG,
+                "stack_slug": PROD_ENV_STACK_CHOICES.get(
+                    self.environment_distribution, MAIN_STACK_SLUG
+                ),
+                "url": self.project_url_prod,
+            },
+        ]
 
     def register_gitlab_variable(
         self, level, var_name, var_value=None, masked=False, protected=True
@@ -375,27 +385,38 @@ class Runner:
             self.register_environment_tfvars(
                 ("digitalocean_spaces_bucket_available", True, "bool")
             )
-        for stack_slug, stack_envs in self.stacks_environments.items():
-            for env_slug, _env_data in stack_envs.items():
-                self.register_environment_tfvars(
-                    ("basic_auth_enabled", env_slug != "prod", "bool"),
-                    ("stack_slug", stack_slug),
-                    ("subdomains", [getattr(self, f"subdomain_{env_slug}")], "list"),
-                    env_slug=env_slug,
-                )
+        for env in self.envs:
+            env_slug = env["slug"]
+            self.register_environment_tfvars(
+                ("basic_auth_enabled", env["basic_auth_enabled"], "bool"),
+                ("stack_slug", env["stack_slug"]),
+                ("subdomains", [getattr(self, f"subdomain_{env_slug}")], "list"),
+                env_slug=env_slug,
+            )
 
-    def register_vault_stack_secret(self, stack_slug, name, data):
-        """Register a Vault stack secret locally."""
-        self.vault_secrets[f"stacks/{stack_slug}/{name}"] = data
+    def register_vault_stack_secret(
+        self, stack_name, stack_envs, secret_name, secret_data
+    ):
+        """Register a Vault stack secret locally, optionally copying it to the envs."""
+        self.vault_secrets[f"stacks/{stack_name}/{secret_name}"] = secret_data
+        [
+            self.register_vault_environment_secret(
+                env["name"], secret_name, secret_data
+            )
+            for env in stack_envs
+        ]
 
-    def register_vault_environment_secret(self, env_slug, name, data):
+    def register_vault_environment_secret(self, env_name, secret_name, secret_data):
         """Register a Vault environment secret locally."""
-        self.vault_secrets[f"envs/{env_slug}/{name}"] = data
+        self.vault_secrets[f"envs/{env_name}/{secret_name}"] = secret_data
 
-    def collect_vault_stack_secrets(self, stack_slug):
+    def collect_vault_stack_secrets(self, stack_name, stack_envs):
         """Collect the Vault secrets for the given stack."""
         self.digitalocean_token and self.register_vault_stack_secret(
-            stack_slug, "digitalocean", dict(digitalocean_token=self.digitalocean_token)
+            stack_name,
+            stack_envs,
+            "digitalocean",
+            dict(digitalocean_token=self.digitalocean_token),
         )
         if "s3" in self.media_storage:
             s3_secret = dict(
@@ -407,12 +428,13 @@ class Runner:
             self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and s3_secret.update(
                 s3_host=self.s3_host
             )
-            self.register_vault_stack_secret(stack_slug, "s3", s3_secret)
+            self.register_vault_stack_secret(stack_name, stack_envs, "s3", s3_secret)
         (
             self.subdomain_monitoring
-            and stack_slug == MAIN_STACK_SLUG
+            and stack_name == MAIN_STACK_NAME
             and self.register_vault_stack_secret(
-                stack_slug,
+                stack_name,
+                stack_envs,
                 "monitoring",
                 dict(grafana_password=secrets.token_urlsafe(12)),
             )
@@ -420,7 +442,7 @@ class Runner:
         (
             self.deployment_type == DEPLOYMENT_TYPE_OTHER
             and self.register_vault_stack_secret(
-                stack_slug,
+                stack_name,
                 "k8s",
                 dict(
                     kubernetes_cluster_ca_certificate=base64.b64encode(
@@ -432,10 +454,10 @@ class Runner:
             )
         )
 
-    def collect_vault_environment_secrets(self, env_slug):
+    def collect_vault_environment_secrets(self, env_name):
         """Collect the Vault secrets for the given environment."""
         self.register_vault_environment_secret(
-            env_slug,
+            env_name,
             "basic_auth",
             dict(
                 basic_auth_username=self.project_slug,
@@ -444,7 +466,7 @@ class Runner:
         )
         # Sentry secrets are used by the GitLab CI/CD
         self.sentry_org and self.register_vault_environment_secret(
-            env_slug, "sentry", dict(sentry_auth_token=self.sentry_auth_token)
+            env_name, "sentry", dict(sentry_auth_token=self.sentry_auth_token)
         )
 
     def collect_vault_pact_secrets(self):
@@ -473,12 +495,13 @@ class Runner:
                 registry_username=gitlab_terraform_outputs["registry_username"],
                 registry_password=gitlab_terraform_outputs["registry_password"],
             )
-        for stack_slug, stack_envs in self.stacks_environments.items():
-            self.collect_vault_stack_secrets(stack_slug)
-            for env_slug in stack_envs:
-                self.collect_vault_environment_secrets(env_slug)
+        for stack_name, stack_envs in groupby(self.envs, key=itemgetter("name")):
+            self.collect_vault_stack_secrets(stack_name, stack_envs)
+            for env in stack_envs:
+                env_name = env["name"]
+                self.collect_vault_environment_secrets(env_name)
                 regcred and self.register_vault_environment_secret(
-                    env_slug, "regcred", regcred
+                    env_name, "regcred", regcred
                 )
         self.pact_broker_url and self.collect_vault_pact_secrets()
 
@@ -500,8 +523,8 @@ class Runner:
                 "project_dirname": self.project_dirname,
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
+                "resources": {"envs": self.envs, "stacks": self.stacks},
                 "service_slug": self.service_slug,
-                "stacks": self.stacks_environments,
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,
                 "tfvars": self.tfvars,
@@ -568,15 +591,13 @@ class Runner:
             TF_VAR_create_organization=self.terraform_cloud_organization_create
             and "true"
             or "false",
-            TF_VAR_environments=json.dumps(
-                [i for j in self.stacks_environments.values() for i in j]
-            ),
+            TF_VAR_environments=json.dumps(list(map(itemgetter("slug"), self.envs))),
             TF_VAR_hostname=self.terraform_cloud_hostname,
             TF_VAR_organization_name=self.terraform_cloud_organization,
             TF_VAR_project_name=self.project_name,
             TF_VAR_project_slug=self.project_slug,
             TF_VAR_service_slug=self.service_slug,
-            TF_VAR_stacks=json.dumps(list(self.stacks_environments)),
+            TF_VAR_stacks=json.dumps(list(map(itemgetter("slug"), self.stacks))),
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
         )
         self.run_terraform("terraform-cloud", env)
@@ -590,8 +611,7 @@ class Runner:
             TF_VAR_project_name=self.project_name,
             TF_VAR_project_slug=self.project_slug,
             TF_VAR_secrets=json.dumps(self.vault_secrets),
-            VAULT_ADDR=self.vault_url,
-            VAULT_TOKEN=self.vault_token,
+            TF_VAR_vault_address=self.vault_url,
         )
         self.terraform_backend == TERRAFORM_BACKEND_TFC and env.update(
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token
@@ -786,7 +806,6 @@ class Runner:
             "uid": self.uid,
             "use_redis": self.use_redis,
             "vault_url": self.vault_url,
-            "vault_token": self.vault_token,
             **kwargs,
         }
         subprocess.run(
@@ -825,10 +844,10 @@ class Runner:
         click.echo(highlight(f"Initializing the {self.service_slug} service:"))
         self.init_service()
         self.create_env_file()
-        if self.gitlab_group_slug:
-            self.init_gitlab()
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
             self.init_terraform_cloud()
+        if self.gitlab_group_slug:
+            self.init_gitlab()
         if self.vault_url:
             self.init_vault()
         frontend_template_url = FRONTEND_TEMPLATE_URLS.get(self.frontend_type)

@@ -151,28 +151,16 @@ class TestBootstrapCollector(TestCase):
     def test_clean_vault_data(self):
         """Test cleaning the Vault data ."""
         self.assertEqual(
-            clean_vault_data("v4UlTtok3N", "https://vault.test.com", True),
-            ("v4UlTtok3N", "https://vault.test.com"),
+            clean_vault_data("https://vault.test.com", True), "https://vault.test.com"
         )
-        with input("y", {"hidden": "v4UlTtok3N"}, "https://vault.test.com"):
-            self.assertEqual(
-                clean_vault_data(None, None, True),
-                ("v4UlTtok3N", "https://vault.test.com"),
-            )
-        with input("y", {"hidden": "v4UlTtok3N"}, "y", "https://vault.test.com"):
-            self.assertEqual(
-                clean_vault_data(None, None, False),
-                ("v4UlTtok3N", "https://vault.test.com"),
-            )
-        with input(
-            "y", {"hidden": "v4UlTtok3N"}, "y", "bad_address", "https://vault.test.com"
-        ):
-            self.assertEqual(
-                clean_vault_data(None, None, False),
-                ("v4UlTtok3N", "https://vault.test.com"),
-            )
+        with input("y", "https://vault.test.com"):
+            self.assertEqual(clean_vault_data(None, True), "https://vault.test.com")
+        with input("y", "y", "https://vault.test.com"):
+            self.assertEqual(clean_vault_data(None, False), "https://vault.test.com")
+        with input("y", "y", "bad_address", "https://vault.test.com"):
+            self.assertEqual(clean_vault_data(None, False), "https://vault.test.com")
         with input("n"):
-            self.assertEqual(clean_vault_data(None, None, True), (None, None))
+            self.assertEqual(clean_vault_data(None, True), None)
 
     def test_clean_environment_distribution(self):
         """Test cleaning the environment distribution."""

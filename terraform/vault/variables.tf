@@ -32,3 +32,8 @@ variable "terraform_cloud_token" {
   sensitive   = true
   default     = ""
 }
+
+variable "vault_address" {
+  description = "The Vault address."
+  type        = string
+}

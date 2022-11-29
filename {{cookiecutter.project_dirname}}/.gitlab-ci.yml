@@ -67,8 +67,9 @@ services:
       -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" and cookiecutter.use_vault == "false" %}
       -e TFC_TOKEN{% endif %}{% if cookiecutter.use_vault == "true" %}
       -e VAULT_ADDR
-      -e VAULT_ENV_SECRETS
-      -e VAULT_STACK_SECRETS
+      -e VAULT_ROLE
+      -e VAULT_SECRETS
+      -e VAULT_SECRETS_PREFIX
       -e VAULT_VERSION{% endif %}
       registry.gitlab.com/gitlab-org/terraform-images/stable:latest sh -c "${TERRAFORM_CMD}"
 
@@ -108,54 +109,56 @@ services:
   stage: Base
   variables:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/base/vars{% if cookiecutter.use_vault == "true" %}
-    VAULT_STACK_SECRETS: "digitalocean s3"{% endif %}{% for stack_slug in cookiecutter.stacks %}
+    VAULT_ROLE: orchestrator-stacks
+    VAULT_SECRETS: "digitalocean s3"
+    VAULT_SECRETS_PREFIX: "stacks/${CI_ENVIRONMENT_NAME}"{% endif %}{% for stack in cookiecutter.resources.stacks %}
 
-# {{ stack_slug|title }} Stack (Base Stage) #
+# {{ stack.slug|title }} Stack (Base Stage) #
 
-.stack_{{ stack_slug }}_base:
+.stack_{{ stack.slug }}_base:
   extends:
     - .base_stage
   variables:
-    STACK_SLUG: {{ stack_slug }}
-    TERRAFORM_EXTRA_VAR_FILE: {{ stack_slug }}.tfvars
+    STACK_SLUG: {{ stack.slug }}
+    TERRAFORM_EXTRA_VAR_FILE: {{ stack.slug }}.tfvars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/base/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
-    TF_STATE_NAME: stack_{{ stack_slug }}_base{% else %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_base_{{ stack_slug }}{% endif %}
+    TF_STATE_NAME: stack_{{ stack.slug }}_base{% else %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_base_{{ stack.slug }}{% endif %}
   cache:
-    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-base
+    key: {{ cookiecutter.project_slug }}-stack-{{ stack.slug }}-base
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: stack-{{ stack_slug }}/base
+    name: {{ stack.name }}
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES =~ /(?:^|,)\s*base\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
+    - if: $ENABLED_STAGES =~ /(?:^|,)\s*base\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack.slug }}\s*(?:,|$)/i
       when: always
     - when: never
 
-stack_{{ stack_slug }}_base_init:
+stack_{{ stack.slug }}_base_init:
   extends:
     - .init
-    - .stack_{{ stack_slug }}_base
+    - .stack_{{ stack.slug }}_base
 
-stack_{{ stack_slug }}_base_validate:
+stack_{{ stack.slug }}_base_validate:
   extends:
     - .validate
-    - .stack_{{ stack_slug }}_base
-  needs: ["stack_{{ stack_slug }}_base_init"]
+    - .stack_{{ stack.slug }}_base
+  needs: ["stack_{{ stack.slug }}_base_init"]
 
-stack_{{ stack_slug }}_base_plan:
+stack_{{ stack.slug }}_base_plan:
   extends:
     - .plan
-    - .stack_{{ stack_slug }}_base
-  needs: ["stack_{{ stack_slug }}_base_validate"]
+    - .stack_{{ stack.slug }}_base
+  needs: ["stack_{{ stack.slug }}_base_validate"]
 
-stack_{{ stack_slug }}_base_apply:
+stack_{{ stack.slug }}_base_apply:
   extends:
     - .apply
-    - .stack_{{ stack_slug }}_base
-  needs: ["stack_{{ stack_slug }}_base_plan"]{% endfor %}
+    - .stack_{{ stack.slug }}_base
+  needs: ["stack_{{ stack.slug }}_base_plan"]{% endfor %}
 
 {% endif %}### CLUSTER STAGE ###
 
@@ -163,57 +166,59 @@ stack_{{ stack_slug }}_base_apply:
   stage: Cluster
   variables:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/cluster/vars{% if cookiecutter.use_vault == "true" %}
-    VAULT_STACK_SECRETS: "digitalocean k8s"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+    VAULT_ROLE: orchestrator-stacks
+    VAULT_SECRETS: "digitalocean k8s"
+    VAULT_SECRETS_PREFIX: "stacks/${CI_ENVIRONMENT_NAME}"{% endif %}{% for stack in cookiecutter.resources.stacks %}
 
-# {{ stack_slug|title }} Stack (Cluster Stage) #
+# {{ stack.slug|title }} Stack (Cluster Stage) #
 
-.stack_{{ stack_slug }}_cluster:
+.stack_{{ stack.slug }}_cluster:
   extends:
     - .cluster_stage
   variables:
-    STACK_SLUG: {{ stack_slug }}
-    TERRAFORM_EXTRA_VAR_FILE: {{ stack_slug }}.tfvars
+    STACK_SLUG: {{ stack.slug }}
+    TERRAFORM_EXTRA_VAR_FILE: {{ stack.slug }}.tfvars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/cluster/{{ cookiecutter.deployment_type }}{% if cookiecutter.terraform_backend == "gitlab" %}
-    TF_STATE_NAME: stack_{{ stack_slug }}_cluster{% else %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_cluster_{{ stack_slug }}{% endif %}
+    TF_STATE_NAME: stack_{{ stack.slug }}_cluster{% else %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_cluster_{{ stack.slug }}{% endif %}
   cache:
-    key: {{ cookiecutter.project_slug }}-stack-{{ stack_slug }}-cluster
+    key: {{ cookiecutter.project_slug }}-stack-{{ stack.slug }}-cluster
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: stack-{{ stack_slug }}/cluster
+    name: {{ stack.name }}
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES =~ /(?:^|,)\s*cluster\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack_slug }}\s*(?:,|$)/i
+    - if: $ENABLED_STAGES =~ /(?:^|,)\s*cluster\s*(?:,|$)/i && $ENABLED_STACKS =~ /(?:^|,)\s*{{ stack.slug }}\s*(?:,|$)/i
       when: always
     - when: never
 
-stack_{{ stack_slug }}_cluster_init:
+stack_{{ stack.slug }}_cluster_init:
   extends:
     - .init
-    - .stack_{{ stack_slug }}_cluster
+    - .stack_{{ stack.slug }}_cluster
 
-stack_{{ stack_slug }}_cluster_validate:
+stack_{{ stack.slug }}_cluster_validate:
   extends:
     - .validate
-    - .stack_{{ stack_slug }}_cluster
-  needs: ["stack_{{ stack_slug }}_cluster_init"]
+    - .stack_{{ stack.slug }}_cluster
+  needs: ["stack_{{ stack.slug }}_cluster_init"]
 
-stack_{{ stack_slug }}_cluster_plan:
+stack_{{ stack.slug }}_cluster_plan:
   extends:
     - .plan
-    - .stack_{{ stack_slug }}_cluster
+    - .stack_{{ stack.slug }}_cluster
   needs:{% if cookiecutter.deployment_type == "digitalocean-k8s" %}
-    - job: stack_{{ stack_slug }}_base_apply
+    - job: stack_{{ stack.slug }}_base_apply
       optional: true{% endif %}
-    - job: stack_{{ stack_slug }}_cluster_validate
+    - job: stack_{{ stack.slug }}_cluster_validate
 
-stack_{{ stack_slug }}_cluster_apply:
+stack_{{ stack.slug }}_cluster_apply:
   extends:
     - .apply
-    - .stack_{{ stack_slug }}_cluster
-  needs: ["stack_{{ stack_slug }}_cluster_plan"]{% endfor %}
+    - .stack_{{ stack.slug }}_cluster
+  needs: ["stack_{{ stack.slug }}_cluster_plan"]{% endfor %}
 
 ### ENVIRONMENT STAGE ###
 
@@ -222,58 +227,57 @@ stack_{{ stack_slug }}_cluster_apply:
   variables:
     TERRAFORM_VARS_DIR: ${CI_PROJECT_DIR}/terraform/environment/vars
     TF_ROOT: ${CI_PROJECT_DIR}/terraform/environment/{{ cookiecutter.deployment_type }}{% if cookiecutter.use_vault == "true" %}
-    VAULT_ENV_SECRETS: "basic_auth regcred tls"
-    VAULT_STACK_SECRETS: "digitalocean k8s monitoring s3"{% endif %}{% for stack_slug, stack_envs in cookiecutter.stacks.items() %}
+    VAULT_ROLE: orchestrator-envs
+    VAULT_SECRETS: "digitalocean k8s orchestrator/basic_auth orchestrator/regcred orchestrator/tls monitoring s3"
+    VAULT_SECRETS_PREFIX: "envs/${CI_ENVIRONMENT_NAME}"{% endif %}{% for env in cookiecutter.resources.envs %}
 
-## {{ stack_slug|title }} Stack (Environment Stage) ##{% for env_slug, env_conf in stack_envs.items() %}
+# {{ env.name|title }} Environment #
 
-# {{ env_conf.name|title }} Environment #
-
-.env_{{ env_slug }}:
+.env_{{ env.slug }}:
   extends:
     - .environment_stage
   variables:
-    ENV_SLUG: {{ env_slug }}
-    STACK_SLUG: {{ stack_slug }}
-    TERRAFORM_EXTRA_VAR_FILE: {{ env_slug }}.tfvars{% if cookiecutter.terraform_backend == "gitlab" %}
-    TF_STATE_NAME: env_{{ env_slug }}{% else %}
-    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_environment_{{ env_slug }}{% endif %}
+    ENV_SLUG: {{ env.slug }}
+    STACK_SLUG: {{ env.stack_slug }}
+    TERRAFORM_EXTRA_VAR_FILE: {{ env.slug }}.tfvars{% if cookiecutter.terraform_backend == "gitlab" %}
+    TF_STATE_NAME: env_{{ env.slug }}{% else %}
+    TF_WORKSPACE: {{ cookiecutter.project_slug }}_{{ cookiecutter.service_slug }}_environment_{{ env.slug }}{% endif %}
   cache:
-    key: {{ cookiecutter.project_slug }}-env-{{ env_slug }}
+    key: {{ cookiecutter.project_slug }}-env-{{ env.slug }}
     paths:
       - ${TF_ROOT}/.terraform
   environment:
-    name: stack-{{ stack_slug }}/env-{{ env_slug }}
-    url: {{ env_conf.url }}
+    name: {{ env.name }}
+    url: {{ env.url }}
   rules:
     - if: $ENABLED_ALL == "true"
       when: always
-    - if: $ENABLED_STAGES =~ /(?:^|,)\s*environment\s*(?:,|$)/i && $ENABLED_ENVS =~ /(?:^|,)\s*{{ env_slug }}\s*(?:,|$)/i
+    - if: $ENABLED_STAGES =~ /(?:^|,)\s*environment\s*(?:,|$)/i && $ENABLED_ENVS =~ /(?:^|,)\s*{{ env.slug }}\s*(?:,|$)/i
       when: always
     - when: never
 
-env_{{ env_slug }}_init:
+env_{{ env.slug }}_init:
   extends:
     - .init
-    - .env_{{ env_slug }}
+    - .env_{{ env.slug }}
 
-env_{{ env_slug }}_validate:
+env_{{ env.slug }}_validate:
   extends:
     - .validate
-    - .env_{{ env_slug }}
-  needs: ["env_{{ env_slug }}_init"]
+    - .env_{{ env.slug }}
+  needs: ["env_{{ env.slug }}_init"]
 
-env_{{ env_slug }}_plan:
+env_{{ env.slug }}_plan:
   extends:
     - .plan
-    - .env_{{ env_slug }}
+    - .env_{{ env.slug }}
   needs:
-    - job: stack_{{ stack_slug }}_cluster_apply
+    - job: stack_{{ env.stack_slug }}_cluster_apply
       optional: true
-    - job: env_{{ env_slug }}_validate
+    - job: env_{{ env.slug }}_validate
 
-env_{{ env_slug }}_apply:
+env_{{ env.slug }}_apply:
   extends:
     - .apply
-    - .env_{{ env_slug }}
-  needs: ["env_{{ env_slug }}_plan"]{% endfor %}{% endfor %}
+    - .env_{{ env.slug }}
+  needs: ["env_{{ env.slug }}_plan"]{% endfor %}

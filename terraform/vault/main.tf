@@ -1,16 +1,19 @@
 terraform {
-  backend "local" {
-  }
-
   required_providers {
     vault = {
       source  = "hashicorp/vault"
-      version = "3.7.0"
+      version = "~>3.11.0"
     }
   }
 }
 
-provider "vault" {}
+provider "vault" {
+  address = var.vault_address
+
+  auth_login_oidc {
+    role = "default"
+  }
+}
 
 /* Terraform Cloud user */
 
@@ -53,7 +56,7 @@ resource "vault_terraform_cloud_secret_role" "main" {
 
   backend = vault_terraform_cloud_secret_backend.main[0].backend
   name    = "default"
-  user_id = jsondecode(data.http.tfc_user_info[0].body).data.id
+  user_id = jsondecode(data.http.tfc_user_info[0].response_body).data.id
 
   max_ttl = var.terraform_cloud_role_max_ttl
   ttl     = var.terraform_cloud_role_ttl
