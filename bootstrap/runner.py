@@ -582,9 +582,9 @@ class Runner:
         self.make_sed(
             "README.md",
             "__VCS_BASE_SSH_URL__",
-            self.terraform_outputs["gitlab"]["ssh_url_to_repo"]
-            .replace(f"/{self.service_slug}.git", "")
-            .replace("/", "\\/"),
+            self.terraform_outputs["gitlab"]["ssh_url_to_repo"].replace(
+                f"/{self.service_slug}.git", ""
+            ),
         )
 
     def init_terraform_cloud(self):
@@ -758,13 +758,9 @@ class Runner:
 
     def make_sed(self, file_path, placeholder, replace_value):
         """Replace a placeholder value with a given one in a given file."""
-        subprocess.run(
-            [
-                "sed",
-                "-i",
-                f"s/{placeholder}/{replace_value}/",
-                str(self.output_dir / self.project_dirname / file_path),
-            ]
+        target_file = self.output_dir / self.project_dirname / file_path
+        target_file.write_text(
+            target_file.read_text().replace(placeholder, replace_value)
         )
 
     def init_subrepo(self, service_slug, template_url, **kwargs):
