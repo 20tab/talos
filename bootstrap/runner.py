@@ -495,7 +495,9 @@ class Runner:
                 registry_username=gitlab_terraform_outputs["registry_username"],
                 registry_password=gitlab_terraform_outputs["registry_password"],
             )
-        for stack_name, stack_envs in groupby(self.envs, key=itemgetter("name")):
+        stacks_mapping = {i["slug"]: i["name"] for i in self.stacks}
+        for stack_slug, stack_envs in groupby(self.envs, key=itemgetter("stack_slug")):
+            stack_name = stacks_mapping[stack_slug]
             stack_envs_names = []
             for env in stack_envs:
                 env_name = env["name"]
