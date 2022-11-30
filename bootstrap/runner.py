@@ -815,6 +815,7 @@ class Runner:
         }
         subprocess.run(
             ["python", "-m", "pip", "install", "-r", "requirements/common.txt"],
+            capture_output=True,
             cwd=subrepo_dir,
         )
         subprocess.run(
