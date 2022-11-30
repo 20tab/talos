@@ -10,8 +10,14 @@ terraform {
 provider "vault" {
   address = var.vault_address
 
-  auth_login_oidc {
-    role = "default"
+  token = var.vault_token
+
+  dynamic "auth_login_oidc" {
+    for_each = var.vault_token == "" ? ["default"] : []
+
+    content {
+      role = auth_login_oidc.value
+    }
   }
 }
 

@@ -616,6 +616,7 @@ class Runner:
             TF_VAR_project_slug=self.project_slug,
             TF_VAR_secrets=json.dumps(self.vault_secrets),
             TF_VAR_vault_address=self.vault_url,
+            TF_VAR_vault_token=os.getenv("VAULT_TOKEN", ""),
         )
         self.terraform_backend == TERRAFORM_BACKEND_TFC and env.update(
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token
