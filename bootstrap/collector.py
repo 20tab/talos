@@ -235,9 +235,9 @@ def collect(
         sentry_org,
         sentry_url,
         sentry_auth_token,
-        backend_type,
+        backend_service_slug,
         backend_sentry_dsn,
-        frontend_type,
+        frontend_service_slug,
         frontend_sentry_dsn,
     )
     (
@@ -706,19 +706,38 @@ def clean_letsencrypt_certificate_email(letsencrypt_certificate_email):
     )
 
 
+def clean_sentry_org(sentry_org):
+    """Return the Sentry organization."""
+    return sentry_org if sentry_org is not None else click.prompt("Sentry organization")
+
+
+def clean_sentry_dsn(service_slug, sentry_dsn):
+    """Return the backend Sentry DSN."""
+    if service_slug:
+        return validate_or_prompt_url(
+            f"Sentry DSN of the {service_slug} service (leave blank if unused)",
+            sentry_dsn,
+            default="",
+            required=False,
+        )
+
+
 def clean_sentry_data(
     sentry_org,
     sentry_url,
     sentry_auth_token,
-    backend_type,
+    backend_service_slug,
     backend_sentry_dsn,
-    frontend_type,
+    frontend_service_slug,
     frontend_sentry_dsn,
 ):
     """Return the Sentry configuration data."""
-    if sentry_org or (
-        sentry_org is None
-        and click.confirm(warning("Do you want to use Sentry?"), default=False)
+    if any((backend_service_slug, frontend_service_slug)) and (
+        sentry_org
+        or (
+            sentry_org is None
+            and click.confirm(warning("Do you want to use Sentry?"), default=False)
+        )
     ):
         sentry_org = clean_sentry_org(sentry_org)
         sentry_url = validate_or_prompt_url(
@@ -727,9 +746,9 @@ def clean_sentry_data(
         sentry_auth_token = validate_or_prompt_password(
             "Sentry auth token", sentry_auth_token
         )
-        backend_sentry_dsn = clean_backend_sentry_dsn(backend_type, backend_sentry_dsn)
-        frontend_sentry_dsn = clean_frontend_sentry_dsn(
-            frontend_type, frontend_sentry_dsn
+        backend_sentry_dsn = clean_sentry_dsn(backend_service_slug, backend_sentry_dsn)
+        frontend_sentry_dsn = clean_sentry_dsn(
+            frontend_service_slug, frontend_sentry_dsn
         )
     else:
         sentry_org = None
@@ -744,37 +763,6 @@ def clean_sentry_data(
         backend_sentry_dsn,
         frontend_sentry_dsn,
     )
-
-
-def clean_sentry_org(sentry_org):
-    """Return the Sentry organization."""
-    return sentry_org if sentry_org is not None else click.prompt("Sentry organization")
-
-
-def clean_backend_sentry_dsn(backend_type, backend_sentry_dsn):
-    """Return the backend Sentry DSN."""
-    if backend_type:
-        return (
-            backend_sentry_dsn
-            if backend_sentry_dsn is not None
-            else click.prompt(
-                "Backend Sentry DSN (leave blank if unused)",
-                default="",
-            )
-        )
-
-
-def clean_frontend_sentry_dsn(frontend_type, frontend_sentry_dsn):
-    """Return the frontend Sentry DSN."""
-    if frontend_type:
-        return (
-            frontend_sentry_dsn
-            if frontend_sentry_dsn is not None
-            else click.prompt(
-                "Frontend Sentry DSN (leave blank if unused)",
-                default="",
-            )
-        )
 
 
 def clean_digitalocean_options(
