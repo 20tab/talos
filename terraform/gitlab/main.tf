@@ -12,21 +12,12 @@ locals {
     local.reserved_member_ids,
   )
   maintainers = setsubtract(
-    setsubtract(
-      toset([for i in data.gitlab_users.maintainers : tostring(i.users[0].id) if length(i.users) > 0]),
-      local.owners
-    ),
-    local.reserved_member_ids,
+    toset([for i in data.gitlab_users.maintainers : tostring(i.users[0].id) if length(i.users) > 0]),
+    setunion(local.reserved_member_ids, local.owners),
   )
   developers = setsubtract(
-    setsubtract(
-      setsubtract(
-        toset([for i in data.gitlab_users.developers : tostring(i.users[0].id) if length(i.users) > 0]),
-        local.maintainers
-      ),
-      local.owners
-    ),
-    local.reserved_member_ids,
+    toset([for i in data.gitlab_users.developers : tostring(i.users[0].id) if length(i.users) > 0]),
+    setunion(local.reserved_member_ids, local.owners, local.maintainers),
   )
 }
 
