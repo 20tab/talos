@@ -78,6 +78,7 @@ class Runner:
     terraform_cloud_organization: str | None = None
     terraform_cloud_organization_create: bool | None = None
     terraform_cloud_admin_email: str | None = None
+    vault_token: str | None = None
     vault_url: str | None = None
     digitalocean_token: str | None = None
     kubernetes_cluster_ca_certificate: str | None = None
@@ -607,7 +608,7 @@ class Runner:
             TF_VAR_project_slug=self.project_slug,
             TF_VAR_secrets=json.dumps(self.vault_secrets),
             TF_VAR_vault_address=self.vault_url,
-            TF_VAR_vault_token=os.getenv("VAULT_TOKEN", ""),
+            TF_VAR_vault_token=self.vault_token,
         )
         self.terraform_backend == TERRAFORM_BACKEND_TFC and env.update(
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token
@@ -800,6 +801,7 @@ class Runner:
             "uid": self.uid,
             "use_redis": self.use_redis,
             "vault_url": self.vault_url,
+            "vault_token": self.vault_token,
             **kwargs,
         }
         subprocess.run(

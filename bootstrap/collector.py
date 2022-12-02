@@ -60,6 +60,7 @@ def collect(
     terraform_cloud_organization,
     terraform_cloud_organization_create,
     terraform_cloud_admin_email,
+    vault_token,
     vault_url,
     digitalocean_token,
     kubernetes_cluster_ca_certificate,
@@ -131,7 +132,7 @@ def collect(
     deployment_type = clean_deployment_type(deployment_type)
     # The "digitalocean-k8s" deployment type includes Postgres by default
     if digitalocean_enabled := ("digitalocean" in deployment_type):
-        digitalocean_token = validate_or_prompt_password(
+        digitalocean_token = validate_or_prompt_secret(
             "DigitalOcean token", digitalocean_token
         )
     (
@@ -149,7 +150,7 @@ def collect(
         terraform_cloud_organization_create,
         terraform_cloud_admin_email,
     )
-    vault_url = clean_vault_data(vault_url, quiet)
+    vault_token, vault_url = clean_vault_data(vault_token, vault_url, quiet)
     environment_distribution = clean_environment_distribution(
         environment_distribution, deployment_type
     )
@@ -304,6 +305,7 @@ def collect(
         "terraform_cloud_organization": terraform_cloud_organization,
         "terraform_cloud_organization_create": terraform_cloud_organization_create,
         "terraform_cloud_admin_email": terraform_cloud_admin_email,
+        "vault_token": vault_token,
         "vault_url": vault_url,
         "digitalocean_token": digitalocean_token,
         "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
@@ -392,8 +394,8 @@ def validate_or_prompt_email(message, value=None, default=None, required=True):
     return validate_or_prompt_email(message, None, default, required)
 
 
-def validate_or_prompt_password(message, value=None, default=None, required=True):
-    """Validate the given password or prompt until a valid value is provided."""
+def validate_or_prompt_secret(message, value=None, default=None, required=True):
+    """Validate the given secret or prompt until a valid value is provided."""
     if value is None:
         value = click.prompt(message, default=default, hide_input=True)
     try:
@@ -402,7 +404,7 @@ def validate_or_prompt_password(message, value=None, default=None, required=True
     except validators.ValidationFailure:
         pass
     click.echo(error("Please type at least 8 chars!"))
-    return validate_or_prompt_password(message, None, default, required)
+    return validate_or_prompt_secret(message, None, default, required)
 
 
 def validate_or_prompt_path(message, value=None, default=None, required=True):
@@ -541,7 +543,7 @@ def clean_terraform_backend(
             terraform_cloud_hostname,
             default="app.terraform.io",
         )
-        terraform_cloud_token = validate_or_prompt_password(
+        terraform_cloud_token = validate_or_prompt_secret(
             "Terraform Cloud User token",
             terraform_cloud_token,
         )
@@ -579,7 +581,7 @@ def clean_terraform_backend(
     )
 
 
-def clean_vault_data(vault_url, quiet=False):
+def clean_vault_data(vault_token, vault_url, quiet=False):
     """Return the Vault data, if applicable."""
     if vault_url or (
         vault_url is None
@@ -587,6 +589,12 @@ def clean_vault_data(vault_url, quiet=False):
             "Do you want to use Vault for secrets management?",
         )
     ):
+        vault_token = validate_or_prompt_secret(
+            "Vault token (leave blank to perform a browser-based OIDC authentication)",
+            vault_token,
+            default="",
+            required=False,
+        )
         quiet or click.confirm(
             warning(
                 "Make sure your Vault permissions allow to enable the "
@@ -596,8 +604,9 @@ def clean_vault_data(vault_url, quiet=False):
         )
         vault_url = validate_or_prompt_url("Vault address", vault_url)
     else:
+        vault_token = None
         vault_url = None
-    return vault_url
+    return vault_token, vault_url
 
 
 def clean_environment_distribution(environment_distribution, deployment_type):
@@ -631,7 +640,7 @@ def clean_kubernetes_credentials(
     kubernetes_host = kubernetes_host or validate_or_prompt_url(
         "Kubernetes host", kubernetes_host
     )
-    kubernetes_token = kubernetes_token or validate_or_prompt_password(
+    kubernetes_token = kubernetes_token or validate_or_prompt_secret(
         "Kubernetes token", kubernetes_token
     )
     return kubernetes_cluster_ca_certificate, kubernetes_host, kubernetes_token
@@ -743,7 +752,7 @@ def clean_sentry_data(
         sentry_url = validate_or_prompt_url(
             "Sentry URL", sentry_url, default="https://sentry.io/"
         )
-        sentry_auth_token = validate_or_prompt_password(
+        sentry_auth_token = validate_or_prompt_secret(
             "Sentry auth token", sentry_auth_token
         )
         backend_sentry_dsn = clean_sentry_dsn(backend_service_slug, backend_sentry_dsn)
@@ -883,7 +892,7 @@ def clean_pact_broker_data(pact_broker_url, pact_broker_username, pact_broker_pa
         pact_broker_username = pact_broker_username or click.prompt(
             "Pact broker username",
         )
-        pact_broker_password = validate_or_prompt_password(
+        pact_broker_password = validate_or_prompt_secret(
             "Pact broker password", pact_broker_password
         )
     else:
@@ -992,7 +1001,7 @@ def clean_s3_media_storage_data(
 ):
     """Return S3 media storage data."""
     if media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-        digitalocean_token = validate_or_prompt_password(
+        digitalocean_token = validate_or_prompt_secret(
             "DigitalOcean token", digitalocean_token
         )
         s3_region = s3_region or click.prompt(
@@ -1011,8 +1020,8 @@ def clean_s3_media_storage_data(
         s3_bucket_name = s3_bucket_name or click.prompt(
             "AWS S3 bucket name",
         )
-    s3_access_id = validate_or_prompt_password("S3 Access Key ID", s3_access_id)
-    s3_secret_key = validate_or_prompt_password("S3 Secret Access Key", s3_secret_key)
+    s3_access_id = validate_or_prompt_secret("S3 Access Key ID", s3_access_id)
+    s3_secret_key = validate_or_prompt_secret("S3 Secret Access Key", s3_secret_key)
     return (
         digitalocean_token,
         s3_region,
