@@ -6,6 +6,8 @@ locals {
 
   git_config_args = "-c user.email=${local.user_data.email} -c user.name=\"${local.user_data.name}\""
 
+  escaped_base_ssh_url = replace(replace(gitlab_project.main.ssh_url_to_repo, "/${var.project_slug}.git", ""), "/", "\\/")
+
   reserved_member_ids = toset([tostring(local.user_data.id)])
   owners = setsubtract(
     toset([for i in data.gitlab_users.owners : tostring(i.users[0].id) if length(i.users) > 0]),
@@ -94,6 +96,7 @@ resource "null_resource" "init_repo" {
       "cd ${var.local_repository_dir}",
       format(
         join(" && ", [
+          "sed -i 's/__VCS_BASE_SSH_URL__/${local.escaped_base_ssh_url}/' README.md",
           "git init --initial-branch=main",
           "git remote add origin %s",
           "git add .",

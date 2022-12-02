@@ -575,16 +575,7 @@ class Runner:
             GITLAB_BASE_URL=f"{self.gitlab_url}/api/v4/"
         )
         self.run_terraform(
-            "gitlab",
-            env,
-            outputs=["registry_password", "registry_username", "ssh_url_to_repo"],
-        )
-        self.make_sed(
-            "README.md",
-            "__VCS_BASE_SSH_URL__",
-            self.terraform_outputs["gitlab"]["ssh_url_to_repo"].replace(
-                f"/{self.service_slug}.git", ""
-            ),
+            "gitlab", env, outputs=["registry_password", "registry_username"]
         )
 
     def init_terraform_cloud(self):
