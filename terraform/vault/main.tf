@@ -1,4 +1,7 @@
 terraform {
+  backend "local" {
+  }
+
   required_providers {
     vault = {
       source  = "hashicorp/vault"
