@@ -1,10 +1,8 @@
 """Collect options to initialize a template based web project."""
 
-import json
 import re
-from functools import partial
+from pathlib import Path
 from shutil import rmtree
-from time import time
 
 import click
 import validators
@@ -20,7 +18,6 @@ from bootstrap.constants import (
     DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
-    DUMPS_DIR,
     EMPTY_SERVICE_TYPE,
     ENVIRONMENT_DISTRIBUTION_CHOICES,
     ENVIRONMENT_DISTRIBUTION_DEFAULT,
@@ -34,10 +31,7 @@ from bootstrap.constants import (
     TERRAFORM_BACKEND_CHOICES,
     TERRAFORM_BACKEND_TFC,
 )
-
-error = partial(click.style, fg="red")
-
-warning = partial(click.style, fg="yellow")
+from bootstrap.helpers import error, warning
 
 
 def collect(
@@ -115,12 +109,7 @@ def collect(
     quiet,
 ):
     """Collect options and run the bootstrap."""
-    try:
-        dump_path = sorted(DUMPS_DIR.glob("*.json"))[-1]
-    except IndexError:
-        pass
-    else:
-        return json.load(dump_path.open())
+    output_dir = Path(output_dir)
     project_name = project_name or click.prompt("Project name")
     project_slug = clean_project_slug(project_name, project_slug)
     project_dirname = slugify(project_slug, separator="")
@@ -190,7 +179,8 @@ def collect(
         project_url_prod,
         letsencrypt_certificate_email,
     )
-    use_redis = click.confirm(warning("Do you want to use Redis?"), default=False)
+    if use_redis is None:
+        use_redis = click.confirm(warning("Do you want to use Redis?"), default=False)
     if digitalocean_enabled:
         (
             digitalocean_domain_create,
@@ -362,9 +352,6 @@ def collect(
         "terraform_dir": terraform_dir,
         "logs_dir": logs_dir,
     }
-    DUMPS_DIR.mkdir(exist_ok=True)
-    dump_path = DUMPS_DIR / f"{time():.0f}.json"
-    dump_path.write_text(json.dumps(options))
     return options
 
 

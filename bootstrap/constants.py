@@ -149,3 +149,20 @@ TERRAFORM_BACKEND_CHOICES = [TERRAFORM_BACKEND_TFC, TERRAFORM_BACKEND_GITLAB]
 # GitLab
 
 GITLAB_URL_DEFAULT = "https://gitlab.com"
+
+# Dump
+
+DUMP_EXCLUDED_OPTIONS = (
+    "backend_sentry_dsn",
+    "digitalocean_token",
+    "frontend_sentry_dsn",
+    "gitlab_private_token",
+    "kubernetes_token",
+    "pact_broker_password",
+    "s3_access_id",
+    "s3_secret_key",
+    "sentry_auth_token",
+    "service_dir",
+    "terraform_cloud_token",
+    "vault_token",
+)

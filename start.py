@@ -15,7 +15,7 @@ from bootstrap.constants import (
     VAULT_TOKEN_ENV_VAR,
 )
 from bootstrap.exceptions import BootstrapError
-from bootstrap.helpers import slugify_option
+from bootstrap.helpers import dump_options, load_options, slugify_option
 from bootstrap.runner import Runner
 
 OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
@@ -125,8 +125,11 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--quiet", is_flag=True)
 def main(**options):
     """Run the setup."""
+    options.update(load_options())
     try:
-        Runner(**collect(**options)).run()
+        options = collect(**options)
+        dump_options(options)
+        Runner(**options).run()
     except BootstrapError as e:
         raise click.Abort() from e
 
