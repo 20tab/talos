@@ -638,7 +638,8 @@ class Runner:
             [
                 "terraform",
                 "init",
-                "-backend-config",
+                "
+                ackend-config",
                 f"path={state_path.resolve()}",
                 "-input=false",
                 "-no-color",
@@ -763,8 +764,6 @@ class Runner:
             [
                 "git",
                 "clone",
-                "-b",
-                "feature/vault-refactoring",
                 template_url,
                 subrepo_dir,
                 "-q",
