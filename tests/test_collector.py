@@ -6,14 +6,12 @@ from pathlib import Path
 from unittest import TestCase, mock
 
 from bootstrap.collector import (
-    clean_backend_sentry_dsn,
     clean_backend_service_slug,
     clean_backend_type,
     clean_deployment_type,
     clean_digitalocean_options,
     clean_domains,
     clean_environment_distribution,
-    clean_frontend_sentry_dsn,
     clean_frontend_service_slug,
     clean_frontend_type,
     clean_gitlab_data,
@@ -23,6 +21,8 @@ from bootstrap.collector import (
     clean_pact_broker_data,
     clean_project_slug,
     clean_s3_media_storage_data,
+    clean_sentry_data,
+    clean_sentry_dsn,
     clean_sentry_org,
     clean_service_dir,
     clean_terraform_backend,
@@ -391,26 +391,70 @@ class TestBootstrapCollector(TestCase):
         with input("My Project"):
             self.assertEqual(clean_sentry_org(None), "My Project")
 
-    def test_clean_backend_sentry_dsn(self):
-        """Test cleaning the backend Sentry DSN."""
-        self.assertIsNone(clean_backend_sentry_dsn(None, None))
+    def test_clean_sentry_dsn(self):
+        """Test cleaning the Sentry DSN of a service."""
+        self.assertIsNone(clean_sentry_dsn(None, None))
+        with input(""):
+            self.assertEqual(clean_sentry_dsn("backend", None), "")
+        with input("bad-dsn-url", "https://public@sentry.example.com/1"):
+            self.assertEqual(
+                clean_sentry_dsn("backend", None), "https://public@sentry.example.com/1"
+            )
         with input("https://public@sentry.example.com/1"):
             self.assertEqual(
-                clean_backend_sentry_dsn(
-                    "django", "https://public@sentry.example.com/1"
-                ),
-                "https://public@sentry.example.com/1",
+                clean_sentry_dsn("backend", None), "https://public@sentry.example.com/1"
             )
 
-    def test_clean_frontend_sentry_dsn(self):
-        """Test cleaning the frontend Sentry DSN."""
-        self.assertIsNone(clean_frontend_sentry_dsn(None, None))
-        with input("https://public@sentry.example.com/1"):
+    def test_clean_sentry_data(self):
+        """Test cleaning the Sentry data."""
+        self.assertEqual(
+            clean_sentry_data(
+                "test-company",
+                "https://sentry.io",
+                "my-sentry-t0K3N",
+                None,
+                "https://sentry.io/backend-dsn",
+                None,
+                "https://sentry.io/frontend-dsn",
+            ),
+            (None, None, None, None, None),
+        )
+        self.assertEqual(
+            clean_sentry_data(
+                "test-company",
+                "https://sentry.io",
+                "my-sentry-t0K3N",
+                "backend",
+                "https://sentry.io/backend-dsn",
+                "frontend",
+                "https://sentry.io/frontend-dsn",
+            ),
+            (
+                "test-company",
+                "https://sentry.io",
+                "my-sentry-t0K3N",
+                "https://sentry.io/backend-dsn",
+                "https://sentry.io/frontend-dsn",
+            ),
+        )
+        with input("y", "my-company"):
             self.assertEqual(
-                clean_frontend_sentry_dsn(
-                    "django", "https://public@sentry.example.com/1"
+                clean_sentry_data(
+                    None,
+                    "https://sentry.io",
+                    "my-sentry-t0K3N",
+                    "backend",
+                    "https://sentry.io/backend-dsn",
+                    "frontend",
+                    "https://sentry.io/frontend-dsn",
                 ),
-                "https://public@sentry.example.com/1",
+                (
+                    "my-company",
+                    "https://sentry.io",
+                    "my-sentry-t0K3N",
+                    "https://sentry.io/backend-dsn",
+                    "https://sentry.io/frontend-dsn",
+                ),
             )
 
     def test_clean_digitalocean_options(self):

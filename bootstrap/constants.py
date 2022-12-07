@@ -1,34 +1,71 @@
 """Web project initialization CLI constants."""
 
 from pathlib import Path
+from typing import Dict
 
 DUMPS_DIR = Path(__file__).parent.parent / ".dumps"
 
 # Stacks
 
+# BEWARE: stack names must be suitable for inclusion in Vault paths
+
+DEV_STACK_NAME = "development"
+
 DEV_STACK_SLUG = "dev"
+
+STAGE_STACK_NAME = "staging"
 
 STAGE_STACK_SLUG = "stage"
 
+MAIN_STACK_NAME = "main"
+
 MAIN_STACK_SLUG = "main"
 
+STACKS_CHOICES = {
+    "1": [{"name": MAIN_STACK_NAME, "slug": MAIN_STACK_SLUG}],
+    "2": [
+        {"name": DEV_STACK_NAME, "slug": DEV_STACK_SLUG},
+        {"name": MAIN_STACK_NAME, "slug": MAIN_STACK_SLUG},
+    ],
+    "3": [
+        {"name": DEV_STACK_NAME, "slug": DEV_STACK_SLUG},
+        {"name": STAGE_STACK_NAME, "slug": STAGE_STACK_SLUG},
+        {"name": MAIN_STACK_NAME, "slug": MAIN_STACK_SLUG},
+    ],
+}
+
 # Environments
+
+# BEWARE: environment names must be suitable for inclusion in Vault paths
 
 DEV_ENV_NAME = "development"
 
 DEV_ENV_SLUG = "dev"
 
+DEV_ENV_STACK_CHOICES: Dict[str, str] = {
+    "1": MAIN_STACK_SLUG,
+}
+
 STAGE_ENV_NAME = "staging"
 
 STAGE_ENV_SLUG = "stage"
+
+STAGE_ENV_STACK_CHOICES: Dict[str, str] = {
+    "1": MAIN_STACK_SLUG,
+    "2": DEV_STACK_SLUG,
+}
 
 PROD_ENV_NAME = "production"
 
 PROD_ENV_SLUG = "prod"
 
+PROD_ENV_STACK_CHOICES: Dict[str, str] = {}
+
 # Env vars
 
 GITLAB_TOKEN_ENV_VAR = "GITLAB_PRIVATE_TOKEN"
+
+VAULT_TOKEN_ENV_VAR = "VAULT_TOKEN"
 
 # Subrepos
 
