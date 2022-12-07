@@ -638,8 +638,7 @@ class Runner:
             [
                 "terraform",
                 "init",
-                "
-                ackend-config",
+                "-backend-config",
                 f"path={state_path.resolve()}",
                 "-input=false",
                 "-no-color",
