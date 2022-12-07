@@ -51,11 +51,11 @@ Environment stage will create the other resource for each of it.
 
 ### Stacks
 
-{% if cookiecutter.environment_distribution == "1" %}You have opted to have all environments share the same stack.
+{% if cookiecutter.environments_distribution == "1" %}You have opted to have all environments share the same stack.
 
-`ENABLED_STACKS` = `main`{% endif %}{% if cookiecutter.environment_distribution == "2" %}You have opted to have Dev and Stage environments share the same stack, Prod has its own.
+`ENABLED_STACKS` = `main`{% endif %}{% if cookiecutter.environments_distribution == "2" %}You have opted to have Dev and Stage environments share the same stack, Prod has its own.
 
-`ENABLED_STACKS` = `dev, main`{% endif %}{% if cookiecutter.environment_distribution == "3" %}Each environment has its own stack
+`ENABLED_STACKS` = `dev, main`{% endif %}{% if cookiecutter.environments_distribution == "3" %}Each environment has its own stack
 
 `ENABLED_STACKS` = `main, dev, prod`{% endif %}
 

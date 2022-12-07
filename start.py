@@ -9,7 +9,7 @@ import click
 from bootstrap.collector import collect
 from bootstrap.constants import (
     DEPLOYMENT_TYPE_CHOICES,
-    ENVIRONMENT_DISTRIBUTION_CHOICES,
+    ENVIRONMENTS_DISTRIBUTION_CHOICES,
     GITLAB_TOKEN_ENV_VAR,
     MEDIA_STORAGE_CHOICES,
     VAULT_TOKEN_ENV_VAR,
@@ -64,7 +64,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--kubernetes-host")
 @click.option("--kubernetes-token")
 @click.option(
-    "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)
+    "--environments-distribution", type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES)
 )
 @click.option("--project-domain")
 @click.option("--subdomain-dev")
@@ -98,9 +98,9 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--digitalocean-redis-cluster-node-size")
 @click.option("--sentry-org")
 @click.option("--sentry-url")
+@click.option("--sentry-auth-token")
 @click.option("--backend-sentry-dsn")
 @click.option("--frontend-sentry-dsn")
-@click.option("--sentry-auth-token")
 @click.option("--pact-broker-url")
 @click.option("--pact-broker-username")
 @click.option("--pact-broker-password")

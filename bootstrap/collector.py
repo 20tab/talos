@@ -1,11 +1,11 @@
 """Collect options to initialize a template based web project."""
 
-import re
+from dataclasses import dataclass, field
 from pathlib import Path
 from shutil import rmtree
 
 import click
-import validators
+from pydantic import validate_arguments
 from slugify import slugify
 
 from bootstrap.constants import (
@@ -19,9 +19,9 @@ from bootstrap.constants import (
     DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
     EMPTY_SERVICE_TYPE,
-    ENVIRONMENT_DISTRIBUTION_CHOICES,
-    ENVIRONMENT_DISTRIBUTION_DEFAULT,
-    ENVIRONMENT_DISTRIBUTION_PROMPT,
+    ENVIRONMENTS_DISTRIBUTION_CHOICES,
+    ENVIRONMENTS_DISTRIBUTION_DEFAULT,
+    ENVIRONMENTS_DISTRIBUTION_PROMPT,
     FRONTEND_TYPE_CHOICES,
     FRONTEND_TYPE_DEFAULT,
     GITLAB_URL_DEFAULT,
@@ -31,989 +31,624 @@ from bootstrap.constants import (
     TERRAFORM_BACKEND_CHOICES,
     TERRAFORM_BACKEND_TFC,
 )
-from bootstrap.helpers import error, warning
+from bootstrap.helpers import (
+    validate_or_prompt_domain,
+    validate_or_prompt_email,
+    validate_or_prompt_path,
+    validate_or_prompt_secret,
+    validate_or_prompt_url,
+    warning,
+)
+from bootstrap.runner import Runner
 
 
-def collect(
-    uid,
-    gid,
-    output_dir,
-    project_name,
-    project_slug,
-    project_dirname,
-    backend_type,
-    backend_service_slug,
-    backend_service_port,
-    frontend_type,
-    frontend_service_slug,
-    frontend_service_port,
-    deployment_type,
-    terraform_backend,
-    terraform_cloud_hostname,
-    terraform_cloud_token,
-    terraform_cloud_organization,
-    terraform_cloud_organization_create,
-    terraform_cloud_admin_email,
-    vault_token,
-    vault_url,
-    digitalocean_token,
-    kubernetes_cluster_ca_certificate,
-    kubernetes_host,
-    kubernetes_token,
-    environment_distribution,
-    project_domain,
-    subdomain_dev,
-    subdomain_stage,
-    subdomain_prod,
-    subdomain_monitoring,
-    project_url_dev,
-    project_url_stage,
-    project_url_prod,
-    letsencrypt_certificate_email,
-    digitalocean_domain_create,
-    digitalocean_dns_records_create,
-    digitalocean_k8s_cluster_region,
-    digitalocean_database_cluster_region,
-    digitalocean_database_cluster_node_size,
-    postgres_image,
-    postgres_persistent_volume_capacity,
-    postgres_persistent_volume_claim_capacity,
-    postgres_persistent_volume_host_path,
-    use_redis,
-    redis_image,
-    digitalocean_redis_cluster_region,
-    digitalocean_redis_cluster_node_size,
-    sentry_org,
-    sentry_url,
-    backend_sentry_dsn,
-    frontend_sentry_dsn,
-    sentry_auth_token,
-    pact_broker_url,
-    pact_broker_username,
-    pact_broker_password,
-    media_storage,
-    s3_region,
-    s3_host,
-    s3_access_id,
-    s3_secret_key,
-    s3_bucket_name,
-    gitlab_url,
-    gitlab_private_token,
-    gitlab_namespace_path,
-    gitlab_group_slug,
-    gitlab_group_owners,
-    gitlab_group_maintainers,
-    gitlab_group_developers,
-    terraform_dir,
-    logs_dir,
-    quiet,
-):
-    """Collect options and run the bootstrap."""
-    output_dir = Path(output_dir)
-    project_name = project_name or click.prompt("Project name")
-    project_slug = clean_project_slug(project_name, project_slug)
-    project_dirname = slugify(project_slug, separator="")
-    service_dir = clean_service_dir(output_dir, project_dirname)
-    if (backend_type := clean_backend_type(backend_type)) != EMPTY_SERVICE_TYPE:
-        backend_service_slug = clean_backend_service_slug(backend_service_slug)
-    if (frontend_type := clean_frontend_type(frontend_type)) != EMPTY_SERVICE_TYPE:
-        frontend_service_slug = clean_frontend_service_slug(frontend_service_slug)
-    deployment_type = clean_deployment_type(deployment_type)
-    # The "digitalocean-k8s" deployment type includes Postgres by default
-    if digitalocean_enabled := ("digitalocean" in deployment_type):
-        digitalocean_token = validate_or_prompt_secret(
-            "DigitalOcean token", digitalocean_token
+@validate_arguments
+@dataclass(kw_only=True)
+class Collector:
+    """The bootstrap CLI options collector."""
+
+    output_dir: Path
+    project_name: str
+    project_slug: str
+    project_dirname: str
+    service_dir: Path | None = None
+    backend_type: str
+    backend_service_slug: str | None = None
+    backend_service_port: int | None = None
+    frontend_type: str
+    frontend_service_slug: str | None = None
+    frontend_service_port: int | None = None
+    deployment_type: str
+    terraform_backend: str
+    terraform_cloud_hostname: str | None = None
+    terraform_cloud_token: str | None = None
+    terraform_cloud_organization: str | None = None
+    terraform_cloud_organization_create: bool | None = None
+    terraform_cloud_admin_email: str | None = None
+    vault_token: str | None = None
+    vault_url: str | None = None
+    digitalocean_token: str | None = None
+    kubernetes_cluster_ca_certificate: str | None = None
+    kubernetes_host: str | None = None
+    kubernetes_token: str | None = None
+    environments_distribution: str
+    use_monitoring: bool = False
+    project_domain: str | None = None
+    subdomain_dev: str | None = None
+    subdomain_stage: str | None = None
+    subdomain_prod: str | None = None
+    subdomain_monitoring: str | None = None
+    project_url_dev: str = ""
+    project_url_stage: str = ""
+    project_url_prod: str = ""
+    letsencrypt_certificate_email: str | None = None
+    digitalocean_domain_create: bool | None = None
+    digitalocean_dns_records_create: bool | None = None
+    digitalocean_k8s_cluster_region: str | None = None
+    digitalocean_database_cluster_region: str | None = None
+    digitalocean_database_cluster_node_size: str | None = None
+    postgres_image: str | None = None
+    postgres_persistent_volume_capacity: str | None = None
+    postgres_persistent_volume_claim_capacity: str | None = None
+    postgres_persistent_volume_host_path: str | None = None
+    use_redis: bool = False
+    redis_image: str | None = None
+    digitalocean_redis_cluster_region: str | None = None
+    digitalocean_redis_cluster_node_size: str | None = None
+    sentry_org: str | None = None
+    sentry_url: str | None = None
+    sentry_auth_token: str | None = None
+    backend_sentry_dsn: str | None = None
+    frontend_sentry_dsn: str | None = None
+    pact_broker_url: str | None = None
+    pact_broker_username: str | None = None
+    pact_broker_password: str | None = None
+    media_storage: str
+    s3_region: str | None = None
+    s3_host: str | None = None
+    s3_access_id: str | None = None
+    s3_secret_key: str | None = None
+    s3_bucket_name: str | None = None
+    gitlab_url: str | None = None
+    gitlab_private_token: str | None = None
+    gitlab_namespace_path: str | None = None
+    gitlab_group_slug: str | None = None
+    gitlab_group_owners: str | None = None
+    gitlab_group_maintainers: str | None = None
+    gitlab_group_developers: str | None = None
+    uid: int | None = None
+    gid: int | None = None
+    terraform_dir: Path | None = None
+    logs_dir: Path | None = None
+    quiet: bool | None = False
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the instance."""
+        self.digitalocean_enabled = False
+        self.other_kubernetes_enabled = False
+        super().__init__(*args, **kwargs)
+
+    def __post_init__(self):
+        """Finalize initialization."""
+        self.collect()
+
+    def collect(self):
+        """Collect options."""
+        self.set_project_name()
+        self.set_project_slug()
+        self.set_project_dirname()
+        self.set_project_service_dir()
+        self.set_backend_service()
+        self.set_frontend_service()
+        self.set_use_monitoring()
+        self.set_use_redis()
+        self.set_terraform()
+        self.set_vault()
+        self.set_deployment_type()
+        self.set_environments_distribution()
+        self.set_domain_and_urls()
+        self.set_sentry()
+        self.set_pact()
+        self.set_gitlab()
+        self.set_storage()
+
+    def set_project_name(self):
+        """Set the project name option."""
+        self.project_name = self.project_name or click.prompt("Project name")
+
+    def set_project_slug(self):
+        """Set the project slug option."""
+        self.project_slug = slugify(
+            self.project_slug
+            or click.prompt("Project slug", default=slugify(self.project_name))
         )
-    (
-        terraform_backend,
-        terraform_cloud_hostname,
-        terraform_cloud_token,
-        terraform_cloud_organization,
-        terraform_cloud_organization_create,
-        terraform_cloud_admin_email,
-    ) = clean_terraform_backend(
-        terraform_backend,
-        terraform_cloud_hostname,
-        terraform_cloud_token,
-        terraform_cloud_organization,
-        terraform_cloud_organization_create,
-        terraform_cloud_admin_email,
-    )
-    vault_token, vault_url = clean_vault_data(vault_token, vault_url, quiet)
-    environment_distribution = clean_environment_distribution(
-        environment_distribution, deployment_type
-    )
-    use_monitoring = click.confirm(
-        warning("Do you want to enable the monitoring stack?"), default=False
-    )
-    if other_kubernetes_enabled := (deployment_type == DEPLOYMENT_TYPE_OTHER):
-        (
-            kubernetes_cluster_ca_certificate,
-            kubernetes_host,
-            kubernetes_token,
-        ) = clean_kubernetes_credentials(
-            kubernetes_cluster_ca_certificate,
-            kubernetes_host,
-            kubernetes_token,
-        )
-    (
-        project_domain,
-        subdomain_dev,
-        subdomain_stage,
-        subdomain_prod,
-        subdomain_monitoring,
-        project_url_dev,
-        project_url_stage,
-        project_url_prod,
-        letsencrypt_certificate_email,
-    ) = clean_domains(
-        project_slug,
-        project_domain,
-        use_monitoring,
-        subdomain_dev,
-        subdomain_stage,
-        subdomain_prod,
-        subdomain_monitoring,
-        project_url_dev,
-        project_url_stage,
-        project_url_prod,
-        letsencrypt_certificate_email,
-    )
-    if use_redis is None:
-        use_redis = click.confirm(warning("Do you want to use Redis?"), default=False)
-    if digitalocean_enabled:
-        (
-            digitalocean_domain_create,
-            digitalocean_dns_records_create,
-            digitalocean_k8s_cluster_region,
-            digitalocean_database_cluster_region,
-            digitalocean_database_cluster_node_size,
-            digitalocean_redis_cluster_region,
-            digitalocean_redis_cluster_node_size,
-        ) = clean_digitalocean_options(
-            digitalocean_domain_create,
-            digitalocean_dns_records_create,
-            digitalocean_k8s_cluster_region,
-            digitalocean_database_cluster_region,
-            digitalocean_database_cluster_node_size,
-            digitalocean_redis_cluster_region,
-            digitalocean_redis_cluster_node_size,
-            use_redis,
-        )
-    if other_kubernetes_enabled:
-        (
-            postgres_image,
-            postgres_persistent_volume_capacity,
-            postgres_persistent_volume_claim_capacity,
-            postgres_persistent_volume_host_path,
-            redis_image,
-        ) = clean_other_k8s_options(
-            postgres_image,
-            postgres_persistent_volume_capacity,
-            postgres_persistent_volume_claim_capacity,
-            postgres_persistent_volume_host_path,
-            redis_image,
-            use_redis,
-        )
-    media_storage = clean_media_storage(media_storage)
-    (
-        sentry_org,
-        sentry_url,
-        sentry_auth_token,
-        backend_sentry_dsn,
-        frontend_sentry_dsn,
-    ) = clean_sentry_data(
-        sentry_org,
-        sentry_url,
-        sentry_auth_token,
-        backend_service_slug,
-        backend_sentry_dsn,
-        frontend_service_slug,
-        frontend_sentry_dsn,
-    )
-    (
-        pact_broker_url,
-        pact_broker_username,
-        pact_broker_password,
-    ) = clean_pact_broker_data(
-        pact_broker_url, pact_broker_username, pact_broker_password
-    )
-    (
-        gitlab_url,
-        gitlab_private_token,
-        gitlab_namespace_path,
-        gitlab_group_slug,
-        gitlab_group_owners,
-        gitlab_group_maintainers,
-        gitlab_group_developers,
-    ) = clean_gitlab_data(
-        project_slug,
-        gitlab_url,
-        gitlab_private_token,
-        gitlab_namespace_path,
-        gitlab_group_slug,
-        gitlab_group_owners,
-        gitlab_group_maintainers,
-        gitlab_group_developers,
-        quiet,
-    )
-    if (gitlab_url or vault_url) and "s3" in media_storage:
-        (
-            digitalocean_token,
-            s3_region,
-            s3_host,
-            s3_access_id,
-            s3_secret_key,
-            s3_bucket_name,
-        ) = clean_s3_media_storage_data(
-            media_storage,
-            digitalocean_token,
-            s3_region,
-            s3_host,
-            s3_access_id,
-            s3_secret_key,
-            s3_bucket_name,
-        )
-    options = {
-        "uid": uid,
-        "gid": gid,
-        "output_dir": str(output_dir.resolve()),
-        "project_name": project_name,
-        "project_slug": project_slug,
-        "project_dirname": project_dirname,
-        "service_dir": str(service_dir.resolve()),
-        "backend_type": backend_type,
-        "backend_service_slug": backend_service_slug,
-        "backend_service_port": backend_service_port,
-        "frontend_type": frontend_type,
-        "frontend_service_slug": frontend_service_slug,
-        "frontend_service_port": frontend_service_port,
-        "deployment_type": deployment_type,
-        "terraform_backend": terraform_backend,
-        "terraform_cloud_hostname": terraform_cloud_hostname,
-        "terraform_cloud_token": terraform_cloud_token,
-        "terraform_cloud_organization": terraform_cloud_organization,
-        "terraform_cloud_organization_create": terraform_cloud_organization_create,
-        "terraform_cloud_admin_email": terraform_cloud_admin_email,
-        "vault_token": vault_token,
-        "vault_url": vault_url,
-        "digitalocean_token": digitalocean_token,
-        "kubernetes_cluster_ca_certificate": kubernetes_cluster_ca_certificate,
-        "kubernetes_host": kubernetes_host,
-        "kubernetes_token": kubernetes_token,
-        "environment_distribution": environment_distribution,
-        "project_domain": project_domain,
-        "subdomain_dev": subdomain_dev,
-        "subdomain_stage": subdomain_stage,
-        "subdomain_prod": subdomain_prod,
-        "subdomain_monitoring": subdomain_monitoring,
-        "project_url_dev": project_url_dev,
-        "project_url_stage": project_url_stage,
-        "project_url_prod": project_url_prod,
-        "letsencrypt_certificate_email": letsencrypt_certificate_email,
-        "digitalocean_domain_create": digitalocean_domain_create,
-        "digitalocean_dns_records_create": digitalocean_dns_records_create,
-        "digitalocean_k8s_cluster_region": digitalocean_k8s_cluster_region,
-        "digitalocean_database_cluster_region": digitalocean_database_cluster_region,
-        "digitalocean_database_cluster_node_size": (
-            digitalocean_database_cluster_node_size
-        ),
-        "postgres_image": postgres_image,
-        "postgres_persistent_volume_capacity": postgres_persistent_volume_capacity,
-        "postgres_persistent_volume_claim_capacity": (
-            postgres_persistent_volume_claim_capacity
-        ),
-        "postgres_persistent_volume_host_path": postgres_persistent_volume_host_path,
-        "use_redis": use_redis,
-        "redis_image": redis_image,
-        "digitalocean_redis_cluster_region": digitalocean_redis_cluster_region,
-        "digitalocean_redis_cluster_node_size": digitalocean_redis_cluster_node_size,
-        "sentry_org": sentry_org,
-        "sentry_url": sentry_url,
-        "backend_sentry_dsn": backend_sentry_dsn,
-        "frontend_sentry_dsn": frontend_sentry_dsn,
-        "sentry_auth_token": sentry_auth_token,
-        "pact_broker_url": pact_broker_url,
-        "pact_broker_username": pact_broker_username,
-        "pact_broker_password": pact_broker_password,
-        "media_storage": media_storage,
-        "s3_region": s3_region,
-        "s3_host": s3_host,
-        "s3_access_id": s3_access_id,
-        "s3_secret_key": s3_secret_key,
-        "s3_bucket_name": s3_bucket_name,
-        "gitlab_url": gitlab_url,
-        "gitlab_private_token": gitlab_private_token,
-        "gitlab_namespace_path": gitlab_namespace_path,
-        "gitlab_group_slug": gitlab_group_slug,
-        "gitlab_group_owners": gitlab_group_owners,
-        "gitlab_group_maintainers": gitlab_group_maintainers,
-        "gitlab_group_developers": gitlab_group_developers,
-        "terraform_dir": terraform_dir,
-        "logs_dir": logs_dir,
-    }
-    return options
 
+    def set_project_dirname(self):
+        """Set the project dirname option."""
+        self.project_dirname = slugify(self.project_slug, separator="")
 
-def validate_or_prompt_domain(message, value=None, default=None, required=True):
-    """Validate the given domain or prompt until a valid value is provided."""
-    if value is None:
-        value = click.prompt(message, default=default)
-    try:
-        if not required and value == "" or validators.domain(value):
-            return value
-    except validators.ValidationFailure:
-        pass
-    click.echo(error("Please type a valid domain!"))
-    return validate_or_prompt_domain(message, None, default, required)
-
-
-def validate_or_prompt_email(message, value=None, default=None, required=True):
-    """Validate the given email address or prompt until a valid value is provided."""
-    if value is None:
-        value = click.prompt(message, default=default)
-    try:
-        if not required and value == "" or validators.email(value):
-            return value
-    except validators.ValidationFailure:
-        pass
-    click.echo(error("Please type a valid email!"))
-    return validate_or_prompt_email(message, None, default, required)
-
-
-def validate_or_prompt_secret(message, value=None, default=None, required=True):
-    """Validate the given secret or prompt until a valid value is provided."""
-    if value is None:
-        value = click.prompt(message, default=default, hide_input=True)
-    try:
-        if not required and value == "" or validators.length(value, min=8):
-            return value
-    except validators.ValidationFailure:
-        pass
-    click.echo(error("Please type at least 8 chars!"))
-    return validate_or_prompt_secret(message, None, default, required)
-
-
-def validate_or_prompt_path(message, value=None, default=None, required=True):
-    """Validate the given path or prompt until a valid path is provided."""
-    if value is None:
-        value = click.prompt(message, default=default)
-    try:
-        if (
-            not required
-            and value == ""
-            or re.match(r"^(?:[\w_\-]+)(?:\/[\w_\-]+)*\/?$", value)
-        ):
-            return value.rstrip("/")
-    except validators.ValidationFailure:
-        pass
-    click.echo(
-        error(
-            "Please type a valid slash-separated path containing letters, digits, "
-            "dashes and underscores!"
-        )
-    )
-    return validate_or_prompt_path(message, None, default, required)
-
-
-def validate_or_prompt_url(message, value=None, default=None, required=True):
-    """Validate the given URL or prompt until a valid value is provided."""
-    if value is None:
-        value = click.prompt(message, default=default)
-    try:
-        if not required and value == "" or validators.url(value):
-            return value.rstrip("/")
-    except validators.ValidationFailure:
-        pass
-    click.echo(error("Please type a valid URL!"))
-    return validate_or_prompt_url(message, None, default, required)
-
-
-def clean_project_slug(project_name, project_slug):
-    """Return the project slug."""
-    return slugify(
-        project_slug or click.prompt("Project slug", default=slugify(project_name))
-    )
-
-
-def clean_service_dir(output_dir, project_dirname):
-    """Return the service directory."""
-    service_dir = output_dir / project_dirname
-    if service_dir.is_dir() and click.confirm(
-        warning(
-            f'A directory "{service_dir.resolve()}" already exists and '
-            "must be deleted. Continue?",
-        ),
-        abort=True,
-    ):
-        rmtree(service_dir)
-    return service_dir
-
-
-def clean_backend_type(backend_type):
-    """Return the back end type."""
-    return (
-        backend_type in BACKEND_TYPE_CHOICES
-        and backend_type
-        or click.prompt(
-            "Backend type",
-            default=BACKEND_TYPE_DEFAULT,
-            type=click.Choice(BACKEND_TYPE_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-
-
-def clean_backend_service_slug(backend_service_slug):
-    """Return the back end service slug."""
-    return slugify(
-        backend_service_slug or click.prompt("Backend service slug", default="backend"),
-        separator="",
-    )
-
-
-def clean_frontend_type(frontend_type):
-    """Return the front end type."""
-    return (
-        frontend_type
-        if frontend_type in FRONTEND_TYPE_CHOICES
-        else click.prompt(
-            "Frontend type",
-            default=FRONTEND_TYPE_DEFAULT,
-            type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-
-
-def clean_frontend_service_slug(frontend_service_slug):
-    """Return the front end service slug."""
-    return slugify(
-        frontend_service_slug
-        or click.prompt("Frontend service slug", default="frontend"),
-        separator="",
-    )
-
-
-def clean_deployment_type(deployment_type):
-    """Return the deployment type."""
-    return (
-        deployment_type
-        if deployment_type in DEPLOYMENT_TYPE_CHOICES
-        else click.prompt(
-            "Deploy type",
-            default=DEPLOYMENT_TYPE_DIGITALOCEAN,
-            type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-
-
-def clean_terraform_backend(
-    terraform_backend,
-    terraform_cloud_hostname,
-    terraform_cloud_token,
-    terraform_cloud_organization,
-    terraform_cloud_organization_create,
-    terraform_cloud_admin_email,
-):
-    """Return the Terraform backend and the Terraform Cloud data, if applicable."""
-    terraform_backend = (
-        terraform_backend
-        if terraform_backend in TERRAFORM_BACKEND_CHOICES
-        else click.prompt(
-            "Terraform backend",
-            default=TERRAFORM_BACKEND_TFC,
-            type=click.Choice(TERRAFORM_BACKEND_CHOICES, case_sensitive=False),
-        )
-    ).lower()
-    if terraform_backend == TERRAFORM_BACKEND_TFC:
-        terraform_cloud_hostname = validate_or_prompt_domain(
-            "Terraform host name",
-            terraform_cloud_hostname,
-            default="app.terraform.io",
-        )
-        terraform_cloud_token = validate_or_prompt_secret(
-            "Terraform Cloud User token",
-            terraform_cloud_token,
-        )
-        terraform_cloud_organization = terraform_cloud_organization or click.prompt(
-            "Terraform Organization"
-        )
-        terraform_cloud_organization_create = (
-            terraform_cloud_organization_create
-            if terraform_cloud_organization_create is not None
-            else click.confirm(
-                "Do you want to create Terraform Cloud Organization "
-                f"'{terraform_cloud_organization}'?",
-            )
-        )
-        if terraform_cloud_organization_create:
-            terraform_cloud_admin_email = validate_or_prompt_email(
-                "Terraform Cloud Organization admin email (e.g. tech@20tab.com)",
-                terraform_cloud_admin_email,
-            )
-        else:
-            terraform_cloud_admin_email = ""
-    else:
-        terraform_cloud_organization = None
-        terraform_cloud_hostname = None
-        terraform_cloud_token = None
-        terraform_cloud_organization_create = None
-        terraform_cloud_admin_email = None
-    return (
-        terraform_backend,
-        terraform_cloud_hostname,
-        terraform_cloud_token,
-        terraform_cloud_organization,
-        terraform_cloud_organization_create,
-        terraform_cloud_admin_email,
-    )
-
-
-def clean_vault_data(vault_token, vault_url, quiet=False):
-    """Return the Vault data, if applicable."""
-    if vault_url or (
-        vault_url is None
-        and click.confirm(
-            "Do you want to use Vault for secrets management?",
-        )
-    ):
-        vault_token = validate_or_prompt_secret(
-            "Vault token (leave blank to perform a browser-based OIDC authentication)",
-            vault_token,
-            default="",
-            required=False,
-        )
-        quiet or click.confirm(
+    def set_project_service_dir(self):
+        """Set the project service dir option."""
+        service_dir = self.output_dir / self.project_dirname
+        if service_dir.is_dir() and click.confirm(
             warning(
-                "Make sure your Vault permissions allow to enable the "
-                "project secrets backends and manage the project secrets. Continue?"
+                f'A directory "{service_dir.resolve()}" already exists and '
+                "must be deleted. Continue?",
             ),
             abort=True,
-        )
-        vault_url = validate_or_prompt_url("Vault address", vault_url)
-    else:
-        vault_token = None
-        vault_url = None
-    return vault_token, vault_url
+        ):
+            rmtree(service_dir)
+        self.service_dir = service_dir
 
-
-def clean_environment_distribution(environment_distribution, deployment_type):
-    """Return the environment distribution."""
-    if deployment_type == DEPLOYMENT_TYPE_OTHER:
-        return "1"
-    return (
-        environment_distribution
-        if environment_distribution in ENVIRONMENT_DISTRIBUTION_CHOICES
-        else click.prompt(
-            ENVIRONMENT_DISTRIBUTION_PROMPT,
-            default=ENVIRONMENT_DISTRIBUTION_DEFAULT,
-            type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES),
-        )
-    )
-
-
-def clean_kubernetes_credentials(
-    kubernetes_cluster_ca_certificate,
-    kubernetes_host,
-    kubernetes_token,
-):
-    """Return the clean Kubernetes credentials."""
-    kubernetes_cluster_ca_certificate = (
-        kubernetes_cluster_ca_certificate
-        or click.prompt(
-            "Kubernetes cluster CA certificate",
-            type=click.Path(dir_okay=False, exists=True, resolve_path=True),
-        )
-    )
-    kubernetes_host = kubernetes_host or validate_or_prompt_url(
-        "Kubernetes host", kubernetes_host
-    )
-    kubernetes_token = kubernetes_token or validate_or_prompt_secret(
-        "Kubernetes token", kubernetes_token
-    )
-    return kubernetes_cluster_ca_certificate, kubernetes_host, kubernetes_token
-
-
-def clean_domains(
-    project_slug,
-    project_domain,
-    use_monitoring,
-    subdomain_dev,
-    subdomain_stage,
-    subdomain_prod,
-    subdomain_monitoring,
-    project_url_dev,
-    project_url_stage,
-    project_url_prod,
-    letsencrypt_certificate_email,
-):
-    """Return project URLs."""
-    project_domain = validate_or_prompt_domain(
-        "Project domain", project_domain, default=f"{project_slug}.com"
-    )
-    subdomain_dev = subdomain_dev or click.prompt(
-        "Development domain prefix", default="dev"
-    )
-    project_url_dev = f"https://{subdomain_dev}.{project_domain}"
-    subdomain_stage = subdomain_stage or click.prompt(
-        "Staging domain prefix", default="stage"
-    )
-    project_url_stage = f"https://{subdomain_stage}.{project_domain}"
-    subdomain_prod = subdomain_prod or click.prompt(
-        "Production domain prefix", default="www"
-    )
-    project_url_prod = f"https://{subdomain_prod}.{project_domain}"
-    if use_monitoring:
-        subdomain_monitoring = subdomain_monitoring or click.prompt(
-            "Monitorng domain prefix", default="logs"
-        )
-    else:
-        subdomain_monitoring = None
-    letsencrypt_certificate_email = clean_letsencrypt_certificate_email(
-        letsencrypt_certificate_email
-    )
-    return (
-        project_domain,
-        subdomain_dev,
-        subdomain_stage,
-        subdomain_prod,
-        subdomain_monitoring,
-        project_url_dev,
-        project_url_stage,
-        project_url_prod,
-        letsencrypt_certificate_email,
-    )
-
-
-def clean_letsencrypt_certificate_email(letsencrypt_certificate_email):
-    """Return the email to issue Let's Encrypt certificates for."""
-    return (
-        letsencrypt_certificate_email
-        or (
-            letsencrypt_certificate_email is None
-            and click.confirm(
-                warning("Do you want Traefik to generate SSL certificates?"),
-                default=True,
+    def set_backend_service(self):
+        """Set the backend service options."""
+        if self.backend_type not in BACKEND_TYPE_CHOICES:
+            self.backend_type = click.prompt(
+                "Backend type",
+                default=BACKEND_TYPE_DEFAULT,
+                type=click.Choice(BACKEND_TYPE_CHOICES, case_sensitive=False),
+            ).lower()
+        if self.backend_type != EMPTY_SERVICE_TYPE:
+            self.backend_service_slug = slugify(
+                self.backend_service_slug
+                or click.prompt("Backend service slug", default="backend"),
+                separator="",
             )
-            and validate_or_prompt_email(
-                "Let's Encrypt certificates email", letsencrypt_certificate_email
+
+    def set_frontend_service(self):
+        """Set the frontend service options."""
+        if self.frontend_type not in FRONTEND_TYPE_CHOICES:
+            self.frontend_type = click.prompt(
+                "Frontend type",
+                default=FRONTEND_TYPE_DEFAULT,
+                type=click.Choice(FRONTEND_TYPE_CHOICES, case_sensitive=False),
+            ).lower()
+        if self.frontend_type != EMPTY_SERVICE_TYPE:
+            self.frontend_service_slug = slugify(
+                self.frontend_service_slug
+                or click.prompt("Frontend service slug", default="frontend"),
+                separator="",
             )
-        )
-        or None
-    )
 
-
-def clean_sentry_org(sentry_org):
-    """Return the Sentry organization."""
-    return sentry_org if sentry_org is not None else click.prompt("Sentry organization")
-
-
-def clean_sentry_dsn(service_slug, sentry_dsn):
-    """Return the backend Sentry DSN."""
-    if service_slug:
-        return validate_or_prompt_url(
-            f"Sentry DSN of the {service_slug} service (leave blank if unused)",
-            sentry_dsn,
-            default="",
-            required=False,
-        )
-
-
-def clean_sentry_data(
-    sentry_org,
-    sentry_url,
-    sentry_auth_token,
-    backend_service_slug,
-    backend_sentry_dsn,
-    frontend_service_slug,
-    frontend_sentry_dsn,
-):
-    """Return the Sentry configuration data."""
-    if any((backend_service_slug, frontend_service_slug)) and (
-        sentry_org
-        or (
-            sentry_org is None
-            and click.confirm(warning("Do you want to use Sentry?"), default=False)
-        )
-    ):
-        sentry_org = clean_sentry_org(sentry_org)
-        sentry_url = validate_or_prompt_url(
-            "Sentry URL", sentry_url, default="https://sentry.io/"
-        )
-        sentry_auth_token = validate_or_prompt_secret(
-            "Sentry auth token", sentry_auth_token
-        )
-        backend_sentry_dsn = clean_sentry_dsn(backend_service_slug, backend_sentry_dsn)
-        frontend_sentry_dsn = clean_sentry_dsn(
-            frontend_service_slug, frontend_sentry_dsn
-        )
-    else:
-        sentry_org = None
-        sentry_url = None
-        sentry_auth_token = None
-        backend_sentry_dsn = None
-        frontend_sentry_dsn = None
-    return (
-        sentry_org,
-        sentry_url,
-        sentry_auth_token,
-        backend_sentry_dsn,
-        frontend_sentry_dsn,
-    )
-
-
-def clean_digitalocean_options(
-    digitalocean_domain_create,
-    digitalocean_dns_records_create,
-    digitalocean_k8s_cluster_region,
-    digitalocean_database_cluster_region,
-    digitalocean_database_cluster_node_size,
-    digitalocean_redis_cluster_region,
-    digitalocean_redis_cluster_node_size,
-    use_redis,
-):
-    """Return DigitalOcean configuration options."""
-    # TODO: ask these settings for each stack
-    digitalocean_domain_create = (
-        digitalocean_domain_create
-        if digitalocean_domain_create is not None
-        else click.confirm(
-            "Do you want to create the DigitalOcean domain?",
-            default=True,
-        )
-    )
-    digitalocean_dns_records_create = (
-        digitalocean_dns_records_create
-        if digitalocean_dns_records_create is not None
-        else click.confirm(
-            "Do you want to create DigitalOcean DNS records?",
-            default=True,
-        )
-    )
-    digitalocean_k8s_cluster_region = digitalocean_k8s_cluster_region or click.prompt(
-        "Kubernetes cluster DigitalOcean region", default="fra1"
-    )
-    digitalocean_database_cluster_region = (
-        digitalocean_database_cluster_region
-        or click.prompt("Database cluster DigitalOcean region", default="fra1")
-    )
-    digitalocean_database_cluster_node_size = (
-        digitalocean_database_cluster_node_size
-        or click.prompt(
-            "Database cluster node size",
-            default=DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
-        )
-    )
-    if use_redis:
-        digitalocean_redis_cluster_region = (
-            digitalocean_redis_cluster_region
-            if digitalocean_redis_cluster_region is not None
-            else click.prompt("Redis cluster DigitalOcean region", default="fra1")
-        )
-        digitalocean_redis_cluster_node_size = (
-            digitalocean_redis_cluster_node_size
-            if digitalocean_redis_cluster_node_size is not None
-            else click.prompt(
-                "Redis cluster node size",
-                default=DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
+    def set_use_monitoring(self):
+        """Set the use monitoring option."""
+        if self.use_monitoring is None:
+            self.use_monitoring = click.confirm(
+                warning("Do you want to enable the monitoring stack?"), default=False
             )
-        )
-    return (
-        digitalocean_domain_create,
-        digitalocean_dns_records_create,
-        digitalocean_k8s_cluster_region,
-        digitalocean_database_cluster_region,
-        digitalocean_database_cluster_node_size,
-        digitalocean_redis_cluster_region,
-        digitalocean_redis_cluster_node_size,
-    )
 
+    def set_use_redis(self):
+        """Set the use Redis option."""
+        if self.use_redis is None:
+            self.use_redis = click.confirm(
+                warning("Do you want to use Redis?"), default=False
+            )
 
-def clean_other_k8s_options(
-    postgres_image,
-    postgres_persistent_volume_capacity,
-    postgres_persistent_volume_claim_capacity,
-    postgres_persistent_volume_host_path,
-    redis_image,
-    use_redis,
-):
-    """Return the Kubernetes custom deployment options."""
-    # TODO: ask these settings for each stack
-    postgres_image = postgres_image or click.prompt(
-        "Postgres Docker image", default="postgres:14"
-    )
-    postgres_persistent_volume_capacity = (
-        postgres_persistent_volume_capacity
-        or click.prompt("Postgres K8s PersistentVolume capacity", default="10Gi")
-    )
-    postgres_persistent_volume_claim_capacity = (
-        postgres_persistent_volume_claim_capacity or ""
-    )
-    postgres_persistent_volume_host_path = (
-        postgres_persistent_volume_host_path
-        or click.prompt("Postgres K8s PersistentVolume host path")
-    )
-    if use_redis:
-        redis_image = redis_image or click.prompt(
-            "Redis Docker image", default="redis:6.2"
-        )
-    else:
-        redis_image = ""
-    return (
-        postgres_image,
-        postgres_persistent_volume_capacity,
-        postgres_persistent_volume_claim_capacity,
-        postgres_persistent_volume_host_path,
-        redis_image,
-    )
+    def set_terraform(self):
+        """Set the Terraform options."""
+        if self.terraform_backend not in TERRAFORM_BACKEND_CHOICES:
+            self.terraform_backend = click.prompt(
+                "Terraform backend",
+                default=TERRAFORM_BACKEND_TFC,
+                type=click.Choice(TERRAFORM_BACKEND_CHOICES, case_sensitive=False),
+            ).lower()
+        if self.terraform_backend == TERRAFORM_BACKEND_TFC:
+            self.set_terraform_cloud()
 
+    def set_terraform_cloud(self):
+        """Set the Terraform Cloud options."""
+        self.terraform_cloud_hostname = validate_or_prompt_domain(
+            "Terraform host name",
+            self.terraform_cloud_hostname,
+            default="app.terraform.io",
+        )
+        self.terraform_cloud_token = validate_or_prompt_secret(
+            "Terraform Cloud User token", self.terraform_cloud_token
+        )
+        self.terraform_cloud_organization = (
+            self.terraform_cloud_organization or click.prompt("Terraform Organization")
+        )
+        if self.terraform_cloud_organization_create is None:
+            self.terraform_cloud_organization_create = click.confirm(
+                "Do you want to create Terraform Cloud Organization "
+                f"'{self.terraform_cloud_organization}'?",
+            )
+        if self.terraform_cloud_organization_create:
+            self.terraform_cloud_admin_email = validate_or_prompt_email(
+                "Terraform Cloud Organization admin email (e.g. tech@20tab.com)",
+                self.terraform_cloud_admin_email,
+            )
+        else:
+            self.terraform_cloud_admin_email = ""
 
-def clean_pact_broker_data(pact_broker_url, pact_broker_username, pact_broker_password):
-    """Return Pact broker data."""
-    if pact_broker_url or (
-        pact_broker_url is None
-        and click.confirm(warning("Do you want to use Pact?"), default=False)
-    ):
-        pact_broker_url = validate_or_prompt_url(
-            "Pact broker URL (e.g. https://broker.20tab.com/)", pact_broker_url
-        )
-        pact_broker_username = pact_broker_username or click.prompt(
-            "Pact broker username",
-        )
-        pact_broker_password = validate_or_prompt_secret(
-            "Pact broker password", pact_broker_password
-        )
-    else:
-        pact_broker_url = None
-        pact_broker_username = None
-        pact_broker_password = None
-    return pact_broker_url, pact_broker_username, pact_broker_password
-
-
-def clean_media_storage(media_storage):
-    """Return the media storage."""
-    return (
-        media_storage
-        or click.prompt(
-            "Media storage",
-            default=MEDIA_STORAGE_DIGITALOCEAN_S3,
-            type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
-        ).lower()
-    )
-
-
-def clean_gitlab_data(
-    project_slug,
-    gitlab_url,
-    gitlab_private_token,
-    gitlab_namespace_path,
-    gitlab_group_slug,
-    gitlab_group_owners,
-    gitlab_group_maintainers,
-    gitlab_group_developers,
-    quiet=False,
-):
-    """Return GitLab data."""
-    if gitlab_url or (
-        gitlab_url is None
-        and click.confirm(warning("Do you want to use GitLab?"), default=True)
-    ):
-        gitlab_url = validate_or_prompt_url(
-            "GitLab URL", gitlab_url, default=GITLAB_URL_DEFAULT
-        )
-        gitlab_private_token = gitlab_private_token or click.prompt(
-            "GitLab private token (with API scope enabled)", hide_input=True
-        )
-        gitlab_namespace_path = validate_or_prompt_path(
-            "GitLab parent group path (leave blank for a root level group)",
-            gitlab_namespace_path,
-            default="",
-            required=False,
-        )
-        gitlab_group_slug = slugify(
-            gitlab_group_slug or click.prompt("GitLab group slug", default=project_slug)
-        )
-        quiet or (
-            gitlab_namespace_path == ""
-            and gitlab_url == GITLAB_URL_DEFAULT
-            and click.confirm(
+    def set_vault(self):
+        """Set the Vault options."""
+        if self.vault_url or (
+            self.vault_url is None
+            and click.confirm("Do you want to use Vault for secrets management?")
+        ):
+            self.vault_token = validate_or_prompt_secret(
+                "Vault token "
+                "(leave blank to perform a browser-based OIDC authentication)",
+                self.vault_token,
+                default="",
+                required=False,
+            )
+            self.quiet or click.confirm(
                 warning(
-                    f'Make sure the GitLab "{gitlab_group_slug}" group exists '
-                    "before proceeding. Continue?"
+                    "Make sure your Vault permissions allow to enable the "
+                    "project secrets backends and manage the project secrets. Continue?"
                 ),
                 abort=True,
             )
-        )
-        gitlab_group_owners = (
-            gitlab_group_owners
-            if gitlab_group_owners is not None
-            else click.prompt("Comma-separated GitLab group owners", default="")
-        )
-        gitlab_group_maintainers = (
-            gitlab_group_maintainers
-            if gitlab_group_maintainers is not None
-            else click.prompt("Comma-separated GitLab group maintainers", default="")
-        )
-        gitlab_group_developers = (
-            gitlab_group_developers
-            if gitlab_group_developers is not None
-            else click.prompt("Comma-separated GitLab group developers", default="")
-        )
-    else:
-        gitlab_url = None
-        gitlab_private_token = None
-        gitlab_namespace_path = None
-        gitlab_group_slug = None
-        gitlab_group_owners = None
-        gitlab_group_maintainers = None
-        gitlab_group_developers = None
-    return (
-        gitlab_url,
-        gitlab_private_token,
-        gitlab_namespace_path,
-        gitlab_group_slug,
-        gitlab_group_owners,
-        gitlab_group_maintainers,
-        gitlab_group_developers,
-    )
+            self.vault_url = validate_or_prompt_url("Vault address", self.vault_url)
 
+    def set_deployment_type(self):
+        """Set the deployment type option."""
+        if self.deployment_type not in DEPLOYMENT_TYPE_CHOICES:
+            self.deployment_type = click.prompt(
+                "Deploy type",
+                default=DEPLOYMENT_TYPE_DIGITALOCEAN,
+                type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
+            ).lower()
 
-def clean_s3_media_storage_data(
-    media_storage,
-    digitalocean_token,
-    s3_region,
-    s3_host,
-    s3_access_id,
-    s3_secret_key,
-    s3_bucket_name,
-):
-    """Return S3 media storage data."""
-    if media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-        digitalocean_token = validate_or_prompt_secret(
-            "DigitalOcean token", digitalocean_token
+    def set_environments_distribution(self):
+        """Set the environments distribution option."""
+        # TODO: forcing a single stack when deployment is `k8s-other` should be removed,
+        #       and `set_deployment_type` merged with `set_deployment`
+        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
+            self.environments_distribution = "1"
+        elif self.environments_distribution not in ENVIRONMENTS_DISTRIBUTION_CHOICES:
+            self.environments_distribution = click.prompt(
+                ENVIRONMENTS_DISTRIBUTION_PROMPT,
+                default=ENVIRONMENTS_DISTRIBUTION_DEFAULT,
+                type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES),
+            )
+
+    def set_domain_and_urls(self):
+        """Set the domain and urls options."""
+        self.project_domain = validate_or_prompt_domain(
+            "Project domain", self.project_domain, default=f"{self.project_slug}.com"
         )
-        s3_region = s3_region or click.prompt(
+        self.subdomain_dev = self.subdomain_dev or click.prompt(
+            "Development domain prefix", default="dev"
+        )
+        self.project_url_dev = f"https://{self.subdomain_dev}.{self.project_domain}"
+        self.subdomain_stage = self.subdomain_stage or click.prompt(
+            "Staging domain prefix", default="stage"
+        )
+        self.project_url_stage = f"https://{self.subdomain_stage}.{self.project_domain}"
+        self.subdomain_prod = self.subdomain_prod or click.prompt(
+            "Production domain prefix", default="www"
+        )
+        self.project_url_prod = f"https://{self.subdomain_prod}.{self.project_domain}"
+        if self.use_monitoring:
+            self.subdomain_monitoring = self.subdomain_monitoring or click.prompt(
+                "Monitorng domain prefix", default="logs"
+            )
+        self.set_letsencrypt()
+
+    def set_letsencrypt(self):
+        """Set Let's Encrypt options."""
+        self.letsencrypt_certificate_email = (
+            self.letsencrypt_certificate_email
+            or (
+                self.letsencrypt_certificate_email is None
+                and click.confirm(
+                    warning("Do you want Traefik to generate SSL certificates?"),
+                    default=True,
+                )
+                and validate_or_prompt_email(
+                    "Let's Encrypt certificates email",
+                    self.letsencrypt_certificate_email,
+                )
+            )
+            or None
+        )
+
+    def set_deployment(self):
+        """Set the deployment options."""
+        if "digitalocean" in self.deployment_type:
+            self.set_digitalocean()
+        elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
+            self.set_kubernetes()
+
+    def set_digitalocean(self):
+        """Set the DigitalOcean options."""
+        self.digitalocean_enabled = True
+        self.set_digitalocean_token()
+        # TODO: these settings should be different for each stack
+        if self.digitalocean_domain_create is None:
+            self.digitalocean_domain_create = click.confirm(
+                "Do you want to create the DigitalOcean domain?", default=True
+            )
+        if self.digitalocean_dns_records_create is None:
+            self.digitalocean_dns_records_create = click.confirm(
+                "Do you want to create DigitalOcean DNS records?", default=True
+            )
+        self.digitalocean_k8s_cluster_region = (
+            self.digitalocean_k8s_cluster_region
+            or click.prompt("Kubernetes cluster DigitalOcean region", default="fra1")
+        )
+        self.digitalocean_database_cluster_region = (
+            self.digitalocean_database_cluster_region
+            or click.prompt("Database cluster DigitalOcean region", default="fra1")
+        )
+        self.digitalocean_database_cluster_node_size = (
+            self.digitalocean_database_cluster_node_size
+            or click.prompt(
+                "Database cluster node size",
+                default=DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
+            )
+        )
+        if self.use_redis:
+            if self.digitalocean_redis_cluster_region is None:
+                self.digitalocean_redis_cluster_region = click.prompt(
+                    "Redis cluster DigitalOcean region", default="fra1"
+                )
+            if self.digitalocean_redis_cluster_node_size is None:
+                self.digitalocean_redis_cluster_node_size = click.prompt(
+                    "Redis cluster node size",
+                    default=DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
+                )
+
+    def set_digitalocean_token(self):
+        """Set the DigitalOcean token option."""
+        self.digitalocean_token = validate_or_prompt_secret(
+            "DigitalOcean token", self.digitalocean_token
+        )
+
+    def set_kubernetes(self):
+        """Set the Kubernetes options."""
+        self.other_kubernetes_enabled = True
+        # TODO: these settings should be different for each stack
+        self.kubernetes_cluster_ca_certificate = (
+            self.kubernetes_cluster_ca_certificate
+            or click.prompt(
+                "Kubernetes cluster CA certificate",
+                type=click.Path(dir_okay=False, exists=True, resolve_path=True),
+            )
+        )
+        self.kubernetes_host = self.kubernetes_host or validate_or_prompt_url(
+            "Kubernetes host", self.kubernetes_host
+        )
+        self.kubernetes_token = self.kubernetes_token or validate_or_prompt_secret(
+            "Kubernetes token", self.kubernetes_token
+        )
+        self.postgres_image = self.postgres_image or click.prompt(
+            "Postgres Docker image", default="postgres:14"
+        )
+        self.postgres_persistent_volume_capacity = (
+            self.postgres_persistent_volume_capacity
+            or click.prompt("Postgres K8s PersistentVolume capacity", default="10Gi")
+        )
+        self.postgres_persistent_volume_claim_capacity = (
+            self.postgres_persistent_volume_claim_capacity or ""
+        )
+        self.postgres_persistent_volume_host_path = (
+            self.postgres_persistent_volume_host_path
+            or click.prompt("Postgres K8s PersistentVolume host path")
+        )
+        if self.use_redis:
+            self.redis_image = self.redis_image or click.prompt(
+                "Redis Docker image", default="redis:6.2"
+            )
+        else:
+            self.redis_image = ""
+
+    def set_sentry(self):
+        """Set the Sentry options."""
+        if any((self.backend_service_slug, self.frontend_service_slug)) and (
+            self.sentry_org
+            or (
+                self.sentry_org is None
+                and click.confirm(warning("Do you want to use Sentry?"), default=False)
+            )
+        ):
+            self.sentry_org = self.sentry_org or click.prompt("Sentry organization")
+            self.sentry_url = validate_or_prompt_url(
+                "Sentry URL", self.sentry_url, default="https://sentry.io/"
+            )
+            self.sentry_auth_token = validate_or_prompt_secret(
+                "Sentry auth token", self.sentry_auth_token
+            )
+            self.backend_sentry_dsn = self.get_sentry_dsn(
+                self.backend_service_slug, self.backend_sentry_dsn
+            )
+            self.frontend_sentry_dsn = self.get_sentry_dsn(
+                self.frontend_service_slug, self.frontend_sentry_dsn
+            )
+
+    @staticmethod
+    def get_sentry_dsn(service_slug, sentry_dsn):
+        """Set the backend Sentry DSN."""
+        if service_slug:
+            return validate_or_prompt_url(
+                f"Sentry DSN of the {service_slug} service (leave blank if unused)",
+                sentry_dsn,
+                default="",
+                required=False,
+            )
+
+    def set_pact(self):
+        """Set the Pact options."""
+        if self.pact_broker_url or (
+            self.pact_broker_url is None
+            and click.confirm(warning("Do you want to use Pact?"), default=False)
+        ):
+            self.pact_broker_url = validate_or_prompt_url(
+                "Pact broker URL (e.g. https://broker.20tab.com/)", self.pact_broker_url
+            )
+            self.pact_broker_username = self.pact_broker_username or click.prompt(
+                "Pact broker username",
+            )
+            self.pact_broker_password = validate_or_prompt_secret(
+                "Pact broker password", self.pact_broker_password
+            )
+
+    def set_gitlab(self):
+        """Return the GitLab options."""
+        if self.gitlab_url or (
+            self.gitlab_url is None
+            and click.confirm(warning("Do you want to use GitLab?"), default=True)
+        ):
+            self.gitlab_url = validate_or_prompt_url(
+                "GitLab URL", self.gitlab_url, default=GITLAB_URL_DEFAULT
+            )
+            self.gitlab_private_token = self.gitlab_private_token or click.prompt(
+                "GitLab private token (with API scope enabled)", hide_input=True
+            )
+            self.gitlab_namespace_path = validate_or_prompt_path(
+                "GitLab parent group path (leave blank for a root level group)",
+                self.gitlab_namespace_path,
+                default="",
+                required=False,
+            )
+            self.gitlab_group_slug = slugify(
+                self.gitlab_group_slug
+                or click.prompt("GitLab group slug", default=self.project_slug)
+            )
+            self.quiet or (
+                self.gitlab_namespace_path == ""
+                and self.gitlab_url == GITLAB_URL_DEFAULT
+                and click.confirm(
+                    warning(
+                        f'Make sure the GitLab "{self.gitlab_group_slug}" group exists '
+                        "before proceeding. Continue?"
+                    ),
+                    abort=True,
+                )
+            )
+            if self.gitlab_group_owners is None:
+                self.gitlab_group_owners = click.prompt(
+                    "Comma-separated GitLab group owners", default=""
+                )
+            if self.gitlab_group_maintainers is None:
+                self.gitlab_group_maintainers = click.prompt(
+                    "Comma-separated GitLab group maintainers", default=""
+                )
+            if self.gitlab_group_developers is None:
+                self.gitlab_group_developers = click.prompt(
+                    "Comma-separated GitLab group developers", default=""
+                )
+
+    def set_storage(self):
+        """Set the storage options."""
+        if self.media_storage is None:
+            self.media_storage = click.prompt(
+                "Media storage",
+                default=MEDIA_STORAGE_DIGITALOCEAN_S3,
+                type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
+            ).lower()
+        self.store_secrets = bool(self.gitlab_url or self.vault_url)
+        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
+            self.set_digitalocean_spaces()
+        elif self.media_storage == MEDIA_STORAGE_AWS_S3:
+            self.set_aws_s3()
+        self.s3_access_id = validate_or_prompt_secret(
+            "S3 Access Key ID", self.s3_access_id
+        )
+        self.s3_secret_key = validate_or_prompt_secret(
+            "S3 Secret Access Key", self.s3_secret_key
+        )
+
+    def set_digitalocean_spaces(self):
+        """Set the DigitalOcean Spaces options."""
+        self.set_digitalocean_token()
+        self.digitalocean_token = validate_or_prompt_secret(
+            "DigitalOcean token", self.digitalocean_token
+        )
+        self.s3_region = self.s3_region or click.prompt(
             "DigitalOcean Spaces region",
             default=DIGITALOCEAN_SPACES_REGION_DEFAULT,
         )
-        s3_host = "digitaloceanspaces.com"
-        s3_bucket_name = ""
-    elif media_storage == MEDIA_STORAGE_AWS_S3:
-        digitalocean_token = ""
-        s3_region = s3_region or click.prompt(
+        self.s3_host = "digitaloceanspaces.com"
+        self.s3_bucket_name = ""
+
+    def set_aws_s3(self):
+        """Set the AWS S3 options."""
+        self.s3_region = self.s3_region or click.prompt(
             "AWS S3 region name",
             default=AWS_S3_REGION_DEFAULT,
         )
-        s3_host = ""
-        s3_bucket_name = s3_bucket_name or click.prompt(
+        self.s3_host = ""
+        self.s3_bucket_name = self.s3_bucket_name or click.prompt(
             "AWS S3 bucket name",
         )
-    s3_access_id = validate_or_prompt_secret("S3 Access Key ID", s3_access_id)
-    s3_secret_key = validate_or_prompt_secret("S3 Secret Access Key", s3_secret_key)
-    return (
-        digitalocean_token,
-        s3_region,
-        s3_host,
-        s3_access_id,
-        s3_secret_key,
-        s3_bucket_name,
-    )
+
+    def get_runner(self):
+        """Get the bootstrap runner instance."""
+        return Runner(
+            uid=self.uid,
+            gid=self.gid,
+            output_dir=str(self.output_dir.resolve()),
+            project_name=self.project_name,
+            project_slug=self.project_slug,
+            project_dirname=self.project_dirname,
+            service_dir=str(self.service_dir.resolve()),
+            backend_type=self.backend_type,
+            backend_service_slug=self.backend_service_slug,
+            backend_service_port=self.backend_service_port,
+            frontend_type=self.frontend_type,
+            frontend_service_slug=self.frontend_service_slug,
+            frontend_service_port=self.frontend_service_port,
+            deployment_type=self.deployment_type,
+            terraform_backend=self.terraform_backend,
+            terraform_cloud_hostname=self.terraform_cloud_hostname,
+            terraform_cloud_token=self.terraform_cloud_token,
+            terraform_cloud_organization=self.terraform_cloud_organization,
+            terraform_cloud_organization_create=self.terraform_cloud_organization_create,
+            terraform_cloud_admin_email=self.terraform_cloud_admin_email,
+            vault_token=self.vault_token,
+            vault_url=self.vault_url,
+            digitalocean_token=self.digitalocean_token,
+            kubernetes_cluster_ca_certificate=self.kubernetes_cluster_ca_certificate,
+            kubernetes_host=self.kubernetes_host,
+            kubernetes_token=self.kubernetes_token,
+            environments_distribution=self.environments_distribution,
+            project_domain=self.project_domain,
+            subdomain_dev=self.subdomain_dev,
+            subdomain_stage=self.subdomain_stage,
+            subdomain_prod=self.subdomain_prod,
+            subdomain_monitoring=self.subdomain_monitoring,
+            project_url_dev=self.project_url_dev,
+            project_url_stage=self.project_url_stage,
+            project_url_prod=self.project_url_prod,
+            letsencrypt_certificate_email=self.letsencrypt_certificate_email,
+            digitalocean_domain_create=self.digitalocean_domain_create,
+            digitalocean_dns_records_create=self.digitalocean_dns_records_create,
+            digitalocean_k8s_cluster_region=self.digitalocean_k8s_cluster_region,
+            digitalocean_database_cluster_region=self.digitalocean_database_cluster_region,
+            digitalocean_database_cluster_node_size=self.digitalocean_database_cluster_node_size,
+            postgres_image=self.postgres_image,
+            postgres_persistent_volume_capacity=self.postgres_persistent_volume_capacity,
+            postgres_persistent_volume_claim_capacity=self.postgres_persistent_volume_claim_capacity,
+            postgres_persistent_volume_host_path=self.postgres_persistent_volume_host_path,
+            use_redis=self.use_redis,
+            redis_image=self.redis_image,
+            digitalocean_redis_cluster_region=self.digitalocean_redis_cluster_region,
+            digitalocean_redis_cluster_node_size=self.digitalocean_redis_cluster_node_size,
+            sentry_org=self.sentry_org,
+            sentry_url=self.sentry_url,
+            backend_sentry_dsn=self.backend_sentry_dsn,
+            frontend_sentry_dsn=self.frontend_sentry_dsn,
+            sentry_auth_token=self.sentry_auth_token,
+            pact_broker_url=self.pact_broker_url,
+            pact_broker_username=self.pact_broker_username,
+            pact_broker_password=self.pact_broker_password,
+            media_storage=self.media_storage,
+            s3_region=self.s3_region,
+            s3_host=self.s3_host,
+            s3_access_id=self.s3_access_id,
+            s3_secret_key=self.s3_secret_key,
+            s3_bucket_name=self.s3_bucket_name,
+            gitlab_url=self.gitlab_url,
+            gitlab_private_token=self.gitlab_private_token,
+            gitlab_namespace_path=self.gitlab_namespace_path,
+            gitlab_group_slug=self.gitlab_group_slug,
+            gitlab_group_owners=self.gitlab_group_owners,
+            gitlab_group_maintainers=self.gitlab_group_maintainers,
+            gitlab_group_developers=self.gitlab_group_developers,
+            terraform_dir=self.terraform_dir,
+            logs_dir=self.logs_dir,
+        )

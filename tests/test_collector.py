@@ -11,7 +11,7 @@ from bootstrap.collector import (
     clean_deployment_type,
     clean_digitalocean_options,
     clean_domains,
-    clean_environment_distribution,
+    clean_environments_distribution,
     clean_frontend_service_slug,
     clean_frontend_type,
     clean_gitlab_data,
@@ -174,16 +174,16 @@ class TestBootstrapCollector(TestCase):
         with input("n"):
             self.assertEqual(clean_vault_data(None, None, True), (None, None))
 
-    def test_clean_environment_distribution(self):
-        """Test cleaning the environment distribution."""
-        self.assertEqual(clean_environment_distribution(None, "other-k8s"), "1")
+    def test_clean_environments_distribution(self):
+        """Test cleaning the environments distribution."""
+        self.assertEqual(clean_environments_distribution(None, "other-k8s"), "1")
         with input("1", ""):
             self.assertEqual(
-                clean_environment_distribution(None, "digitalocean-k8s"), "1"
+                clean_environments_distribution(None, "digitalocean-k8s"), "1"
             )
         with input("999", "3"):
             self.assertEqual(
-                clean_environment_distribution(None, "digitalocean-k8s"), "3"
+                clean_environments_distribution(None, "digitalocean-k8s"), "3"
             )
 
     def test_clean_kubernetes_credentials(self):

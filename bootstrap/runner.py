@@ -84,7 +84,7 @@ class Runner:
     kubernetes_cluster_ca_certificate: str | None = None
     kubernetes_host: str | None = None
     kubernetes_token: str | None = None
-    environment_distribution: str
+    environments_distribution: str
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -156,7 +156,7 @@ class Runner:
 
     def set_stacks(self):
         """Set the stacks."""
-        self.stacks = STACKS_CHOICES[self.environment_distribution]
+        self.stacks = STACKS_CHOICES[self.environments_distribution]
 
     def set_envs(self):
         """Set the envs."""
@@ -167,7 +167,7 @@ class Runner:
                 "prefix": self.subdomain_dev,
                 "slug": DEV_ENV_SLUG,
                 "stack_slug": DEV_ENV_STACK_CHOICES.get(
-                    self.environment_distribution, DEV_STACK_SLUG
+                    self.environments_distribution, DEV_STACK_SLUG
                 ),
                 "url": self.project_url_dev,
             },
@@ -177,7 +177,7 @@ class Runner:
                 "prefix": self.subdomain_stage,
                 "slug": STAGE_ENV_SLUG,
                 "stack_slug": STAGE_ENV_STACK_CHOICES.get(
-                    self.environment_distribution, STAGE_STACK_SLUG
+                    self.environments_distribution, STAGE_STACK_SLUG
                 ),
                 "url": self.project_url_stage,
             },
@@ -187,7 +187,7 @@ class Runner:
                 "prefix": self.subdomain_prod,
                 "slug": PROD_ENV_SLUG,
                 "stack_slug": PROD_ENV_STACK_CHOICES.get(
-                    self.environment_distribution, MAIN_STACK_SLUG
+                    self.environments_distribution, MAIN_STACK_SLUG
                 ),
                 "url": self.project_url_prod,
             },
@@ -520,7 +520,7 @@ class Runner:
                 "backend_service_slug": self.backend_service_slug,
                 "backend_type": self.backend_type,
                 "deployment_type": self.deployment_type,
-                "environment_distribution": self.environment_distribution,
+                "environments_distribution": self.environments_distribution,
                 "frontend_service_port": self.frontend_service_port,
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
@@ -772,7 +772,7 @@ class Runner:
         )
         options = {
             "deployment_type": self.deployment_type,
-            "environment_distribution": self.environment_distribution,
+            "environments_distribution": self.environments_distribution,
             "gid": self.gid,
             "gitlab_url": self.gitlab_url,
             "gitlab_group_path": str(

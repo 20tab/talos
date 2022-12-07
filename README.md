@@ -238,14 +238,14 @@ The following arguments can be appended to the Docker and shell commands
 Disabled args
 `--terraform-cloud-organization-create-skip`
 
-#### Environment distribution
+#### Environments distribution
 
 Choose the environments distribution:
 Value | Description | Argument
 ------------- | ------------- | -------------
-1 | All environments share the same stack (Default) | `--environment-distribution=1`
-2 | Dev and Stage environments share the same stack, Prod has its own | `--environment-distribution=2`
-3 | Each environment has its own stack | `--environment-distribution=3`
+1 | All environments share the same stack (Default) | `--environments-distribution=1`
+2 | Dev and Stage environments share the same stack, Prod has its own | `--environments-distribution=2`
+3 | Each environment has its own stack | `--environments-distribution=3`
 
 #### Project Domain
 
