@@ -763,8 +763,6 @@ class Runner:
             [
                 "git",
                 "clone",
-                "-b",
-                "feature/vault-refactoring",
                 template_url,
                 subrepo_dir,
                 "-q",
