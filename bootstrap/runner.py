@@ -122,7 +122,7 @@ class Runner:
     s3_secret_key: str | None = None
     s3_bucket_name: str | None = None
     gitlab_url: str | None = None
-    gitlab_private_token: str | None = None
+    gitlab_token: str | None = None
     gitlab_namespace_path: str | None = None
     gitlab_group_slug: str | None = None
     gitlab_group_owners: str | None = None
@@ -556,7 +556,7 @@ class Runner:
         click.echo(info("...creating the GitLab resources with Terraform"))
         env = dict(
             TF_VAR_gitlab_url=self.gitlab_url,
-            TF_VAR_gitlab_token=self.gitlab_private_token,
+            TF_VAR_gitlab_token=self.gitlab_token,
             TF_VAR_group_maintainers=self.gitlab_group_maintainers,
             TF_VAR_group_name=self.project_name,
             TF_VAR_group_namespace_path=self.gitlab_namespace_path,
@@ -776,7 +776,7 @@ class Runner:
             "gitlab_group_path": str(
                 Path(self.gitlab_namespace_path) / self.gitlab_group_slug
             ),
-            "gitlab_private_token": self.gitlab_private_token,
+            "gitlab_token": self.gitlab_token,
             "logs_dir": str(self.logs_dir.resolve()),
             "output_dir": str(self.service_dir.resolve()),
             "project_dirname": service_slug,

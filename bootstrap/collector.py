@@ -1,6 +1,6 @@
 """Collect options to initialize a template based web project."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from shutil import rmtree
 
@@ -47,19 +47,18 @@ from bootstrap.runner import Runner
 class Collector:
     """The bootstrap CLI options collector."""
 
-    output_dir: Path
-    project_name: str
-    project_slug: str
-    project_dirname: str
-    service_dir: Path | None = None
-    backend_type: str
+    output_dir: Path = Path(".")
+    project_name: str | None = None
+    project_slug: str | None = None
+    project_dirname: str | None = None
+    backend_type: str | None = None
     backend_service_slug: str | None = None
     backend_service_port: int | None = None
-    frontend_type: str
+    frontend_type: str | None = None
     frontend_service_slug: str | None = None
     frontend_service_port: int | None = None
-    deployment_type: str
-    terraform_backend: str
+    deployment_type: str | None = None
+    terraform_backend: str | None = None
     terraform_cloud_hostname: str | None = None
     terraform_cloud_token: str | None = None
     terraform_cloud_organization: str | None = None
@@ -71,16 +70,15 @@ class Collector:
     kubernetes_cluster_ca_certificate: str | None = None
     kubernetes_host: str | None = None
     kubernetes_token: str | None = None
-    environments_distribution: str
-    use_monitoring: bool = False
+    environments_distribution: str | None = None
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
     subdomain_prod: str | None = None
     subdomain_monitoring: str | None = None
-    project_url_dev: str = ""
-    project_url_stage: str = ""
-    project_url_prod: str = ""
+    project_url_dev: str | None = None
+    project_url_stage: str | None = None
+    project_url_prod: str | None = None
     letsencrypt_certificate_email: str | None = None
     digitalocean_domain_create: bool | None = None
     digitalocean_dns_records_create: bool | None = None
@@ -91,7 +89,7 @@ class Collector:
     postgres_persistent_volume_capacity: str | None = None
     postgres_persistent_volume_claim_capacity: str | None = None
     postgres_persistent_volume_host_path: str | None = None
-    use_redis: bool = False
+    use_redis: bool | None = None
     redis_image: str | None = None
     digitalocean_redis_cluster_region: str | None = None
     digitalocean_redis_cluster_node_size: str | None = None
@@ -103,14 +101,14 @@ class Collector:
     pact_broker_url: str | None = None
     pact_broker_username: str | None = None
     pact_broker_password: str | None = None
-    media_storage: str
+    media_storage: str | None = None
     s3_region: str | None = None
     s3_host: str | None = None
     s3_access_id: str | None = None
     s3_secret_key: str | None = None
     s3_bucket_name: str | None = None
     gitlab_url: str | None = None
-    gitlab_private_token: str | None = None
+    gitlab_token: str | None = None
     gitlab_namespace_path: str | None = None
     gitlab_group_slug: str | None = None
     gitlab_group_owners: str | None = None
@@ -120,33 +118,29 @@ class Collector:
     gid: int | None = None
     terraform_dir: Path | None = None
     logs_dir: Path | None = None
-    quiet: bool | None = False
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the instance."""
-        self.digitalocean_enabled = False
-        self.other_kubernetes_enabled = False
-        super().__init__(*args, **kwargs)
+    quiet: bool = False
 
     def __post_init__(self):
         """Finalize initialization."""
-        self.collect()
+        self._service_dir = None
+        self._digitalocean_enabled = False
+        self._other_kubernetes_enabled = False
 
     def collect(self):
         """Collect options."""
         self.set_project_name()
         self.set_project_slug()
         self.set_project_dirname()
-        self.set_project_service_dir()
+        self.set_service_dir()
         self.set_backend_service()
         self.set_frontend_service()
-        self.set_use_monitoring()
         self.set_use_redis()
         self.set_terraform()
         self.set_vault()
         self.set_deployment_type()
         self.set_environments_distribution()
         self.set_domain_and_urls()
+        self.set_deployment()
         self.set_sentry()
         self.set_pact()
         self.set_gitlab()
@@ -167,8 +161,8 @@ class Collector:
         """Set the project dirname option."""
         self.project_dirname = slugify(self.project_slug, separator="")
 
-    def set_project_service_dir(self):
-        """Set the project service dir option."""
+    def set_service_dir(self):
+        """Set the service dir option."""
         service_dir = self.output_dir / self.project_dirname
         if service_dir.is_dir() and click.confirm(
             warning(
@@ -178,7 +172,7 @@ class Collector:
             abort=True,
         ):
             rmtree(service_dir)
-        self.service_dir = service_dir
+        self._service_dir = service_dir
 
     def set_backend_service(self):
         """Set the backend service options."""
@@ -208,13 +202,6 @@ class Collector:
                 self.frontend_service_slug
                 or click.prompt("Frontend service slug", default="frontend"),
                 separator="",
-            )
-
-    def set_use_monitoring(self):
-        """Set the use monitoring option."""
-        if self.use_monitoring is None:
-            self.use_monitoring = click.confirm(
-                warning("Do you want to enable the monitoring stack?"), default=False
             )
 
     def set_use_redis(self):
@@ -322,7 +309,9 @@ class Collector:
             "Production domain prefix", default="www"
         )
         self.project_url_prod = f"https://{self.subdomain_prod}.{self.project_domain}"
-        if self.use_monitoring:
+        if self.subdomain_monitoring is not None or click.confirm(
+            warning("Do you want to enable the monitoring stack?"), default=False
+        ):
             self.subdomain_monitoring = self.subdomain_monitoring or click.prompt(
                 "Monitorng domain prefix", default="logs"
             )
@@ -355,7 +344,7 @@ class Collector:
 
     def set_digitalocean(self):
         """Set the DigitalOcean options."""
-        self.digitalocean_enabled = True
+        self._digitalocean_enabled = True
         self.set_digitalocean_token()
         # TODO: these settings should be different for each stack
         if self.digitalocean_domain_create is None:
@@ -400,7 +389,7 @@ class Collector:
 
     def set_kubernetes(self):
         """Set the Kubernetes options."""
-        self.other_kubernetes_enabled = True
+        self._other_kubernetes_enabled = True
         # TODO: these settings should be different for each stack
         self.kubernetes_cluster_ca_certificate = (
             self.kubernetes_cluster_ca_certificate
@@ -495,8 +484,8 @@ class Collector:
             self.gitlab_url = validate_or_prompt_url(
                 "GitLab URL", self.gitlab_url, default=GITLAB_URL_DEFAULT
             )
-            self.gitlab_private_token = self.gitlab_private_token or click.prompt(
-                "GitLab private token (with API scope enabled)", hide_input=True
+            self.gitlab_token = self.gitlab_token or click.prompt(
+                "GitLab access token (with API scope enabled)", hide_input=True
             )
             self.gitlab_namespace_path = validate_or_prompt_path(
                 "GitLab parent group path (leave blank for a root level group)",
@@ -581,11 +570,11 @@ class Collector:
         return Runner(
             uid=self.uid,
             gid=self.gid,
-            output_dir=str(self.output_dir.resolve()),
+            output_dir=self.output_dir,
             project_name=self.project_name,
             project_slug=self.project_slug,
             project_dirname=self.project_dirname,
-            service_dir=str(self.service_dir.resolve()),
+            service_dir=self._service_dir,
             backend_type=self.backend_type,
             backend_service_slug=self.backend_service_slug,
             backend_service_port=self.backend_service_port,
@@ -643,7 +632,7 @@ class Collector:
             s3_secret_key=self.s3_secret_key,
             s3_bucket_name=self.s3_bucket_name,
             gitlab_url=self.gitlab_url,
-            gitlab_private_token=self.gitlab_private_token,
+            gitlab_token=self.gitlab_token,
             gitlab_namespace_path=self.gitlab_namespace_path,
             gitlab_group_slug=self.gitlab_group_slug,
             gitlab_group_owners=self.gitlab_group_owners,
@@ -652,3 +641,7 @@ class Collector:
             terraform_dir=self.terraform_dir,
             logs_dir=self.logs_dir,
         )
+
+    def launch_runner(self):
+        """Launch a bootstrap runner with the collected options."""
+        self.get_runner().run()

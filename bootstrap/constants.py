@@ -156,7 +156,7 @@ DUMP_EXCLUDED_OPTIONS = (
     "backend_sentry_dsn",
     "digitalocean_token",
     "frontend_sentry_dsn",
-    "gitlab_private_token",
+    "gitlab_token",
     "kubernetes_token",
     "pact_broker_password",
     "s3_access_id",

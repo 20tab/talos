@@ -1,7 +1,9 @@
 """Web project initialization helpers."""
 
 import json
+import re
 from functools import partial
+from pathlib import Path
 from time import time
 
 import click
@@ -13,6 +15,16 @@ from bootstrap.constants import DUMP_EXCLUDED_OPTIONS, DUMPS_DIR
 error = partial(click.style, fg="red")
 
 warning = partial(click.style, fg="yellow")
+
+
+class CollectorJSONEncoder(json.JSONEncoder):
+    """A JSON encoder supporting bootstrap collector options types."""
+
+    def default(self, o):
+        """Perform default serialization."""
+        if isinstance(o, Path):
+            return str(o.resolve())
+        return super().default(o)
 
 
 def format_gitlab_variable(value, masked=False, protected=True):
@@ -47,6 +59,7 @@ def dump_options(options):
         dump_path.write_text(
             json.dumps(
                 {k: v for k, v in options.items() if k not in DUMP_EXCLUDED_OPTIONS},
+                cls=CollectorJSONEncoder,
                 indent=2,
             )
         )

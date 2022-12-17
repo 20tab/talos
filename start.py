@@ -2,11 +2,12 @@
 """Initialize a template based web project."""
 
 import os
+from dataclasses import asdict
 from pathlib import Path
 
 import click
 
-from bootstrap.collector import collect
+from bootstrap.collector import Collector
 from bootstrap.constants import (
     DEPLOYMENT_TYPE_CHOICES,
     ENVIRONMENTS_DISTRIBUTION_CHOICES,
@@ -16,9 +17,6 @@ from bootstrap.constants import (
 )
 from bootstrap.exceptions import BootstrapError
 from bootstrap.helpers import dump_options, load_options, slugify_option
-from bootstrap.runner import Runner
-
-OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 
 
 @click.command()
@@ -26,7 +24,8 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gid", type=int)
 @click.option(
     "--output-dir",
-    default=OUTPUT_DIR,
+    default=".",
+    envvar="OUTPUT_BASE_DIR",
     type=click.Path(
         exists=True, path_type=Path, file_okay=False, readable=True, writable=True
     ),
@@ -114,7 +113,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--s3-secret-key")
 @click.option("--s3-bucket-name")
 @click.option("--gitlab-url")
-@click.option("--gitlab-private-token", envvar=GITLAB_TOKEN_ENV_VAR)
+@click.option("--gitlab-token", envvar=GITLAB_TOKEN_ENV_VAR)
 @click.option("--gitlab-namespace-path")
 @click.option("--gitlab-group-slug")
 @click.option("--gitlab-group-owners")
@@ -127,9 +126,10 @@ def main(**options):
     """Run the setup."""
     options.update(load_options())
     try:
-        options = collect(**options)
-        dump_options(options)
-        Runner(**options).run()
+        collector = Collector(**options)
+        collector.collect()
+        dump_options(asdict(collector))
+        collector.launch_runner()
     except BootstrapError as e:
         raise click.Abort() from e
 
