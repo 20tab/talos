@@ -1,101 +1,30 @@
-locals {
-  basic_auth_ready = alltrue(
-    [
-      var.basic_auth_username != "",
-      var.basic_auth_password != ""
-    ]
-  )
-}
-
 terraform {
   required_providers {
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.13"
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.6"
     }
   }
 }
 
-/* Metrics Ingress Route */
+/* Metrics Server */
 
-resource "kubernetes_secret_v1" "metrics_basic_auth" {
-  count = local.basic_auth_ready ? 1 : 0
+resource "helm_release" "metrics_server" {
+  name              = "metrics-server"
+  namespace         = "metrics-server"
+  repository        = "https://kubernetes-sigs.github.io/metrics-server"
+  chart             = "metrics-server"
+  create_namespace  = true
+  version           = "3.8.2"
 
-  metadata {
-    name      = "metrics-basic-auth"
-    namespace = "kube-system"
-  }
-
-  data = {
-    username = var.basic_auth_username
-    password = var.basic_auth_password
-  }
-
-  type = "kubernetes.io/basic-auth"
+  values = [file("${path.module}/metrics-server/values.yaml")]
 }
 
-resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
-  count = local.basic_auth_ready ? 1 : 0
+/* Kube State Metrics */
 
-  manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
-    kind       = "Middleware"
-    metadata = {
-      name      = "metrics-basic-auth-middleware"
-      namespace = "kube-system"
-    }
-    spec = {
-      basicAuth = {
-        removeHeader = true
-        secret       = kubernetes_secret_v1.metrics_basic_auth[0].metadata[0].name
-      }
-    }
-  }
-}
-
-resource "kubernetes_manifest" "metrics_ingress_route" {
-
-  manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
-    kind       = "IngressRoute"
-    metadata = {
-      name      = "metrics"
-      namespace = "kube-system"
-    }
-    spec = merge(
-      {
-        entryPoints = var.tls_secret_name != "" ? ["websecure"] : ["web"]
-        routes = concat(
-          local.basic_auth_ready ? [
-            {
-              kind        = "Rule"
-              match       = "Host(`${var.project_domain}`) && PathPrefix(`/metrics`)"
-              middlewares = [{ "name" : "metrics-basic-auth-middleware" }]
-              services = [
-                {
-                  name = "kube-state-metrics"
-                  port = 8080
-                }
-              ]
-          }] : [],
-          [{
-            kind        = "Rule"
-            match       = "Host(`${var.project_domain}`) && PathPrefix(`/healthz`)"
-            middlewares = []
-            services = [
-              {
-                name = "kube-state-metrics"
-                port = 8080
-              }
-            ]
-            }
-        ])
-      },
-      var.tls_secret_name != "" ? {
-        tls = {
-          secretName = var.tls_secret_name
-        }
-      } : {}
-    )
-  }
+resource "helm_release" "kube_state_metrics" {
+  name       = "kube-state-metrics"
+  namespace  = "kube-system"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "kube-state-metrics"
 }

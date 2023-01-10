@@ -1,0 +1,52 @@
+## Loki stack
+## https://github.com/digitalocean/Kubernetes-Starter-Kit-Developers/blob/main/04-setup-observability/assets/manifests/loki-stack-values-v2.6.4.yaml
+
+loki:
+  enabled: true
+  config:
+    schema_config:
+      configs:
+        - from: "2020-10-24"
+          store: boltdb-shipper
+          object_store: aws
+          schema: v11
+          index:
+            prefix: index_
+            period: 24h
+    storage_config:
+      boltdb_shipper:
+        cache_ttl: 24h # Can be increased for faster performance over longer query periods, uses more disk space
+        shared_store: aws
+      aws:
+        # bucketnames: <YOUR_DO_SPACES_BUCKET_NAME_HERE>
+        # endpoint: <YOUR_DO_SPACES_BUCKET_ENDPOINT_HERE>  # e.g.: nyc1.digitaloceanspaces.com
+        # region: <YOUR_DO_SPACES_BUCKET_REGION_HERE>      # e.g.: nyc1
+        # access_key_id: <YOUR_DO_SPACES_ACCESS_KEY_HERE>
+        # secret_access_key: <YOURDO_SPACES_SECRET_KEY_HERE>
+        s3forcepathstyle: true
+    chunk_store_config:
+        max_look_back_period: "4400h"
+    table_manager:
+        retention_deletes_enabled: true
+        retention_period: "4400h"
+    limits_config:
+        max_query_length: "2200h"
+
+  persistence:
+    enabled: true
+    storageClassName: do-block-storage
+    accessModes: ["ReadWriteOnce"]
+    size: 10Gi
+
+
+promtail:
+  enabled: true
+
+fluent-bit:
+  enabled: false
+
+grafana:
+  enabled: false
+
+prometheus:
+  enabled: false
