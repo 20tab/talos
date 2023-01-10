@@ -3,13 +3,17 @@
 .PHONY: check
 check:  ## Check code formatting and import sorting
 	python3 -m black --check .
-	python3 -m ruff .
+	ruff .
 	python3 -m mypy .
+
+.PHONY: checkov
+checkov:  ## Run IaC configuration test with checkov
+	docker run --rm --tty --volume $$PWD:/app --workdir /app bridgecrew/checkov
 
 .PHONY: fix
 fix:  ## Fix code formatting, linting and sorting imports
 	python3 -m black .
-	python3 -m ruff --fix .
+	ruff --fix .
 	python3 -m mypy .
 
 .PHONY: local

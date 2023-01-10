@@ -162,6 +162,7 @@ kubeconfig.yaml
 {{ cookiecutter.frontend_service_slug }}/{% endif %}
 
 # Locals
+.checkov
 *.local.yaml
 
 # Terraform

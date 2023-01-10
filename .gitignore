@@ -161,7 +161,7 @@ cython_debug/
 .DS_Store
 
 # Ruff
- .ruff_cache
+.ruff_cache
 
 # Terraform
 .terraform*
@@ -171,6 +171,7 @@ terraform.tfstate.backup
 terraform.tfvars
 
 # Other
-*.bak
-.subrepos
+.checkov
 .dumps/
+.subrepos
+*.bak

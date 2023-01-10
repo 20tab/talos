@@ -2,6 +2,11 @@
 
 c = {{ cookiecutter.project_slug }}_backend
 p = shell
+
+.PHONY: checkov
+checkov:  ## Run IaC configuration test with checkov
+	docker run --rm --tty --volume $$PWD:/app --workdir /app bridgecrew/checkov
+
 .PHONY: django
 django_shell:  ## Exec django command
 	docker exec -it $(c) python manage.py $(p)

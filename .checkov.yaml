@@ -1,0 +1,11 @@
+directory: .
+download-external-modules: false
+evaluate-variables: true
+output: [cli]
+output-file-path: .checkov
+quiet: true
+skip-framework: [gitlab_ci,kubernetes,sca_image,sca_package,terraform_plan]
+soft-fail: true
+skip-path: [
+    tests,
+]
