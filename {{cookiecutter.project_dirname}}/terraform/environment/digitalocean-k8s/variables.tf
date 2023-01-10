@@ -62,7 +62,7 @@ variable "database_connection_pool_size" {
 variable "database_dumps_enabled" {
   description = "Enable database dumps."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "digitalocean_spaces_bucket_available" {
