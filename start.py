@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Initialize a template based web project."""
 
-import os
 from dataclasses import asdict
 from pathlib import Path
 

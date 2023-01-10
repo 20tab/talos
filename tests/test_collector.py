@@ -10,7 +10,7 @@ from bootstrap.collector import Collector
 
 @contextmanager
 def input(*cmds):
-    """Mock the input."""
+    """Mock the user input."""
     visible_cmds = "\n".join(c for c in cmds if isinstance(c, str))
     hidden_cmds = [c["hidden"] for c in cmds if isinstance(c, dict) and "hidden" in c]
     with mock.patch("sys.stdin", StringIO(f"{visible_cmds}\n")), mock.patch(
@@ -27,6 +27,7 @@ class TestBootstrapCollector(TestCase):
     def test_project_name_from_input(self):
         """Test collecting the project name from user input."""
         collector = Collector()
+        self.assertIsNone(collector.project_name)
         with input("My New Project"):
             collector.set_project_name()
         self.assertEqual(collector.project_name, "My New Project")
@@ -34,12 +35,16 @@ class TestBootstrapCollector(TestCase):
     def test_project_name_from_options(self):
         """Test collecting the project name from the collected options."""
         collector = Collector(project_name="My Project")
-        collector.set_project_name()
         self.assertEqual(collector.project_name, "My Project")
+        with mock.patch("bootstrap.collector.click.confirm") as mocked_prompt:
+            collector.set_project_name()
+        self.assertEqual(collector.project_name, "My Project")
+        mocked_prompt.assert_not_called()
 
     def test_project_slug_from_default(self):
         """Test collecting the project slug from its default value."""
         collector = Collector(project_name="My Project")
+        self.assertIsNone(collector.project_slug)
         with input(""):
             collector.set_project_slug()
         self.assertEqual(collector.project_slug, "my-project")
@@ -47,6 +52,7 @@ class TestBootstrapCollector(TestCase):
     def test_project_slug_from_input(self):
         """Test collecting the project slug from user input."""
         collector = Collector(project_name="Test Project")
+        self.assertIsNone(collector.project_slug)
         with input("My New Project Slug"):
             collector.set_project_slug()
         self.assertEqual(collector.project_slug, "my-new-project-slug")
@@ -54,12 +60,16 @@ class TestBootstrapCollector(TestCase):
     def test_project_slug_from_options(self):
         """Test collecting the project slug from the collected options."""
         collector = Collector(project_name="My Project", project_slug="my-new-project")
-        collector.set_project_slug()
         self.assertEqual(collector.project_slug, "my-new-project")
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_project_slug()
+        self.assertEqual(collector.project_slug, "my-new-project")
+        mocked_prompt.assert_not_called()
 
     def test_project_dirname(self):
         """Test collecting the project dirname."""
         collector = Collector(project_slug="test-project")
+        self.assertIsNone(collector.project_dirname)
         collector.set_project_dirname()
         self.assertEqual(collector.project_dirname, "testproject")
 
@@ -72,6 +82,7 @@ class TestBootstrapCollector(TestCase):
         service_dir.is_dir.return_value = False
         output_dir.__truediv__.return_value = service_dir
         collector = Collector(project_slug="my-project")
+        self.assertIsNone(collector._service_dir)
         collector.output_dir = output_dir
         collector.set_project_dirname()
         collector.set_service_dir()
@@ -87,6 +98,7 @@ class TestBootstrapCollector(TestCase):
         service_dir.is_dir.return_value = True
         output_dir.__truediv__.return_value = service_dir
         collector = Collector(project_slug="my-project")
+        self.assertIsNone(collector._service_dir)
         collector.output_dir = output_dir
         collector.set_project_dirname()
         with mock.patch("bootstrap.collector.rmtree") as mocked_rmtree, input("y"):
@@ -96,140 +108,266 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector._service_dir, service_dir)
 
     def test_backend_service_none(self):
-        """Test setting the 'none' backend service."""
+        """Test setting up the 'none' backend service."""
         collector = Collector(backend_type="none")
-        collector.set_backend_service()
         self.assertEqual(collector.backend_type, "none")
+        self.assertIsNone(collector.backend_service_slug)
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_backend_service()
+        self.assertEqual(collector.backend_type, "none")
+        self.assertIsNone(collector.backend_service_slug)
+        mocked_prompt.assert_not_called()
 
     def test_backend_service_django_and_slug_from_default(self):
-        """Test setting the 'django' backend service with default slug."""
+        """Test setting up the 'django' backend service with default slug."""
         collector = Collector(backend_type="django")
+        self.assertEqual(collector.backend_type, "django")
+        self.assertIsNone(collector.backend_service_slug)
         with input(""):
             collector.set_backend_service()
         self.assertEqual(collector.backend_type, "django")
         self.assertEqual(collector.backend_service_slug, "backend")
 
     def test_backend_service_django_and_slug_from_input(self):
-        """Test setting the 'django' backend service taking slug from user input."""
+        """Test setting up the 'django' backend service taking slug from user input."""
         collector = Collector(backend_type="django")
+        self.assertEqual(collector.backend_type, "django")
+        self.assertIsNone(collector.backend_service_slug)
         with input("my-django-service"):
             collector.set_backend_service()
+        self.assertEqual(collector.backend_type, "django")
         self.assertEqual(collector.backend_service_slug, "mydjangoservice")
 
     def test_backend_service_invalid(self):
-        """Test trying to set an invalid backend service type."""
+        """Test trying to set up an invalid backend service type."""
         collector = Collector(backend_type="bad-type")
+        self.assertEqual(collector.backend_type, "bad-type")
+        self.assertIsNone(collector.backend_service_slug)
         with input("another-bad-type", "yet-another-bad-type", "django", ""):
             collector.set_backend_service()
         self.assertEqual(collector.backend_type, "django")
         self.assertEqual(collector.backend_service_slug, "backend")
 
     def test_frontend_service_none(self):
-        """Test setting the 'none' frontend service."""
+        """Test setting up the 'none' frontend service."""
         collector = Collector(frontend_type="none")
-        collector.set_frontend_service()
         self.assertEqual(collector.frontend_type, "none")
+        self.assertIsNone(collector.frontend_service_slug)
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_frontend_service()
+        self.assertEqual(collector.frontend_type, "none")
+        self.assertIsNone(collector.frontend_service_slug)
+        mocked_prompt.assert_not_called()
 
     def test_frontend_service_nextjs_and_slug_from_default(self):
-        """Test setting the 'nextjs' frontend service with default slug."""
+        """Test setting up the 'nextjs' frontend service with default slug."""
         collector = Collector(frontend_type="nextjs")
+        self.assertEqual(collector.frontend_type, "nextjs")
+        self.assertIsNone(collector.frontend_service_slug)
         with input(""):
             collector.set_frontend_service()
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertEqual(collector.frontend_service_slug, "frontend")
 
     def test_frontend_service_nextjs_and_slug_from_input(self):
-        """Test setting the 'nextjs' frontend service taking slug from user input."""
+        """Test setting up the 'nextjs' frontend service taking slug from user input."""
         collector = Collector(frontend_type="nextjs")
+        self.assertEqual(collector.frontend_type, "nextjs")
+        self.assertIsNone(collector.frontend_service_slug)
         with input("my-nextjs-service"):
             collector.set_frontend_service()
+        self.assertEqual(collector.frontend_type, "nextjs")
         self.assertEqual(collector.frontend_service_slug, "mynextjsservice")
 
     def test_frontend_service_invalid(self):
-        """Test trying to set an invalid frontend service type."""
+        """Test trying to set up an invalid frontend service type."""
         collector = Collector(frontend_type="bad-type")
+        self.assertEqual(collector.frontend_type, "bad-type")
+        self.assertIsNone(collector.frontend_service_slug)
         with input("another-bad-type", "yet-another-bad-type", "nextjs", ""):
             collector.set_frontend_service()
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertEqual(collector.frontend_service_slug, "frontend")
 
-    # def test_clean_deployment_type(self):
-    #     """Test cleaning the deployment type."""
-    #     with input(""):
-    #         self.assertEqual(clean_deployment_type(None), "digitalocean-k8s")
-    #     with input("non-existing", ""):
-    #         self.assertEqual(clean_deployment_type(None), "digitalocean-k8s")
+    def test_use_redis_from_input(self):
+        """Test setting the `use_redis` flag from user input."""
+        collector = Collector()
+        self.assertIsNone(collector.use_redis)
+        with input("y"):
+            collector.set_use_redis()
+        self.assertTrue(collector.use_redis)
 
-    # def test_clean_terraform_backend(self):
-    #     """Test cleaning the Terraform ."""
-    #     self.assertEqual(
-    #         clean_terraform_backend("gitlab", None, None, None, None, None),
-    #         ("gitlab", None, None, None, None, None),
-    #     )
-    #     with input("gitlab"):
-    #         self.assertEqual(
-    #             clean_terraform_backend("wrong-backend", None, None, None, None, None),
-    #             ("gitlab", None, None, None, None, None),
-    #         )
-    #     with input("terraform-cloud", "", "myOrg", "y", "bad-email", "admin@test.com"):
-    #         self.assertEqual(
-    #             clean_terraform_backend(
-    #                 "wrong-backend", None, "mytfcT0k3N", None, None, None
-    #             ),
-    #             (
-    #                 "terraform-cloud",
-    #                 "app.terraform.io",
-    #                 "mytfcT0k3N",
-    #                 "myOrg",
-    #                 True,
-    #                 "admin@test.com",
-    #             ),
-    #         )
-    #     with input(
-    #         "terraform-cloud",
-    #         "tfc.mydomain.com",
-    #         {"hidden": "mytfcT0k3N"},
-    #         "myOrg",
-    #         "n",
-    #         None,
-    #     ):
-    #         self.assertEqual(
-    #             clean_terraform_backend("wrong-backend", None, None, None, None, None),
-    #             (
-    #                 "terraform-cloud",
-    #                 "tfc.mydomain.com",
-    #                 "mytfcT0k3N",
-    #                 "myOrg",
-    #                 False,
-    #                 "",
-    #             ),
-    #         )
+    def test_use_redis_from_options(self):
+        """Test setting the `use_redis` flag from user input."""
+        collector = Collector(use_redis=False)
+        self.assertFalse(collector.use_redis)
+        with mock.patch("bootstrap.collector.click.confirm") as mocked_confirm:
+            collector.set_use_redis()
+        self.assertFalse(collector.use_redis)
+        mocked_confirm.assert_not_called()
 
-    # def test_clean_vault_data(self):
-    #     """Test cleaning the Vault data ."""
-    #     self.assertEqual(
-    #         clean_vault_data("v4UlTtok3N", "https://vault.test.com", True),
-    #         ("v4UlTtok3N", "https://vault.test.com"),
-    #     )
-    #     with input("y", {"hidden": "v4UlTtok3N"}, "https://vault.test.com"):
-    #         self.assertEqual(
-    #             clean_vault_data(None, None, True),
-    #             ("v4UlTtok3N", "https://vault.test.com"),
-    #         )
-    #     with input("y", {"hidden": "v4UlTtok3N"}, "y", "https://vault.test.com"):
-    #         self.assertEqual(
-    #             clean_vault_data(None, None, False),
-    #             ("v4UlTtok3N", "https://vault.test.com"),
-    #         )
-    #     with input(
-    #         "y", {"hidden": "v4UlTtok3N"}, "y", "bad_address", "https://vault.test.com"
-    #     ):
-    #         self.assertEqual(
-    #             clean_vault_data(None, None, False),
-    #             ("v4UlTtok3N", "https://vault.test.com"),
-    #         )
-    #     with input("n"):
-    #         self.assertEqual(clean_vault_data(None, None, True), (None, None))
+    def test_terraform_backend_from_default(self):
+        """Test setting the Terraform backend from its default value."""
+        collector = Collector()
+        self.assertIsNone(collector.terraform_backend)
+        collector.set_terraform_cloud = mock.MagicMock()
+        with input(""):
+            collector.set_terraform()
+        self.assertEqual(collector.terraform_backend, "terraform-cloud")
+        collector.set_terraform_cloud.assert_called_once()
+
+    def test_terraform_backend_from_input(self):
+        """Test setting the Terraform backend from user input."""
+        collector = Collector()
+        self.assertIsNone(collector.terraform_backend)
+        collector.set_terraform_cloud = mock.MagicMock()
+        with input("bad-tf-backend", "another-bad-tf-backend", "gitlab"):
+            collector.set_terraform()
+        self.assertEqual(collector.terraform_backend, "gitlab")
+        collector.set_terraform_cloud.assert_not_called()
+
+    def test_terraform_backend_from_options(self):
+        """Test setting the Terraform backend from the collected options."""
+        collector = Collector(terraform_backend="terraform-cloud")
+        self.assertEqual(collector.terraform_backend, "terraform-cloud")
+        collector.set_terraform_cloud = mock.MagicMock()
+        with mock.patch("bootstrap.collector.click") as mocked_click:
+            collector.set_terraform()
+        self.assertEqual(collector.terraform_backend, "terraform-cloud")
+        mocked_click.prompt.assert_not_called()
+        collector.set_terraform_cloud.assert_called_once()
+
+    def test_terraform_cloud_from_input(self):
+        """Test setting up Terraform Cloud from user input."""
+        collector = Collector(terraform_backend="terraform-cloud")
+        self.assertIsNone(collector.terraform_cloud_hostname)
+        self.assertIsNone(collector.terraform_cloud_token)
+        self.assertIsNone(collector.terraform_cloud_organization)
+        self.assertIsNone(collector.terraform_cloud_organization_create)
+        self.assertIsNone(collector.terraform_cloud_admin_email)
+        with input(
+            "",
+            {"hidden": "mytfcT0k3N"},
+            "myTFCOrg",
+            "y",
+            "bad-email",
+            "admin@test.com",
+        ):
+            collector.set_terraform_cloud()
+        self.assertEqual(collector.terraform_cloud_hostname, "app.terraform.io")
+        self.assertEqual(collector.terraform_cloud_token, "mytfcT0k3N")
+        self.assertEqual(collector.terraform_cloud_organization, "myTFCOrg")
+        self.assertTrue(collector.terraform_cloud_organization_create)
+        self.assertEqual(collector.terraform_cloud_admin_email, "admin@test.com")
+
+    def test_terraform_cloud_from_options(self):
+        """Test setting up Terraform Cloud from the collected options."""
+        collector = Collector(
+            terraform_backend="terraform-cloud",
+            terraform_cloud_hostname="app.terraform.io",
+            terraform_cloud_token="mytfcT0k3N",
+            terraform_cloud_organization="myTFCOrg",
+            terraform_cloud_organization_create=True,
+            terraform_cloud_admin_email="admin@test.com",
+        )
+        self.assertEqual(collector.terraform_cloud_hostname, "app.terraform.io")
+        self.assertEqual(collector.terraform_cloud_token, "mytfcT0k3N")
+        self.assertEqual(collector.terraform_cloud_organization, "myTFCOrg")
+        self.assertTrue(collector.terraform_cloud_organization_create)
+        self.assertEqual(collector.terraform_cloud_admin_email, "admin@test.com")
+        with mock.patch("bootstrap.collector.click") as mocked_click:
+            collector.set_terraform_cloud()
+        self.assertEqual(collector.terraform_cloud_hostname, "app.terraform.io")
+        self.assertEqual(collector.terraform_cloud_token, "mytfcT0k3N")
+        self.assertEqual(collector.terraform_cloud_organization, "myTFCOrg")
+        self.assertTrue(collector.terraform_cloud_organization_create)
+        self.assertEqual(collector.terraform_cloud_admin_email, "admin@test.com")
+        mocked_click.prompt.assert_not_called()
+
+    def test_terraform_cloud_from_input_and_options(self):
+        """Test setting up Terraform Cloud from options and user input."""
+        collector = Collector(
+            terraform_backend="terraform-cloud",
+            terraform_cloud_token="mytfcT0k3N",
+        )
+        self.assertIsNone(collector.terraform_cloud_hostname)
+        self.assertEqual(collector.terraform_cloud_token, "mytfcT0k3N")
+        self.assertIsNone(collector.terraform_cloud_organization)
+        self.assertIsNone(collector.terraform_cloud_organization_create)
+        self.assertIsNone(collector.terraform_cloud_admin_email)
+        with input("tfc.my-company.com", "myTFCOrg", "n"):
+            collector.set_terraform_cloud()
+        self.assertEqual(collector.terraform_cloud_hostname, "tfc.my-company.com")
+        self.assertEqual(collector.terraform_cloud_token, "mytfcT0k3N")
+        self.assertEqual(collector.terraform_cloud_organization, "myTFCOrg")
+        self.assertFalse(collector.terraform_cloud_organization_create)
+        self.assertEqual(collector.terraform_cloud_admin_email, "")
+
+    def test_vault_from_input(self):
+        """Test setting up Vault from user input."""
+        collector = Collector()
+        self.assertIsNone(collector.vault_token)
+        self.assertIsNone(collector.vault_url)
+        with input({"hidden": "v4UlTtok3N"}, "https://vault.test.com",), mock.patch(
+            "bootstrap.collector.click.confirm", return_value=True
+        ) as mocked_confirm:
+            collector.set_vault()
+        self.assertEqual(collector.vault_token, "v4UlTtok3N")
+        self.assertEqual(collector.vault_url, "https://vault.test.com")
+        self.assertEqual(len(mocked_confirm.mock_calls), 2)
+
+    def test_vault_from_options(self):
+        """Test setting up Vault from the collected options."""
+        collector = Collector(
+            vault_token="v4UlTtok3N", vault_url="https://vault.test.com"
+        )
+        self.assertEqual(collector.vault_token, "v4UlTtok3N")
+        self.assertEqual(collector.vault_url, "https://vault.test.com")
+        with mock.patch(
+            "bootstrap.collector.click.confirm", return_value=True
+        ) as mocked_confirm:
+            collector.set_vault()
+        self.assertEqual(collector.vault_token, "v4UlTtok3N")
+        self.assertEqual(collector.vault_url, "https://vault.test.com")
+        self.assertEqual(len(mocked_confirm.mock_calls), 1)
+
+    def test_vault_from_input_and_options(self):
+        """Test setting up Vault from options and user input."""
+        collector = Collector(vault_url="https://vault.test.com")
+        self.assertIsNone(collector.vault_token)
+        self.assertEqual(collector.vault_url, "https://vault.test.com")
+        with input({"hidden": "v4UlTtok3N"}), mock.patch(
+            "bootstrap.collector.click.confirm", return_value=True
+        ) as mocked_confirm:
+            collector.set_vault()
+        self.assertEqual(collector.vault_token, "v4UlTtok3N")
+        self.assertEqual(collector.vault_url, "https://vault.test.com")
+        self.assertEqual(len(mocked_confirm.mock_calls), 1)
+
+    def test_deployment_type_from_default(self):
+        """Test collecting the deployment type from its default value."""
+        collector = Collector()
+        self.assertIsNone(collector.deployment_type)
+        with input(""):
+            collector.set_deployment_type()
+        self.assertEqual(collector.deployment_type, "digitalocean-k8s")
+
+    def test_deployment_type_from_input(self):
+        """Test collecting the deployment type from user input."""
+        collector = Collector()
+        self.assertIsNone(collector.deployment_type)
+        with input("bad-deployment-type", "yet-another-bad-value", "other-k8s"):
+            collector.set_deployment_type()
+        self.assertEqual(collector.deployment_type, "other-k8s")
+
+    def test_deployment_type_from_options(self):
+        """Test collecting the deployment type from the collected options."""
+        collector = Collector(deployment_type="other-k8s")
+        self.assertEqual(collector.deployment_type, "other-k8s")
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_deployment_type()
+        self.assertEqual(collector.deployment_type, "other-k8s")
+        mocked_prompt.assert_not_called()
 
     # def test_clean_environments_distribution(self):
     #     """Test cleaning the environments distribution."""

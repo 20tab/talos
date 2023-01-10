@@ -450,7 +450,7 @@ class Collector:
 
     @staticmethod
     def get_sentry_dsn(service_slug, sentry_dsn):
-        """Set the backend Sentry DSN."""
+        """Set the given service Sentry DSN."""
         if service_slug:
             return validate_or_prompt_url(
                 f"Sentry DSN of the {service_slug} service (leave blank if unused)",
