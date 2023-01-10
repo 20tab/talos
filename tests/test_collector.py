@@ -485,6 +485,50 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.subdomain_monitoring, "custom-log")
         mocked_prompt.assert_not_called()
 
+    def test_letsencrypt_from_input_true(self):
+        """Test collecting the certificate email from user input."""
+        collector = Collector()
+        self.assertIsNone(collector.letsencrypt_certificate_email)
+        with input(
+            "y",
+            "not an email",
+            "bad email @ really -bad . com      ",
+            "admin@admin.com",
+        ):
+            collector.set_letsencrypt()
+        self.assertEqual(collector.letsencrypt_certificate_email, "admin@admin.com")
+
+    def test_letsencrypt_from_input_false(self):
+        """Test collecting the certificate email from user input."""
+        collector = Collector()
+        self.assertIsNone(collector.letsencrypt_certificate_email)
+        with input("n"):
+            collector.set_letsencrypt()
+        self.assertIsNone(collector.letsencrypt_certificate_email)
+
+    def test_letsencrypt_from_options(self):
+        """Test collecting the certificate email from the collected options."""
+        collector = Collector(letsencrypt_certificate_email="admin@admin.com")
+        self.assertEqual(collector.letsencrypt_certificate_email, "admin@admin.com")
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_letsencrypt()
+        self.assertEqual(collector.letsencrypt_certificate_email, "admin@admin.com")
+        mocked_prompt.assert_not_called()
+
+    def test_deployment_digitalocean(self):
+        """Test setting a DigitalOcean deployment."""
+        collector = Collector(deployment_type="digitalocean-k8s")
+        collector.set_digitalocean = mock.MagicMock()
+        collector.set_deployment()
+        collector.set_digitalocean.assert_called_once()
+
+    def test_deployment_other_k8s(self):
+        """Test setting a generic Kubernetes deployment."""
+        collector = Collector(deployment_type="other-k8s")
+        collector.set_kubernetes = mock.MagicMock()
+        collector.set_deployment()
+        collector.set_kubernetes.assert_called_once()
+
     # def test_clean_kubernetes_credentials(self):
     #     """Test cleaning the Kubernetes credentials."""
     #     certificate_path = Path(__file__).parent / "__init__.py"
