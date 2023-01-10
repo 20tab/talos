@@ -369,17 +369,121 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.deployment_type, "other-k8s")
         mocked_prompt.assert_not_called()
 
-    # def test_clean_environments_distribution(self):
-    #     """Test cleaning the environments distribution."""
-    #     self.assertEqual(clean_environments_distribution(None, "other-k8s"), "1")
-    #     with input("1", ""):
-    #         self.assertEqual(
-    #             clean_environments_distribution(None, "digitalocean-k8s"), "1"
-    #         )
-    #     with input("999", "3"):
-    #         self.assertEqual(
-    #             clean_environments_distribution(None, "digitalocean-k8s"), "3"
-    #         )
+    def test_environments_distribution_for_other_k8s_deployment(self):
+        """Test collecting the environments distribution for other-k8s deployment."""
+        collector = Collector(deployment_type="other-k8s")
+        self.assertIsNone(collector.environments_distribution)
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_environments_distribution()
+        self.assertEqual(collector.environments_distribution, "1")
+        mocked_prompt.assert_not_called()
+
+    def test_environments_distribution_from_default(self):
+        """Test collecting the environments distribution from its default value."""
+        collector = Collector()
+        self.assertIsNone(collector.environments_distribution)
+        with input(""):
+            collector.set_environments_distribution()
+        self.assertEqual(collector.environments_distribution, "1")
+
+    def test_environments_distribution_from_input(self):
+        """Test collecting the environments distribution from user input."""
+        collector = Collector()
+        self.assertIsNone(collector.environments_distribution)
+        with input("one", "yet-another-bad-value", "3"):
+            collector.set_environments_distribution()
+        self.assertEqual(collector.environments_distribution, "3")
+
+    def test_environments_distribution_from_options(self):
+        """Test collecting the environments distribution from the collected options."""
+        collector = Collector(environments_distribution="2")
+        self.assertEqual(collector.environments_distribution, "2")
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_environments_distribution()
+        self.assertEqual(collector.environments_distribution, "2")
+        mocked_prompt.assert_not_called()
+
+    def test_set_domain_and_urls_from_default(self):
+        """Test collecting the domain and urls options from default."""
+        collector = Collector(project_slug="test-project")
+        self.assertIsNone(collector.project_domain)
+        self.assertIsNone(collector.subdomain_dev)
+        self.assertIsNone(collector.subdomain_stage)
+        self.assertIsNone(collector.subdomain_prod)
+        self.assertIsNone(collector.project_url_dev)
+        self.assertIsNone(collector.project_url_stage)
+        self.assertIsNone(collector.project_url_prod)
+        self.assertIsNone(collector.subdomain_monitoring)
+        with input("", "", "", "", "y", ""):
+            collector.set_domain_and_urls()
+        self.assertEqual(collector.project_domain, "test-project.com")
+        self.assertEqual(collector.project_url_dev, "https://dev.test-project.com")
+        self.assertEqual(collector.project_url_stage, "https://stage.test-project.com")
+        self.assertEqual(collector.project_url_prod, "https://www.test-project.com")
+        self.assertEqual(collector.subdomain_dev, "dev")
+        self.assertEqual(collector.subdomain_stage, "stage")
+        self.assertEqual(collector.subdomain_prod, "www")
+        self.assertEqual(collector.subdomain_monitoring, "logs")
+
+    def test_set_domain_and_urls_from_input(self):
+        """Test collecting the domain and urls options from input."""
+        collector = Collector(project_slug="test-project")
+        self.assertIsNone(collector.project_domain)
+        self.assertIsNone(collector.subdomain_dev)
+        self.assertIsNone(collector.subdomain_stage)
+        self.assertIsNone(collector.subdomain_prod)
+        self.assertIsNone(collector.project_url_dev)
+        self.assertIsNone(collector.project_url_stage)
+        self.assertIsNone(collector.project_url_prod)
+        with input(
+            "bad domain.com",
+            "domain.com",
+            "dev from input",
+            "   stage-from-Input",
+            "prod-from-input             ",
+            "n",
+        ):
+            collector.set_domain_and_urls()
+        self.assertEqual(collector.project_domain, "domain.com")
+        self.assertEqual(collector.project_url_dev, "https://dev-from-input.domain.com")
+        self.assertEqual(
+            collector.project_url_stage, "https://stage-from-input.domain.com"
+        )
+        self.assertEqual(
+            collector.project_url_prod, "https://prod-from-input.domain.com"
+        )
+        self.assertEqual(collector.subdomain_dev, "dev-from-input")
+        self.assertEqual(collector.subdomain_stage, "stage-from-input")
+        self.assertEqual(collector.subdomain_prod, "prod-from-input")
+
+    def test_set_domain_and_urls_from_options(self):
+        """Test collecting the domain and urls options from input."""
+        collector = Collector(
+            project_slug="test-project",
+            project_domain="domain.com",
+            subdomain_dev="custom-dev",
+            subdomain_stage="custom-stage",
+            subdomain_prod="custom-www",
+            subdomain_monitoring="custom-log",
+        )
+        self.assertEqual(collector.project_domain, "domain.com")
+        self.assertIsNone(collector.project_url_dev)
+        self.assertIsNone(collector.project_url_stage)
+        self.assertIsNone(collector.project_url_prod)
+        self.assertEqual(collector.subdomain_dev, "custom-dev")
+        self.assertEqual(collector.subdomain_stage, "custom-stage")
+        self.assertEqual(collector.subdomain_prod, "custom-www")
+        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
+            collector.set_domain_and_urls()
+        self.assertEqual(collector.project_domain, "domain.com")
+        self.assertEqual(collector.project_url_dev, "https://custom-dev.domain.com")
+        self.assertEqual(collector.project_url_stage, "https://custom-stage.domain.com")
+        self.assertEqual(collector.project_url_prod, "https://custom-www.domain.com")
+        self.assertEqual(collector.subdomain_dev, "custom-dev")
+        self.assertEqual(collector.subdomain_stage, "custom-stage")
+        self.assertEqual(collector.subdomain_prod, "custom-www")
+        self.assertEqual(collector.subdomain_monitoring, "custom-log")
+        mocked_prompt.assert_not_called()
 
     # def test_clean_kubernetes_credentials(self):
     #     """Test cleaning the Kubernetes credentials."""
@@ -424,160 +528,6 @@ class TestBootstrapCollector(TestCase):
     #                 "postgres:14", "10Gi", None, "/etc/k8s-volume-data", None, True
     #             ),
     #             ("postgres:14", "10Gi", "", "/etc/k8s-volume-data", "redis:6"),
-    #         )
-
-    # def test_clean_domains(self):
-    #     """Test cleaning the project domains."""
-    #     # project domain set
-    #     with input("alpha", "beta", "www2"):
-    #         self.assertEqual(
-    #             clean_domains(
-    #                 "projectslug",
-    #                 "myproject.com",
-    #                 False,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 "test@test.com",
-    #             ),
-    #             (
-    #                 "myproject.com",
-    #                 "alpha",
-    #                 "beta",
-    #                 "www2",
-    #                 None,
-    #                 "https://alpha.myproject.com",
-    #                 "https://beta.myproject.com",
-    #                 "https://www2.myproject.com",
-    #                 "test@test.com",
-    #             ),
-    #         )
-    #     self.assertEqual(
-    #         clean_domains(
-    #             "projectslug",
-    #             "myproject.com",
-    #             False,
-    #             "alpha",
-    #             "beta",
-    #             "www2",
-    #             None,
-    #             None,
-    #             None,
-    #             None,
-    #             "test@test.com",
-    #         ),
-    #         (
-    #             "myproject.com",
-    #             "alpha",
-    #             "beta",
-    #             "www2",
-    #             None,
-    #             "https://alpha.myproject.com",
-    #             "https://beta.myproject.com",
-    #             "https://www2.myproject.com",
-    #             "test@test.com",
-    #         ),
-    #     )
-    #     # project domain not set
-    #     with input(
-    #         "myproject.com",
-    #         "alpha",
-    #         "beta",
-    #         "www2",
-    #         "N",
-    #     ):
-    #         self.assertEqual(
-    #             clean_domains(
-    #                 "projectslug",
-    #                 None,
-    #                 False,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #             ),
-    #             (
-    #                 "myproject.com",
-    #                 "alpha",
-    #                 "beta",
-    #                 "www2",
-    #                 None,
-    #                 "https://alpha.myproject.com",
-    #                 "https://beta.myproject.com",
-    #                 "https://www2.myproject.com",
-    #                 None,
-    #             ),
-    #         )
-    #     # monitoring enabled
-    #     with input("alpha", "beta", "www2", "mylogs", "N"):
-    #         self.assertEqual(
-    #             clean_domains(
-    #                 "projectslug",
-    #                 "myproject.com",
-    #                 True,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #             ),
-    #             (
-    #                 "myproject.com",
-    #                 "alpha",
-    #                 "beta",
-    #                 "www2",
-    #                 "mylogs",
-    #                 "https://alpha.myproject.com",
-    #                 "https://beta.myproject.com",
-    #                 "https://www2.myproject.com",
-    #                 None,
-    #             ),
-    #         )  # Let's Encrypt certificates enabled
-    #     with input(
-    #         "myproject.com",
-    #         "alpha",
-    #         "beta",
-    #         "www2",
-    #         "mylogs",
-    #         "Y",
-    #         "test@test.com",
-    #     ):
-    #         self.assertEqual(
-    #             clean_domains(
-    #                 "projectslug",
-    #                 "",
-    #                 True,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #                 None,
-    #             ),
-    #             (
-    #                 "myproject.com",
-    #                 "alpha",
-    #                 "beta",
-    #                 "www2",
-    #                 "mylogs",
-    #                 "https://alpha.myproject.com",
-    #                 "https://beta.myproject.com",
-    #                 "https://www2.myproject.com",
-    #                 "test@test.com",
-    #             ),
     #         )
 
     # def test_clean_sentry_org(self):

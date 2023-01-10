@@ -140,6 +140,7 @@ class Collector:
         self.set_deployment_type()
         self.set_environments_distribution()
         self.set_domain_and_urls()
+        self.set_letsencrypt()
         self.set_deployment()
         self.set_sentry()
         self.set_pact()
@@ -297,25 +298,28 @@ class Collector:
         self.project_domain = validate_or_prompt_domain(
             "Project domain", self.project_domain, default=f"{self.project_slug}.com"
         )
-        self.subdomain_dev = self.subdomain_dev or click.prompt(
-            "Development domain prefix", default="dev"
+        self.subdomain_dev = slugify(
+            self.subdomain_dev
+            or click.prompt("Development domain prefix", default="dev")
         )
         self.project_url_dev = f"https://{self.subdomain_dev}.{self.project_domain}"
-        self.subdomain_stage = self.subdomain_stage or click.prompt(
-            "Staging domain prefix", default="stage"
+        self.subdomain_stage = slugify(
+            self.subdomain_stage
+            or click.prompt("Staging domain prefix", default="stage")
         )
         self.project_url_stage = f"https://{self.subdomain_stage}.{self.project_domain}"
-        self.subdomain_prod = self.subdomain_prod or click.prompt(
-            "Production domain prefix", default="www"
+        self.subdomain_prod = slugify(
+            self.subdomain_prod
+            or click.prompt("Production domain prefix", default="www")
         )
         self.project_url_prod = f"https://{self.subdomain_prod}.{self.project_domain}"
         if self.subdomain_monitoring is not None or click.confirm(
             warning("Do you want to enable the monitoring stack?"), default=False
         ):
-            self.subdomain_monitoring = self.subdomain_monitoring or click.prompt(
-                "Monitorng domain prefix", default="logs"
+            self.subdomain_monitoring = slugify(
+                self.subdomain_monitoring
+                or click.prompt("Monitorng domain prefix", default="logs")
             )
-        self.set_letsencrypt()
 
     def set_letsencrypt(self):
         """Set Let's Encrypt options."""
