@@ -3,26 +3,15 @@
   "project_slug": "{{ cookiecutter.project_name | slugify() }}",
   "project_dirname": "{{ cookiecutter.project_slug | slugify(separator='') }}",
   "service_slug": "orchestrator",
-  "backend_type": [
-    "django",
-    "none"
-  ],
+  "backend_type": ["django", "none"],
   "backend_service_slug": "backend",
   "backend_service_port": "8000",
-  "frontend_type": [
-    "nextjs",
-    "none"
-  ],
+  "frontend_type": ["nextjs", "none"],
   "frontend_service_slug": "frontend",
   "frontend_service_port": "3000",
   "terraform_backend": "gitlab",
   "terraform_cloud_organization": "",
-  "media_storage": [
-    "digitalocean-s3",
-    "aws-s3",
-    "local",
-    "none"
-  ],
+  "media_storage": ["digitalocean-s3", "aws-s3", "local", "none"],
   "use_pact": "false",
   "use_vault": "false",
   "resources": {
@@ -52,13 +41,8 @@
       }
     ]
   },
-  "deployment_type": [
-    "digitalocean-k8s",
-    "other-k8s"
-  ],
+  "deployment_type": ["digitalocean-k8s", "other-k8s"],
   "environment_distribution": "1",
   "tfvars": {},
-  "_extensions": [
-    "cookiecutter.extensions.SlugifyExtension"
-  ]
+  "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }

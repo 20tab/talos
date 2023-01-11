@@ -7,25 +7,25 @@ datasources:
   datasources.yaml:
     apiVersion: 1
     datasources:
-    - name: Loki
-      type: loki
-      url: http://loki:3100
-      access: proxy
-      isDefault: true
+      - name: Loki
+        type: loki
+        url: http://loki:3100
+        access: proxy
+        isDefault: true
 
 dashboardProviders:
   dashboardproviders.yaml:
     apiVersion: 1
     providers:
-    - name: 'default'
-      orgId: 1
-      folder: ''
-      type: file
-      disableDeletion: false
-      editable: true
-      options:
-        path: /var/lib/grafana/dashboards/default
-        foldersFromFilesStructure: true
+      - name: "default"
+        orgId: 1
+        folder: ""
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+          foldersFromFilesStructure: true
 
 dashboardsConfigMaps:
   default: grafana-k8s-logs-dashboard
