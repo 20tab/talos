@@ -38,7 +38,7 @@ repos:
     rev: "v3.0.0-alpha.4"
     hooks:
       - id: prettier
-        files: ^(?!.*\b(tfvars|tf|yaml|yml)\b)
+        files: ^(?!.*(tf|yaml|yml))
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.0.218
     hooks:
