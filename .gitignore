@@ -160,6 +160,9 @@ cython_debug/
 # macOS
 .DS_Store
 
+# Ruff
+ .ruff_cache
+
 # Terraform
 .terraform*
 secrets.tf

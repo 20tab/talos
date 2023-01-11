@@ -1,7 +1,6 @@
 """Web project initialization CLI constants."""
 
 from pathlib import Path
-from typing import Dict
 
 DUMPS_DIR = Path(__file__).parent.parent / ".dumps"
 
@@ -42,7 +41,7 @@ DEV_ENV_NAME = "development"
 
 DEV_ENV_SLUG = "dev"
 
-DEV_ENV_STACK_CHOICES: Dict[str, str] = {
+DEV_ENV_STACK_CHOICES: dict[str, str] = {
     "1": MAIN_STACK_SLUG,
 }
 
@@ -50,7 +49,7 @@ STAGE_ENV_NAME = "staging"
 
 STAGE_ENV_SLUG = "stage"
 
-STAGE_ENV_STACK_CHOICES: Dict[str, str] = {
+STAGE_ENV_STACK_CHOICES: dict[str, str] = {
     "1": MAIN_STACK_SLUG,
     "2": DEV_STACK_SLUG,
 }
@@ -59,7 +58,7 @@ PROD_ENV_NAME = "production"
 
 PROD_ENV_SLUG = "prod"
 
-PROD_ENV_STACK_CHOICES: Dict[str, str] = {}
+PROD_ENV_STACK_CHOICES: dict[str, str] = {}
 
 # Env vars
 
