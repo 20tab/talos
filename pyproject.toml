@@ -1,10 +1,6 @@
 [tool.black]
 target-version = ["py311"]
 
-[tool.isort]
-atomic = true
-profile = "black"
-
 [tool.mypy]
 ignore_missing_imports = true
 python_version = "3.11"
@@ -56,7 +52,9 @@ source = ["."]
  select = ["B", "C", "D", "E", "F", "I", "W", "B9"]
  target-version = "py311"
 
- [tool.ruff.isort]
- known-first-party = [
+[tool.ruff.isort]
+atomic = true
+known-first-party = [
      "bootstrap",
- ]
+]
+profile = "black"
