@@ -53,8 +53,7 @@ source = ["."]
  target-version = "py311"
 
 [tool.ruff.isort]
-atomic = true
+combine-as-imports = true
 known-first-party = [
      "bootstrap",
 ]
-profile = "black"
