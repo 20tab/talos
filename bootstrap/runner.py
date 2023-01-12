@@ -411,14 +411,14 @@ class Runner:
             stack_name,
             stack_envs_names,
             "digitalocean",
-            dict(digitalocean_token=self.digitalocean_token),
+            {"digitalocean_token": self.digitalocean_token},
         )
         if "s3" in self.media_storage:
-            s3_secret = dict(
-                s3_region=self.s3_region,
-                s3_access_id=self.s3_access_id,
-                s3_secret_key=self.s3_secret_key,
-            )
+            s3_secret = {
+                "s3_region": self.s3_region,
+                "s3_access_id": self.s3_access_id,
+                "s3_secret_key": self.s3_secret_key,
+            }
             self.s3_bucket_name and s3_secret.update(s3_bucket_name=self.s3_bucket_name)
             self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and s3_secret.update(
                 s3_host=self.s3_host
@@ -433,7 +433,7 @@ class Runner:
                 stack_name,
                 stack_envs_names,
                 "monitoring",
-                dict(grafana_password=secrets.token_urlsafe(12)),
+                {"grafana_password": secrets.token_urlsafe(12)},
             )
         )
         (
@@ -441,13 +441,13 @@ class Runner:
             and self.register_vault_stack_secret(
                 stack_name,
                 "k8s",
-                dict(
-                    kubernetes_cluster_ca_certificate=base64.b64encode(
+                {
+                    "kubernetes_cluster_ca_certificate": base64.b64encode(
                         Path(self.kubernetes_cluster_ca_certificate).read_bytes()
                     ).decode(),
-                    kubernetes_host=self.kubernetes_host,
-                    kubernetes_token=self.kubernetes_token,
-                ),
+                    "kubernetes_host": self.kubernetes_host,
+                    "kubernetes_token": self.kubernetes_token,
+                },
             )
         )
 
@@ -456,14 +456,14 @@ class Runner:
         self.register_vault_environment_secret(
             env_name,
             f"{self.service_slug}/basic_auth",
-            dict(
-                basic_auth_username=self.project_slug,
-                basic_auth_password=secrets.token_urlsafe(12),
-            ),
+            {
+                "basic_auth_username": self.project_slug,
+                "basic_auth_password": secrets.token_urlsafe(12),
+            },
         )
         # Sentry secrets are used by the GitLab CI/CD
         self.sentry_org and self.register_vault_environment_secret(
-            env_name, "sentry", dict(sentry_auth_token=self.sentry_auth_token)
+            env_name, "sentry", {"sentry_auth_token": self.sentry_auth_token}
         )
 
     def collect_vault_pact_secrets(self):
@@ -477,21 +477,21 @@ class Runner:
             rf"\g<1>://{pact_broker_username}:{pact_broker_password}@\g<2>",
             pact_broker_url,
         )
-        self.vault_secrets["pact"] = dict(
-            pact_broker_base_url=pact_broker_url,
-            pact_broker_username=pact_broker_username,
-            pact_broker_password=pact_broker_password,
-            pact_broker_auth_url=pact_broker_auth_url,
-        )
+        self.vault_secrets["pact"] = {
+            "pact_broker_base_url": pact_broker_url,
+            "pact_broker_username": pact_broker_username,
+            "pact_broker_password": pact_broker_password,
+            "pact_broker_auth_url": pact_broker_auth_url,
+        }
 
     def collect_vault_secrets(self):
         """Collect Vault secrets."""
         regcred = None
         if gitlab_terraform_outputs := self.terraform_outputs.get("gitlab"):
-            regcred = dict(
-                registry_username=gitlab_terraform_outputs["registry_username"],
-                registry_password=gitlab_terraform_outputs["registry_password"],
-            )
+            regcred = {
+                "registry_username": gitlab_terraform_outputs["registry_username"],
+                "registry_password": gitlab_terraform_outputs["registry_password"],
+            }
         stacks_mapping = {i["slug"]: i["name"] for i in self.stacks}
         for stack_slug, stack_envs in groupby(self.envs, key=itemgetter("stack_slug")):
             stack_name = stacks_mapping[stack_slug]
@@ -550,24 +550,26 @@ class Runner:
     def init_gitlab(self):
         """Initialize the GitLab resources."""
         click.echo(info("...creating the GitLab resources with Terraform"))
-        env = dict(
-            TF_VAR_gitlab_url=self.gitlab_url,
-            TF_VAR_gitlab_token=self.gitlab_token,
-            TF_VAR_group_maintainers=self.gitlab_group_maintainers,
-            TF_VAR_group_name=self.project_name,
-            TF_VAR_group_namespace_path=self.gitlab_namespace_path,
-            TF_VAR_group_owners=self.gitlab_group_owners,
-            TF_VAR_group_slug=self.gitlab_group_slug,
-            TF_VAR_group_variables=self.render_gitlab_variables_to_string("group"),
-            TF_VAR_local_repository_dir=self.service_dir,
-            TF_VAR_project_description=(
+        env = {
+            "TF_VAR_gitlab_url": self.gitlab_url,
+            "TF_VAR_gitlab_token": self.gitlab_token,
+            "TF_VAR_group_maintainers": self.gitlab_group_maintainers,
+            "TF_VAR_group_name": self.project_name,
+            "TF_VAR_group_namespace_path": self.gitlab_namespace_path,
+            "TF_VAR_group_owners": self.gitlab_group_owners,
+            "TF_VAR_group_slug": self.gitlab_group_slug,
+            "TF_VAR_group_variables": self.render_gitlab_variables_to_string("group"),
+            "TF_VAR_local_repository_dir": self.service_dir,
+            "TF_VAR_project_description": (
                 f'The "{self.project_name}" project {self.service_slug} service.'
             ),
-            TF_VAR_project_name=self.service_slug.title(),
-            TF_VAR_project_slug=self.service_slug,
-            TF_VAR_project_variables=self.render_gitlab_variables_to_string("project"),
-            TF_VAR_use_vault=self.vault_url and "true" or "false",
-        )
+            "TF_VAR_project_name": self.service_slug.title(),
+            "TF_VAR_project_slug": self.service_slug,
+            "TF_VAR_project_variables": self.render_gitlab_variables_to_string(
+                "project"
+            ),
+            "TF_VAR_use_vault": self.vault_url and "true" or "false",
+        }
         self.gitlab_url != GITLAB_URL_DEFAULT and env.update(
             GITLAB_BASE_URL=f"{self.gitlab_url}/api/v4/"
         )
@@ -578,20 +580,20 @@ class Runner:
     def init_terraform_cloud(self):
         """Initialize the Terraform Cloud resources."""
         click.echo(info("...creating the Terraform Cloud resources with Terraform"))
-        env = dict(
-            TF_VAR_admin_email=self.terraform_cloud_admin_email,
-            TF_VAR_create_organization=self.terraform_cloud_organization_create
+        env = {
+            "TF_VAR_admin_email": self.terraform_cloud_admin_email,
+            "TF_VAR_create_organization": self.terraform_cloud_organization_create
             and "true"
             or "false",
-            TF_VAR_environments=json.dumps(list(map(itemgetter("slug"), self.envs))),
-            TF_VAR_hostname=self.terraform_cloud_hostname,
-            TF_VAR_organization_name=self.terraform_cloud_organization,
-            TF_VAR_project_name=self.project_name,
-            TF_VAR_project_slug=self.project_slug,
-            TF_VAR_service_slug=self.service_slug,
-            TF_VAR_stacks=json.dumps(list(map(itemgetter("slug"), self.stacks))),
-            TF_VAR_terraform_cloud_token=self.terraform_cloud_token,
-        )
+            "TF_VAR_environments": json.dumps(list(map(itemgetter("slug"), self.envs))),
+            "TF_VAR_hostname": self.terraform_cloud_hostname,
+            "TF_VAR_organization_name": self.terraform_cloud_organization,
+            "TF_VAR_project_name": self.project_name,
+            "TF_VAR_project_slug": self.project_slug,
+            "TF_VAR_service_slug": self.service_slug,
+            "TF_VAR_stacks": json.dumps(list(map(itemgetter("slug"), self.stacks))),
+            "TF_VAR_terraform_cloud_token": self.terraform_cloud_token,
+        }
         self.run_terraform("terraform-cloud", env)
 
     def init_vault(self):
@@ -599,13 +601,13 @@ class Runner:
         click.echo(info("...creating the Vault resources with Terraform"))
         # NOTE: Vault secrets collection must be done AFTER GitLab init
         self.collect_vault_secrets()
-        env = dict(
-            TF_VAR_project_name=self.project_name,
-            TF_VAR_project_slug=self.project_slug,
-            TF_VAR_secrets=json.dumps(self.vault_secrets),
-            TF_VAR_vault_address=self.vault_url,
-            TF_VAR_vault_token=self.vault_token,
-        )
+        env = {
+            "TF_VAR_project_name": self.project_name,
+            "TF_VAR_project_slug": self.project_slug,
+            "TF_VAR_secrets": json.dumps(self.vault_secrets),
+            "TF_VAR_vault_address": self.vault_url,
+            "TF_VAR_vault_token": self.vault_token,
+        }
         self.terraform_backend == TERRAFORM_BACKEND_TFC and env.update(
             TF_VAR_terraform_cloud_token=self.terraform_cloud_token
         )
