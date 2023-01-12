@@ -6,6 +6,8 @@ from pathlib import Path
 from unittest import TestCase, mock
 
 from bootstrap.collector import Collector
+from bootstrap.constants import BASE_DIR
+from bootstrap.runner import Runner
 
 
 @contextmanager
@@ -303,6 +305,15 @@ class TestBootstrapCollector(TestCase):
         self.assertFalse(collector.terraform_cloud_organization_create)
         self.assertEqual(collector.terraform_cloud_admin_email, "")
 
+    def test_vault_no(self):
+        """Test not setting vault."""
+        collector = Collector()
+        self.assertIsNone(collector.vault_token)
+        self.assertIsNone(collector.vault_url)
+        with input("n"):
+            collector.set_vault()
+        self.assertIsNone(collector.vault_token)
+
     def test_vault_from_input(self):
         """Test setting up Vault from user input."""
         collector = Collector()
@@ -529,6 +540,578 @@ class TestBootstrapCollector(TestCase):
         collector.set_deployment()
         collector.set_kubernetes.assert_called_once()
 
+    def test_digitalocean_default(self):
+        """Test setting the Digitalocean options from default."""
+        collector = Collector(use_redis=False)
+        collector.set_digitalocean_token = mock.MagicMock()
+        self.assertFalse(collector._digitalocean_enabled)
+        self.assertIsNone(collector.digitalocean_domain_create)
+        self.assertIsNone(collector.digitalocean_dns_records_create)
+        self.assertIsNone(collector.digitalocean_k8s_cluster_region)
+        self.assertIsNone(collector.digitalocean_database_cluster_region)
+        self.assertIsNone(collector.digitalocean_database_cluster_node_size)
+        with input("", "", "", "", ""):
+            collector.set_digitalocean()
+        self.assertEqual(collector._digitalocean_enabled, True)
+        self.assertEqual(collector.digitalocean_domain_create, True)
+        self.assertEqual(collector.digitalocean_dns_records_create, True)
+        self.assertEqual(collector.digitalocean_k8s_cluster_region, "fra1")
+        self.assertEqual(collector.digitalocean_database_cluster_region, "fra1")
+        self.assertEqual(
+            collector.digitalocean_database_cluster_node_size, "db-s-1vcpu-2gb"
+        )
+
+    def test_digitalocean_input(self):
+        """Test setting the Digitalocean options from input."""
+        collector = Collector(use_redis=True)
+        collector.set_digitalocean_token = mock.MagicMock()
+        self.assertFalse(collector._digitalocean_enabled)
+        self.assertIsNone(collector.digitalocean_domain_create)
+        self.assertIsNone(collector.digitalocean_dns_records_create)
+        self.assertIsNone(collector.digitalocean_k8s_cluster_region)
+        self.assertIsNone(collector.digitalocean_database_cluster_region)
+        self.assertIsNone(collector.digitalocean_database_cluster_node_size)
+        with input(
+            "n", "y", "k8s-cluster-region", "database-cluster-region", "db-size","","redis-cluster-size"
+        ):
+            collector.set_digitalocean()
+        self.assertEqual(collector._digitalocean_enabled, True)
+        self.assertEqual(collector.digitalocean_domain_create, False)
+        self.assertEqual(collector.digitalocean_dns_records_create, True)
+        self.assertEqual(
+            collector.digitalocean_k8s_cluster_region, "k8s-cluster-region"
+        )
+        self.assertEqual(
+            collector.digitalocean_database_cluster_region, "database-cluster-region"
+        )
+        self.assertEqual(collector.digitalocean_database_cluster_node_size, "db-size")
+        self.assertEqual(collector.digitalocean_redis_cluster_region, "fra1")
+        self.assertEqual(collector.digitalocean_redis_cluster_node_size, "redis-cluster-size")
+
+    def test_digitalocean_options(self):
+        """Test setting the Digitalocean options from options."""
+        collector = Collector(
+            use_redis=True,
+            digitalocean_redis_cluster_region="fra2",
+            digitalocean_redis_cluster_node_size="size",
+            digitalocean_domain_create=False,
+            digitalocean_dns_records_create=True,
+            digitalocean_k8s_cluster_region="k8s-cluster-region-from-options",
+            digitalocean_database_cluster_region="database-cluster-region-from-options",
+            digitalocean_database_cluster_node_size="db-size-from-options",
+        )
+        collector.set_digitalocean_token = mock.MagicMock()
+        self.assertEquals(collector._digitalocean_enabled, False)
+        self.assertEquals(collector.digitalocean_domain_create, False)
+        self.assertEquals(collector.digitalocean_dns_records_create, True)
+        self.assertEquals(
+            collector.digitalocean_k8s_cluster_region, "k8s-cluster-region-from-options"
+        )
+        self.assertEquals(
+            collector.digitalocean_database_cluster_region,
+            "database-cluster-region-from-options",
+        )
+        self.assertEquals(
+            collector.digitalocean_database_cluster_node_size, "db-size-from-options"
+        )
+        with input(
+            "n", "y", "k8s-cluster-region", "database-cluster-region", "db-size"
+        ):
+            collector.set_digitalocean()
+        self.assertEquals(collector._digitalocean_enabled, True)
+        self.assertEquals(collector.digitalocean_domain_create, False)
+        self.assertEquals(collector.digitalocean_dns_records_create, True)
+        self.assertEquals(
+            collector.digitalocean_k8s_cluster_region, "k8s-cluster-region-from-options"
+        )
+        self.assertEquals(
+            collector.digitalocean_database_cluster_region,
+            "database-cluster-region-from-options",
+        )
+        self.assertEquals(
+            collector.digitalocean_database_cluster_node_size, "db-size-from-options"
+        )
+
+    def test_digitalocean_token_input(self):
+        """Test setting the DigitalOcean token from input."""
+        collector = Collector()
+        self.assertIsNone(collector.digitalocean_token)
+        with input(
+            {"hidden": "bad"}, {"hidden": "bad2"}, {"hidden": "more-than-8-chars"}
+        ):
+            collector.set_digitalocean_token()
+        self.assertEquals(collector.digitalocean_token, "more-than-8-chars")
+
+    def test_digitalocean_token_options(self):
+        """Test setting the DigitalOcean token from options."""
+        collector = Collector(digitalocean_token="options-token")
+        collector.set_digitalocean_token()
+        self.assertEquals(collector.digitalocean_token, "options-token")
+
+    def test_kubernetes_input_redis(self):
+        """Test setting Kubernets options from input with redis."""
+        collector = Collector(use_redis=True)
+        collector.set_digitalocean_token = mock.MagicMock()
+        self.assertFalse(collector._other_kubernetes_enabled)
+        self.assertIsNone(collector.kubernetes_cluster_ca_certificate)
+        self.assertIsNone(collector.kubernetes_host)
+        self.assertIsNone(collector.kubernetes_token)
+        self.assertIsNone(collector.postgres_image)
+        self.assertIsNone(collector.postgres_persistent_volume_capacity)
+        self.assertIsNone(collector.postgres_persistent_volume_claim_capacity)
+        self.assertIsNone(collector.postgres_persistent_volume_host_path)
+        certificate_path = str(BASE_DIR / "tests/fake_certificate")
+        with input(
+            certificate_path,
+            "https://www.google.com",
+            {"hidden": "toKenl0ngeR!"},
+            "",
+            "",
+            "persistent/host/path",
+            "",
+        ):
+            collector.set_kubernetes()
+        self.assertTrue(collector._other_kubernetes_enabled)
+        self.assertEqual(collector.kubernetes_cluster_ca_certificate, certificate_path)
+        self.assertEqual(collector.kubernetes_host, "https://www.google.com")
+        self.assertEqual(collector.kubernetes_token, "toKenl0ngeR!")
+        self.assertEqual(collector.postgres_image, "postgres:14")
+        self.assertEqual(collector.postgres_persistent_volume_capacity, "10Gi")
+        self.assertEqual(collector.postgres_persistent_volume_claim_capacity, "")
+        self.assertEqual(
+            collector.postgres_persistent_volume_host_path, "persistent/host/path"
+        )
+        self.assertEqual(collector.redis_image,"redis:6.2")
+
+    def test_kubernetes_input_no_redis(self):
+        """Test setting Kubernets options from input without redis."""
+        collector = Collector(use_redis=False)
+        collector.set_digitalocean_token = mock.MagicMock()
+        self.assertFalse(collector._other_kubernetes_enabled)
+        self.assertIsNone(collector.kubernetes_cluster_ca_certificate)
+        self.assertIsNone(collector.kubernetes_host)
+        self.assertIsNone(collector.kubernetes_token)
+        self.assertIsNone(collector.postgres_image)
+        self.assertIsNone(collector.postgres_persistent_volume_capacity)
+        self.assertIsNone(collector.postgres_persistent_volume_claim_capacity)
+        self.assertIsNone(collector.postgres_persistent_volume_host_path)
+        certificate_path = str(BASE_DIR / "tests/fake_certificate")
+        with input(
+            certificate_path,
+            "https://www.google.com",
+            {"hidden": "toKenl0ngeR!"},
+            "",
+            "",
+            "persistent/host/path",
+        ):
+            collector.set_kubernetes()
+        self.assertTrue(collector._other_kubernetes_enabled)
+        self.assertEqual(collector.kubernetes_cluster_ca_certificate, certificate_path)
+        self.assertEqual(collector.kubernetes_host, "https://www.google.com")
+        self.assertEqual(collector.kubernetes_token, "toKenl0ngeR!")
+        self.assertEqual(collector.postgres_image, "postgres:14")
+        self.assertEqual(collector.postgres_persistent_volume_capacity, "10Gi")
+        self.assertEqual(collector.postgres_persistent_volume_claim_capacity, "")
+        self.assertEqual(
+            collector.postgres_persistent_volume_host_path, "persistent/host/path"
+        )
+        self.assertEqual(collector.redis_image,"")
+
+    def set_sentry_no(self):
+        collector = Collector(
+            backend_service_slug="backend-slug", frontend_service_slug="frontend-slug"
+        )
+        self.assertIsNone(collector.sentry_org)
+        with input("n"):
+            collector.set_sentry()    
+        self.assertIsNone(collector.sentry_org)
+    def test_sentry_default(self):
+        """Test setting Sentry options from default."""
+        collector = Collector(
+            backend_service_slug="backend-slug", frontend_service_slug="frontend-slug"
+        )
+        collector.get_sentry_dsn = mock.MagicMock()
+        self.assertIsNone(collector.sentry_org)
+        self.assertIsNone(collector.sentry_url)
+        self.assertIsNone(collector.sentry_auth_token)
+        with input(
+            "y", "sentry-input-organization", "", {"hidden": "s3ntrY-4uth-t0kEn!"}
+        ):
+            collector.set_sentry()
+        self.assertEqual(collector.get_sentry_dsn.call_count, 2)
+        self.assertEqual(collector.sentry_org, "sentry-input-organization")
+        self.assertEqual(collector.sentry_url, "https://sentry.io")
+        self.assertEqual(collector.sentry_auth_token, "s3ntrY-4uth-t0kEn!")
+
+    def test_sentry_options(self):
+        """Test setting Sentry options from options."""
+        collector = Collector(
+            backend_service_slug="backend-slug",
+            frontend_service_slug="frontend-slug",
+            sentry_org="sentry-options-organization",
+            sentry_url="https://other-sentry-url.com",
+            sentry_auth_token="S0me!tok3n",
+        )
+        collector.get_sentry_dsn = mock.MagicMock()
+        self.assertEqual(collector.sentry_org, "sentry-options-organization")
+        self.assertEqual(collector.sentry_url, "https://other-sentry-url.com")
+        self.assertEqual(collector.sentry_auth_token, "S0me!tok3n")
+        collector.set_sentry()
+        self.assertEqual(collector.get_sentry_dsn.call_count, 2)
+        self.assertEqual(collector.sentry_org, "sentry-options-organization")
+        self.assertEqual(collector.sentry_url, "https://other-sentry-url.com")
+        self.assertEqual(collector.sentry_auth_token, "S0me!tok3n")
+
+    def test_sentry_dsn_default(self):
+        """Test setting Sentry DSN options from default."""
+        with input(""):
+            self.assertEqual(Collector.get_sentry_dsn("service-slug", "dsn"), "")
+
+    def test_sentry_dsn_input(self):
+        """Test setting Sentry DSN options from input."""
+        with input("https://www.google.com"):
+            self.assertEqual(
+                Collector.get_sentry_dsn("service-slug", "dsn"),
+                "https://www.google.com",
+            )
+
+    def test_pact_default(self):
+        """Test setting Pact options from default."""
+        collector = Collector()
+        self.assertIsNone(collector.pact_broker_url)
+        self.assertIsNone(collector.pact_broker_username)
+        self.assertIsNone(collector.pact_broker_password)
+        with input(""):
+            collector.set_pact()
+        self.assertIsNone(collector.pact_broker_url)
+        self.assertIsNone(collector.pact_broker_username)
+        self.assertIsNone(collector.pact_broker_password)
+
+    def test_pact_input(self):
+        """Test setting Pact options from input."""
+        collector = Collector()
+        self.assertIsNone(collector.pact_broker_url)
+        self.assertIsNone(collector.pact_broker_username)
+        self.assertIsNone(collector.pact_broker_password)
+        with input(
+            "y", "https://broker.url", "broker-username", {"hidden": "P4sSw0rd!"}
+        ):
+            collector.set_pact()
+        self.assertEqual(collector.pact_broker_url, "https://broker.url")
+        self.assertEqual(collector.pact_broker_username, "broker-username")
+        self.assertEqual(collector.pact_broker_password, "P4sSw0rd!")
+
+    def test_pact_options(self):
+        """Test setting Pact options from options."""
+        collector = Collector(
+            pact_broker_url="https://options.broker.url",
+            pact_broker_username="options-username",
+            pact_broker_password="PassW0rd FroM opt1ons!",
+        )
+        self.assertEqual(collector.pact_broker_url, "https://options.broker.url")
+        self.assertEqual(collector.pact_broker_username, "options-username")
+        self.assertEqual(collector.pact_broker_password, "PassW0rd FroM opt1ons!")
+        collector.set_pact()
+        self.assertEqual(collector.pact_broker_url, "https://options.broker.url")
+        self.assertEqual(collector.pact_broker_username, "options-username")
+        self.assertEqual(collector.pact_broker_password, "PassW0rd FroM opt1ons!")
+
+    def test_gitlab_no(self):
+        """Test not setting Gitlab."""
+        collector = Collector(gitlab_url="")
+        with input("n"):
+            collector.set_gitlab()
+        self.assertEqual(collector.gitlab_url, "")
+
+    def test_gitlab_default(self):
+        """Test setting Gitlab options from default."""
+        collector = Collector(project_slug="gitlab-project")
+        self.assertIsNone(collector.gitlab_url)
+        self.assertIsNone(collector.gitlab_token)
+        self.assertIsNone(collector.gitlab_namespace_path)
+        self.assertIsNone(collector.gitlab_group_slug)
+        self.assertIsNone(collector.gitlab_group_owners)
+        self.assertIsNone(collector.gitlab_group_maintainers)
+        self.assertIsNone(collector.gitlab_group_developers)
+        with input("", "", {"hidden": "G1tl4b_Tok3n!"}, "", "", "y", "", "", ""):
+            collector.set_gitlab()
+        self.assertEqual(collector.gitlab_url, "https://gitlab.com")
+        self.assertEqual(collector.gitlab_token, "G1tl4b_Tok3n!")
+        self.assertEqual(collector.gitlab_namespace_path, "")
+        self.assertEqual(collector.gitlab_group_slug, "gitlab-project")
+        self.assertEqual(collector.gitlab_group_owners, "")
+        self.assertEqual(collector.gitlab_group_maintainers, "")
+        self.assertEqual(collector.gitlab_group_developers, "")
+
+    def test_gitlab_input(self):
+        """Test setting Gitlab options from input."""
+        collector = Collector()
+        self.assertIsNone(collector.gitlab_url)
+        self.assertIsNone(collector.gitlab_token)
+        self.assertIsNone(collector.gitlab_namespace_path)
+        self.assertIsNone(collector.gitlab_group_slug)
+        self.assertIsNone(collector.gitlab_group_owners)
+        self.assertIsNone(collector.gitlab_group_maintainers)
+        self.assertIsNone(collector.gitlab_group_developers)
+        with input(
+            "y",
+            "https://gitlab.custom-domain.com",
+            {"hidden": "input-G1tl4b_Tok3n!"},
+            "inputnamespacepath",
+            "input-gitlab-project",
+            "owner1,owner2",
+            "maintainer1,maintainer2",
+            "developer1,developer2",
+        ):
+            collector.set_gitlab()
+        self.assertEqual(collector.gitlab_url, "https://gitlab.custom-domain.com")
+        self.assertEqual(collector.gitlab_token, "input-G1tl4b_Tok3n!")
+        self.assertEqual(collector.gitlab_namespace_path, "inputnamespacepath")
+        self.assertEqual(collector.gitlab_group_slug, "input-gitlab-project")
+        self.assertEqual(collector.gitlab_group_owners, "owner1,owner2")
+        self.assertEqual(collector.gitlab_group_maintainers, "maintainer1,maintainer2")
+        self.assertEqual(collector.gitlab_group_developers, "developer1,developer2")
+
+    def test_gitlab_options(self):
+        """Test setting Gitlab options from options."""
+        collector = Collector(
+            gitlab_url="https://gitlab.custom-domain.com",
+            gitlab_token="input-G1tl4b_Tok3n!",
+            gitlab_namespace_path="inputnamespacepath",
+            gitlab_group_slug="input-gitlab-project",
+            gitlab_group_owners="owner1,owner2",
+            gitlab_group_maintainers="maintainer1,maintainer2",
+            gitlab_group_developers="developer1,developer2",
+        )
+        self.assertEqual(collector.gitlab_url, "https://gitlab.custom-domain.com")
+        self.assertEqual(collector.gitlab_token, "input-G1tl4b_Tok3n!")
+        self.assertEqual(collector.gitlab_namespace_path, "inputnamespacepath")
+        self.assertEqual(collector.gitlab_group_slug, "input-gitlab-project")
+        self.assertEqual(collector.gitlab_group_owners, "owner1,owner2")
+        self.assertEqual(collector.gitlab_group_maintainers, "maintainer1,maintainer2")
+        self.assertEqual(collector.gitlab_group_developers, "developer1,developer2")
+        collector.set_gitlab()
+        self.assertEqual(collector.gitlab_url, "https://gitlab.custom-domain.com")
+        self.assertEqual(collector.gitlab_token, "input-G1tl4b_Tok3n!")
+        self.assertEqual(collector.gitlab_namespace_path, "inputnamespacepath")
+        self.assertEqual(collector.gitlab_group_slug, "input-gitlab-project")
+        self.assertEqual(collector.gitlab_group_owners, "owner1,owner2")
+        self.assertEqual(collector.gitlab_group_maintainers, "maintainer1,maintainer2")
+        self.assertEqual(collector.gitlab_group_developers, "developer1,developer2")
+
+    def test_storage_default(self):
+        """Test setting storage options from default."""
+        collector = Collector()
+        collector.set_digitalocean_spaces = mock.MagicMock()
+        collector.set_aws_s3 = mock.MagicMock()
+        with input("", {"hidden": "s3_accEss!"}, {"hidden": "s3_s3crEt!"}):
+            collector.set_storage()
+        self.assertEqual(collector.media_storage, "digitalocean-s3")
+        self.assertFalse(collector.store_secrets)
+        self.assertEqual(collector.s3_access_id, "s3_accEss!")
+        self.assertEqual(collector.s3_secret_key, "s3_s3crEt!")
+        collector.set_digitalocean_spaces.assert_called_once()
+        collector.set_aws_s3.assert_not_called()
+
+    def test_storage_input(self):
+        """Test setting storage options from input."""
+        collector = Collector()
+        collector.set_digitalocean_spaces = mock.MagicMock()
+        collector.set_aws_s3 = mock.MagicMock()
+        with input(
+            "aws-s3", {"hidden": "s3_accEss!-input"}, {"hidden": "s3_s3crEt!-input"}
+        ):
+            collector.set_storage()
+        self.assertEqual(collector.media_storage, "aws-s3")
+        self.assertFalse(collector.store_secrets)
+        self.assertEqual(collector.s3_access_id, "s3_accEss!-input")
+        self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-input")
+        collector.set_aws_s3.assert_called_once()
+        collector.set_digitalocean_spaces.assert_not_called()
+
+    def test_storage_options(self):
+        """Test setting storage options from options."""
+        collector = Collector(
+            media_storage="aws-s3",
+            s3_access_id="s3_accEss!-options",
+            s3_secret_key="s3_s3crEt!-options",
+        )
+        self.assertEqual(collector.media_storage, "aws-s3")
+        self.assertEqual(collector.s3_access_id, "s3_accEss!-options")
+        self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-options")
+        collector.set_digitalocean_spaces = mock.MagicMock()
+        collector.set_aws_s3 = mock.MagicMock()
+        with input("2", "s3_accEss-input", "s3_s3crEt!-input"):
+            collector.set_storage()
+        self.assertEqual(collector.media_storage, "aws-s3")
+        self.assertFalse(collector.store_secrets)
+        self.assertEqual(collector.s3_access_id, "s3_accEss!-options")
+        self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-options")
+        collector.set_aws_s3.assert_called_once()
+        collector.set_digitalocean_spaces.assert_not_called()
+
+    def test_digitalocean_spaces_input(self):
+        """Test setting digitalocean spaces from input."""
+        collector = Collector()
+        self.assertIsNone(collector.digitalocean_token)
+        self.assertIsNone(collector.s3_region)
+        self.assertIsNone(collector.s3_host)
+        self.assertIsNone(collector.s3_bucket_name)
+        collector.set_digitalocean_token = mock.MagicMock()
+        with input({"hidden": "VeRy_s3cr3t!1"}, "region"):
+            collector.set_digitalocean_spaces()
+        self.assertEqual(collector.digitalocean_token, "VeRy_s3cr3t!1")
+        self.assertEqual(collector.s3_region, "region")
+        self.assertEqual(collector.s3_host, "digitaloceanspaces.com")
+        self.assertEqual(collector.s3_bucket_name, "")
+
+    def test_digitalocean_spaces_default(self):
+        """Test setting digitalocean spaces from default."""
+        collector = Collector()
+        self.assertIsNone(collector.digitalocean_token)
+        self.assertIsNone(collector.s3_region)
+        self.assertIsNone(collector.s3_host)
+        self.assertIsNone(collector.s3_bucket_name)
+        collector.set_digitalocean_token = mock.MagicMock()
+        with input({"hidden": "VeRy_s3cr3t!1"}, ""):
+            collector.set_digitalocean_spaces()
+        self.assertEqual(collector.digitalocean_token, "VeRy_s3cr3t!1")
+        self.assertEqual(collector.s3_region, "fra1")
+        self.assertEqual(collector.s3_host, "digitaloceanspaces.com")
+        self.assertEqual(collector.s3_bucket_name, "")
+
+    def test_digitalocean_spaces_options(self):
+        """Test setting digitalocean spaces from options."""
+        collector = Collector(
+            digitalocean_token="T0k3n!2-options", s3_region="options-region"
+        )
+        self.assertIsNone(collector.s3_host)
+        self.assertIsNone(collector.s3_bucket_name)
+        self.assertEqual(collector.digitalocean_token, "T0k3n!2-options")
+        self.assertEqual(collector.s3_region, "options-region")
+        collector.set_digitalocean_token = mock.MagicMock()
+        collector.set_digitalocean_spaces()
+        self.assertEqual(collector.digitalocean_token, "T0k3n!2-options")
+        self.assertEqual(collector.s3_region, "options-region")
+        self.assertEqual(collector.s3_host, "digitaloceanspaces.com")
+        self.assertEqual(collector.s3_bucket_name, "")
+
+    def test_aws_s3_default(self):
+        """Test setting AWS s3 from default."""
+        collector = Collector()
+        self.assertIsNone(collector.s3_bucket_name)
+        self.assertIsNone(collector.s3_host)
+        self.assertIsNone(collector.s3_region)
+        with input("", "bucket_name"):
+            collector.set_aws_s3()
+        self.assertEqual(collector.s3_region, "eu-central-1")
+        self.assertEqual(collector.s3_host, "")
+        self.assertEqual(collector.s3_bucket_name, "bucket_name")
+
+    def test_aws_s3_input(self):
+        """Test setting AWS s3 from input."""
+        collector = Collector()
+        self.assertIsNone(collector.s3_bucket_name)
+        self.assertIsNone(collector.s3_host)
+        self.assertIsNone(collector.s3_region)
+        with input("custom-region", "bucket_name-input"):
+            collector.set_aws_s3()
+        self.assertEqual(collector.s3_region, "custom-region")
+        self.assertEqual(collector.s3_host, "")
+        self.assertEqual(collector.s3_bucket_name, "bucket_name-input")
+
+    def test_aws_s3_options(self):
+        """Test setting AWS s3 from options."""
+        collector = Collector(s3_bucket_name="options-name", s3_region="options-region")
+        self.assertIsNone(collector.s3_host)
+        self.assertEqual(collector.s3_bucket_name, "options-name")
+        self.assertEqual(collector.s3_region, "options-region")
+        collector.set_aws_s3()
+        self.assertEqual(collector.s3_host, "")
+        self.assertEqual(collector.s3_region, "options-region")
+        self.assertEqual(collector.s3_bucket_name, "options-name")
+
+    def test_launch_runner(self):
+        """Test launching the runner."""
+        collector = Collector()
+        runner = mock.MagicMock()
+        collector.get_runner = mock.MagicMock(return_value=runner)
+        collector.launch_runner()
+        runner.run.assert_called_once()
+
+    def test_get_runner(self):
+        """Test getting the runner."""
+        collector = Collector(
+            backend_type="django",
+            deployment_type="digitalocean-k8s",
+            environments_distribution="1",
+            frontend_type="nextjs",
+            media_storage="local",
+            project_dirname="project_dirname",
+            project_name="Test Project",
+            project_slug="test-project",
+            project_url_dev="https://dev.test.com",
+            project_url_prod="https://www.test.com",
+            project_url_stage="https://stage.test.com",
+            terraform_backend="terraform-cloud",
+            use_redis=False,
+        )
+        collector._service_dir = Path(".")
+        runner = collector.get_runner()
+        self.assertEqual(runner.backend_type, "django")
+        self.assertEqual(runner.deployment_type, "digitalocean-k8s")
+        self.assertEqual(runner.environments_distribution, "1")
+        self.assertEqual(runner.frontend_type, "nextjs")
+        self.assertEqual(runner.media_storage, "local")
+        self.assertEqual(runner.project_dirname, "project_dirname")
+        self.assertEqual(runner.project_name, "Test Project")
+        self.assertEqual(runner.project_slug, "test-project")
+        self.assertEqual(runner.project_url_dev, "https://dev.test.com")
+        self.assertEqual(runner.project_url_prod, "https://www.test.com")
+        self.assertEqual(runner.project_url_stage, "https://stage.test.com")
+        self.assertEqual(runner.terraform_backend, "terraform-cloud")
+        self.assertEqual(runner.use_redis, False)
+
+    def test_collect(self):
+        """Test collect options."""
+        collector = Collector()
+        collector.set_project_name = mock.MagicMock()
+        collector.set_project_slug = mock.MagicMock()
+        collector.set_project_dirname = mock.MagicMock()
+        collector.set_service_dir = mock.MagicMock()
+        collector.set_backend_service = mock.MagicMock()
+        collector.set_frontend_service = mock.MagicMock()
+        collector.set_use_redis = mock.MagicMock()
+        collector.set_terraform = mock.MagicMock()
+        collector.set_vault = mock.MagicMock()
+        collector.set_deployment_type = mock.MagicMock()
+        collector.set_environments_distribution = mock.MagicMock()
+        collector.set_domain_and_urls = mock.MagicMock()
+        collector.set_letsencrypt = mock.MagicMock()
+        collector.set_deployment = mock.MagicMock()
+        collector.set_sentry = mock.MagicMock()
+        collector.set_pact = mock.MagicMock()
+        collector.set_gitlab = mock.MagicMock()
+        collector.set_storage = mock.MagicMock()
+        collector.collect()
+        collector.set_project_name.assert_called_once()
+        collector.set_project_slug.assert_called_once()
+        collector.set_project_dirname.assert_called_once()
+        collector.set_service_dir.assert_called_once()
+        collector.set_backend_service.assert_called_once()
+        collector.set_frontend_service.assert_called_once()
+        collector.set_use_redis.assert_called_once()
+        collector.set_terraform.assert_called_once()
+        collector.set_vault.assert_called_once()
+        collector.set_deployment_type.assert_called_once()
+        collector.set_environments_distribution.assert_called_once()
+        collector.set_domain_and_urls.assert_called_once()
+        collector.set_letsencrypt.assert_called_once()
+        collector.set_deployment.assert_called_once()
+        collector.set_sentry.assert_called_once()
+        collector.set_pact.assert_called_once()
+        collector.set_gitlab.assert_called_once()
+        collector.set_storage.assert_called_once()
     # def test_clean_kubernetes_credentials(self):
     #     """Test cleaning the Kubernetes credentials."""
     #     certificate_path = Path(__file__).parent / "__init__.py"

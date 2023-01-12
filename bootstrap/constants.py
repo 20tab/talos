@@ -3,7 +3,8 @@
 from pathlib import Path
 from typing import Dict
 
-DUMPS_DIR = Path(__file__).parent.parent / ".dumps"
+BASE_DIR = Path(__file__).parent.parent
+DUMPS_DIR = BASE_DIR / ".dumps"
 
 # Stacks
 

@@ -149,10 +149,6 @@ class Runner:
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
-        self.set_stacks()
-        self.set_envs()
-        self.collect_tfvars()
-        self.collect_gitlab_variables()
 
     def set_stacks(self):
         """Set the stacks."""
@@ -837,6 +833,10 @@ class Runner:
     def run(self):
         """Run the bootstrap."""
         click.echo(highlight(f"Initializing the {self.service_slug} service:"))
+        self.set_stacks()
+        self.set_envs()
+        self.collect_tfvars()
+        self.collect_gitlab_variables()
         self.init_service()
         self.create_env_file()
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:
