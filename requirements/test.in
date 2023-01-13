@@ -2,3 +2,4 @@
 coverage[toml]~=7.0.0
 ruff~=0.0.0
 mypy~=0.991
+freezegun~=0.3.4

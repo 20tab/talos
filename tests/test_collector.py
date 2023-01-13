@@ -1,23 +1,11 @@
 """Bootstrap collector tests."""
 
-from contextlib import contextmanager
-from io import StringIO
 from pathlib import Path
 from unittest import TestCase, mock
+
 from bootstrap.collector import Collector
 from bootstrap.constants import BASE_DIR
-
-
-@contextmanager
-def input(*cmds):
-    """Mock the user input."""
-    visible_cmds = "\n".join(c for c in cmds if isinstance(c, str))
-    hidden_cmds = [c["hidden"] for c in cmds if isinstance(c, dict) and "hidden" in c]
-    with mock.patch("sys.stdin", StringIO(f"{visible_cmds}\n")), mock.patch(
-        "getpass.getpass", side_effect=hidden_cmds
-    ):
-        yield
-
+from tests.test_utils import mock_input
 
 class TestBootstrapCollector(TestCase):
     """Test the bootstrap collector."""
@@ -28,7 +16,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the project name from user input."""
         collector = Collector()
         self.assertIsNone(collector.project_name)
-        with input("My New Project"):
+        with mock_input("My New Project"):
             collector.set_project_name()
         self.assertEqual(collector.project_name, "My New Project")
 
@@ -45,7 +33,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the project slug from its default value."""
         collector = Collector(project_name="My Project")
         self.assertIsNone(collector.project_slug)
-        with input(""):
+        with mock_input(""):
             collector.set_project_slug()
         self.assertEqual(collector.project_slug, "my-project")
 
@@ -53,7 +41,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the project slug from user input."""
         collector = Collector(project_name="Test Project")
         self.assertIsNone(collector.project_slug)
-        with input("My New Project Slug"):
+        with mock_input("My New Project Slug"):
             collector.set_project_slug()
         self.assertEqual(collector.project_slug, "my-new-project-slug")
 
@@ -101,7 +89,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector._service_dir)
         collector.output_dir = output_dir
         collector.set_project_dirname()
-        with mock.patch("bootstrap.collector.rmtree") as mocked_rmtree, input("y"):
+        with mock.patch("bootstrap.collector.rmtree") as mocked_rmtree, mock_input("y"):
             collector.set_service_dir()
         output_dir.__truediv__.assert_called_once_with("myproject")
         mocked_rmtree.assert_called_once_with(service_dir)
@@ -123,7 +111,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(backend_type="django")
         self.assertEqual(collector.backend_type, "django")
         self.assertIsNone(collector.backend_service_slug)
-        with input(""):
+        with mock_input(""):
             collector.set_backend_service()
         self.assertEqual(collector.backend_type, "django")
         self.assertEqual(collector.backend_service_slug, "backend")
@@ -133,7 +121,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(backend_type="django")
         self.assertEqual(collector.backend_type, "django")
         self.assertIsNone(collector.backend_service_slug)
-        with input("my-django-service"):
+        with mock_input("my-django-service"):
             collector.set_backend_service()
         self.assertEqual(collector.backend_type, "django")
         self.assertEqual(collector.backend_service_slug, "mydjangoservice")
@@ -143,7 +131,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(backend_type="bad-type")
         self.assertEqual(collector.backend_type, "bad-type")
         self.assertIsNone(collector.backend_service_slug)
-        with input("another-bad-type", "yet-another-bad-type", "django", ""):
+        with mock_input("another-bad-type", "yet-another-bad-type", "django", ""):
             collector.set_backend_service()
         self.assertEqual(collector.backend_type, "django")
         self.assertEqual(collector.backend_service_slug, "backend")
@@ -164,7 +152,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(frontend_type="nextjs")
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertIsNone(collector.frontend_service_slug)
-        with input(""):
+        with mock_input(""):
             collector.set_frontend_service()
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertEqual(collector.frontend_service_slug, "frontend")
@@ -174,7 +162,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(frontend_type="nextjs")
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertIsNone(collector.frontend_service_slug)
-        with input("my-nextjs-service"):
+        with mock_input("my-nextjs-service"):
             collector.set_frontend_service()
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertEqual(collector.frontend_service_slug, "mynextjsservice")
@@ -184,7 +172,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(frontend_type="bad-type")
         self.assertEqual(collector.frontend_type, "bad-type")
         self.assertIsNone(collector.frontend_service_slug)
-        with input("another-bad-type", "yet-another-bad-type", "nextjs", ""):
+        with mock_input("another-bad-type", "yet-another-bad-type", "nextjs", ""):
             collector.set_frontend_service()
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertEqual(collector.frontend_service_slug, "frontend")
@@ -193,7 +181,7 @@ class TestBootstrapCollector(TestCase):
         """Test setting the `use_redis` flag from user input."""
         collector = Collector()
         self.assertIsNone(collector.use_redis)
-        with input("y"):
+        with mock_input("y"):
             collector.set_use_redis()
         self.assertTrue(collector.use_redis)
 
@@ -211,7 +199,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         self.assertIsNone(collector.terraform_backend)
         collector.set_terraform_cloud = mock.MagicMock()
-        with input(""):
+        with mock_input(""):
             collector.set_terraform()
         self.assertEqual(collector.terraform_backend, "terraform-cloud")
         collector.set_terraform_cloud.assert_called_once()
@@ -221,7 +209,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         self.assertIsNone(collector.terraform_backend)
         collector.set_terraform_cloud = mock.MagicMock()
-        with input("bad-tf-backend", "another-bad-tf-backend", "gitlab"):
+        with mock_input("bad-tf-backend", "another-bad-tf-backend", "gitlab"):
             collector.set_terraform()
         self.assertEqual(collector.terraform_backend, "gitlab")
         collector.set_terraform_cloud.assert_not_called()
@@ -245,7 +233,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.terraform_cloud_organization)
         self.assertIsNone(collector.terraform_cloud_organization_create)
         self.assertIsNone(collector.terraform_cloud_admin_email)
-        with input(
+        with mock_input(
             "",
             {"hidden": "mytfcT0k3N"},
             "myTFCOrg",
@@ -295,7 +283,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.terraform_cloud_organization)
         self.assertIsNone(collector.terraform_cloud_organization_create)
         self.assertIsNone(collector.terraform_cloud_admin_email)
-        with input("tfc.my-company.com", "myTFCOrg", "n"):
+        with mock_input("tfc.my-company.com", "myTFCOrg", "n"):
             collector.set_terraform_cloud()
         self.assertEqual(collector.terraform_cloud_hostname, "tfc.my-company.com")
         self.assertEqual(collector.terraform_cloud_token, "mytfcT0k3N")
@@ -308,7 +296,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         self.assertIsNone(collector.vault_token)
         self.assertIsNone(collector.vault_url)
-        with input("n"):
+        with mock_input("n"):
             collector.set_vault()
         self.assertIsNone(collector.vault_token)
 
@@ -317,7 +305,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         self.assertIsNone(collector.vault_token)
         self.assertIsNone(collector.vault_url)
-        with input({"hidden": "v4UlTtok3N"}, "https://vault.test.com",), mock.patch(
+        with mock_input({"hidden": "v4UlTtok3N"}, "https://vault.test.com",), mock.patch(
             "bootstrap.collector.click.confirm", return_value=True
         ) as mocked_confirm:
             collector.set_vault()
@@ -345,7 +333,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(vault_url="https://vault.test.com")
         self.assertIsNone(collector.vault_token)
         self.assertEqual(collector.vault_url, "https://vault.test.com")
-        with input({"hidden": "v4UlTtok3N"}), mock.patch(
+        with mock_input({"hidden": "v4UlTtok3N"}), mock.patch(
             "bootstrap.collector.click.confirm", return_value=True
         ) as mocked_confirm:
             collector.set_vault()
@@ -357,7 +345,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the deployment type from its default value."""
         collector = Collector()
         self.assertIsNone(collector.deployment_type)
-        with input(""):
+        with mock_input(""):
             collector.set_deployment_type()
         self.assertEqual(collector.deployment_type, "digitalocean-k8s")
 
@@ -365,7 +353,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the deployment type from user input."""
         collector = Collector()
         self.assertIsNone(collector.deployment_type)
-        with input("bad-deployment-type", "yet-another-bad-value", "other-k8s"):
+        with mock_input("bad-deployment-type", "yet-another-bad-value", "other-k8s"):
             collector.set_deployment_type()
         self.assertEqual(collector.deployment_type, "other-k8s")
 
@@ -391,7 +379,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the environments distribution from its default value."""
         collector = Collector()
         self.assertIsNone(collector.environments_distribution)
-        with input(""):
+        with mock_input(""):
             collector.set_environments_distribution()
         self.assertEqual(collector.environments_distribution, "1")
 
@@ -399,7 +387,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the environments distribution from user input."""
         collector = Collector()
         self.assertIsNone(collector.environments_distribution)
-        with input("one", "yet-another-bad-value", "3"):
+        with mock_input("one", "yet-another-bad-value", "3"):
             collector.set_environments_distribution()
         self.assertEqual(collector.environments_distribution, "3")
 
@@ -423,7 +411,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.project_url_stage)
         self.assertIsNone(collector.project_url_prod)
         self.assertIsNone(collector.subdomain_monitoring)
-        with input("", "", "", "", "y", ""):
+        with mock_input("", "", "", "", "y", ""):
             collector.set_domain_and_urls()
         self.assertEqual(collector.project_domain, "test-project.com")
         self.assertEqual(collector.project_url_dev, "https://dev.test-project.com")
@@ -444,7 +432,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.project_url_dev)
         self.assertIsNone(collector.project_url_stage)
         self.assertIsNone(collector.project_url_prod)
-        with input(
+        with mock_input(
             "bad domain.com",
             "domain.com",
             "dev from input",
@@ -498,7 +486,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the certificate email from user input."""
         collector = Collector()
         self.assertIsNone(collector.letsencrypt_certificate_email)
-        with input(
+        with mock_input(
             "y",
             "not an email",
             "bad email @ really -bad . com      ",
@@ -511,7 +499,7 @@ class TestBootstrapCollector(TestCase):
         """Test collecting the certificate email from user input."""
         collector = Collector()
         self.assertIsNone(collector.letsencrypt_certificate_email)
-        with input("n"):
+        with mock_input("n"):
             collector.set_letsencrypt()
         self.assertIsNone(collector.letsencrypt_certificate_email)
 
@@ -553,7 +541,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.digitalocean_k8s_cluster_region)
         self.assertIsNone(collector.digitalocean_database_cluster_region)
         self.assertIsNone(collector.digitalocean_database_cluster_node_size)
-        with input("", "", "", "", ""):
+        with mock_input("", "", "", "", ""):
             collector.set_digitalocean()
         self.assertEqual(collector._digitalocean_enabled, True)
         self.assertEqual(collector.digitalocean_domain_create, True)
@@ -574,7 +562,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.digitalocean_k8s_cluster_region)
         self.assertIsNone(collector.digitalocean_database_cluster_region)
         self.assertIsNone(collector.digitalocean_database_cluster_node_size)
-        with input(
+        with mock_input(
             "n",
             "y",
             "k8s-cluster-region",
@@ -625,7 +613,7 @@ class TestBootstrapCollector(TestCase):
         self.assertEquals(
             collector.digitalocean_database_cluster_node_size, "db-size-from-options"
         )
-        with input(
+        with mock_input(
             "n", "y", "k8s-cluster-region", "database-cluster-region", "db-size"
         ):
             collector.set_digitalocean()
@@ -647,7 +635,7 @@ class TestBootstrapCollector(TestCase):
         """Test setting the DigitalOcean token from input."""
         collector = Collector()
         self.assertIsNone(collector.digitalocean_token)
-        with input(
+        with mock_input(
             {"hidden": "bad"}, {"hidden": "bad2"}, {"hidden": "more-than-8-chars"}
         ):
             collector.set_digitalocean_token()
@@ -672,7 +660,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.postgres_persistent_volume_claim_capacity)
         self.assertIsNone(collector.postgres_persistent_volume_host_path)
         certificate_path = str(BASE_DIR / "tests/fake_certificate")
-        with input(
+        with mock_input(
             certificate_path,
             "https://www.google.com",
             {"hidden": "toKenl0ngeR!"},
@@ -707,7 +695,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.postgres_persistent_volume_claim_capacity)
         self.assertIsNone(collector.postgres_persistent_volume_host_path)
         certificate_path = str(BASE_DIR / "tests/fake_certificate")
-        with input(
+        with mock_input(
             certificate_path,
             "https://www.google.com",
             {"hidden": "toKenl0ngeR!"},
@@ -734,7 +722,7 @@ class TestBootstrapCollector(TestCase):
             backend_service_slug="backend-slug", frontend_service_slug="frontend-slug"
         )
         self.assertIsNone(collector.sentry_org)
-        with input("n"):
+        with mock_input("n"):
             collector.set_sentry()
         self.assertIsNone(collector.sentry_org)
 
@@ -746,7 +734,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.sentry_org)
         self.assertIsNone(collector.sentry_url)
         self.assertIsNone(collector.sentry_auth_token)
-        with input(
+        with mock_input(
             "y",
             "sentry-input-organization",
             "",
@@ -785,7 +773,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.pact_broker_url)
         self.assertIsNone(collector.pact_broker_username)
         self.assertIsNone(collector.pact_broker_password)
-        with input(""):
+        with mock_input(""):
             collector.set_pact()
         self.assertIsNone(collector.pact_broker_url)
         self.assertIsNone(collector.pact_broker_username)
@@ -797,7 +785,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.pact_broker_url)
         self.assertIsNone(collector.pact_broker_username)
         self.assertIsNone(collector.pact_broker_password)
-        with input(
+        with mock_input(
             "y", "https://broker.url", "broker-username", {"hidden": "P4sSw0rd!"}
         ):
             collector.set_pact()
@@ -823,7 +811,7 @@ class TestBootstrapCollector(TestCase):
     def test_gitlab_no(self):
         """Test not setting Gitlab."""
         collector = Collector(gitlab_url="")
-        with input("n"):
+        with mock_input("n"):
             collector.set_gitlab()
         self.assertEqual(collector.gitlab_url, "")
 
@@ -837,7 +825,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.gitlab_group_owners)
         self.assertIsNone(collector.gitlab_group_maintainers)
         self.assertIsNone(collector.gitlab_group_developers)
-        with input("", "", {"hidden": "G1tl4b_Tok3n!"}, "", "", "y", "", "", ""):
+        with mock_input("", "", {"hidden": "G1tl4b_Tok3n!"}, "", "", "y", "", "", ""):
             collector.set_gitlab()
         self.assertEqual(collector.gitlab_url, "https://gitlab.com")
         self.assertEqual(collector.gitlab_token, "G1tl4b_Tok3n!")
@@ -857,7 +845,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.gitlab_group_owners)
         self.assertIsNone(collector.gitlab_group_maintainers)
         self.assertIsNone(collector.gitlab_group_developers)
-        with input(
+        with mock_input(
             "y",
             "https://gitlab.custom-domain.com",
             {"hidden": "input-G1tl4b_Tok3n!"},
@@ -908,7 +896,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         collector.set_digitalocean_spaces = mock.MagicMock()
         collector.set_aws_s3 = mock.MagicMock()
-        with input("", {"hidden": "s3_accEss!"}, {"hidden": "s3_s3crEt!"}):
+        with mock_input("", {"hidden": "s3_accEss!"}, {"hidden": "s3_s3crEt!"}):
             collector.set_storage()
         self.assertEqual(collector.media_storage, "digitalocean-s3")
         self.assertEqual(collector.s3_access_id, "s3_accEss!")
@@ -921,7 +909,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         collector.set_digitalocean_spaces = mock.MagicMock()
         collector.set_aws_s3 = mock.MagicMock()
-        with input(
+        with mock_input(
             "aws-s3", {"hidden": "s3_accEss!-input"}, {"hidden": "s3_s3crEt!-input"}
         ):
             collector.set_storage()
@@ -936,7 +924,7 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         collector.set_digitalocean_spaces = mock.MagicMock()
         collector.set_aws_s3 = mock.MagicMock()
-        with input(
+        with mock_input(
             "local", {"hidden": "s3_accEss!-input"}, {"hidden": "s3_s3crEt!-input"}
         ):
             collector.set_storage()
@@ -958,7 +946,7 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-options")
         collector.set_digitalocean_spaces = mock.MagicMock()
         collector.set_aws_s3 = mock.MagicMock()
-        with input("2", "s3_accEss-input", "s3_s3crEt!-input"):
+        with mock_input("2", "s3_accEss-input", "s3_s3crEt!-input"):
             collector.set_storage()
         self.assertEqual(collector.media_storage, "aws-s3")
         self.assertEqual(collector.s3_access_id, "s3_accEss!-options")
@@ -974,7 +962,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.s3_host)
         self.assertIsNone(collector.s3_bucket_name)
         collector.set_digitalocean_token = mock.MagicMock()
-        with input({"hidden": "VeRy_s3cr3t!1"}, "region"):
+        with mock_input({"hidden": "VeRy_s3cr3t!1"}, "region"):
             collector.set_digitalocean_spaces()
         self.assertEqual(collector.digitalocean_token, "VeRy_s3cr3t!1")
         self.assertEqual(collector.s3_region, "region")
@@ -989,7 +977,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.s3_host)
         self.assertIsNone(collector.s3_bucket_name)
         collector.set_digitalocean_token = mock.MagicMock()
-        with input({"hidden": "VeRy_s3cr3t!1"}, ""):
+        with mock_input({"hidden": "VeRy_s3cr3t!1"}, ""):
             collector.set_digitalocean_spaces()
         self.assertEqual(collector.digitalocean_token, "VeRy_s3cr3t!1")
         self.assertEqual(collector.s3_region, "fra1")
@@ -1018,7 +1006,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.s3_bucket_name)
         self.assertIsNone(collector.s3_host)
         self.assertIsNone(collector.s3_region)
-        with input("", "bucket_name"):
+        with mock_input("", "bucket_name"):
             collector.set_aws_s3()
         self.assertEqual(collector.s3_region, "eu-central-1")
         self.assertEqual(collector.s3_host, "")
@@ -1030,7 +1018,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.s3_bucket_name)
         self.assertIsNone(collector.s3_host)
         self.assertIsNone(collector.s3_region)
-        with input("custom-region", "bucket_name-input"):
+        with mock_input("custom-region", "bucket_name-input"):
             collector.set_aws_s3()
         self.assertEqual(collector.s3_region, "custom-region")
         self.assertEqual(collector.s3_host, "")

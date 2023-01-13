@@ -28,12 +28,12 @@ class CollectorJSONEncoder(json.JSONEncoder):
 
 
 def format_gitlab_variable(value, masked=False, protected=True):
-    """Format the given value to be used as a Terraform variable."""
+    """Format the given value to be used as a GitLab variable."""
     return (
         f'{{ value = "{value}"'
         + (masked and ", masked = true" or "")
         + (not protected and ", protected = false" or "")
-        + "}"
+        + " }"
     )
 
 
