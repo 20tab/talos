@@ -345,6 +345,7 @@ class Collector:
             self.set_digitalocean()
         elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
             self.set_kubernetes()
+        else: raise ValueError("Invalid deployment type.")
 
     def set_digitalocean(self):
         """Set the DigitalOcean options."""

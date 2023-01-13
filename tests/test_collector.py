@@ -7,7 +7,6 @@ from unittest import TestCase, mock
 
 from bootstrap.collector import Collector
 from bootstrap.constants import BASE_DIR
-from bootstrap.runner import Runner
 
 
 @contextmanager
@@ -539,6 +538,11 @@ class TestBootstrapCollector(TestCase):
         collector.set_kubernetes = mock.MagicMock()
         collector.set_deployment()
         collector.set_kubernetes.assert_called_once()
+    
+    def test_deployment_invalid(self):
+        """Test setting an invalid deployment."""
+        collector = Collector(deployment_type="invalid-deployment")
+        self.assertRaises(ValueError, collector.set_deployment)
 
     def test_digitalocean_default(self):
         """Test setting the Digitalocean options from default."""
@@ -572,7 +576,13 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.digitalocean_database_cluster_region)
         self.assertIsNone(collector.digitalocean_database_cluster_node_size)
         with input(
-            "n", "y", "k8s-cluster-region", "database-cluster-region", "db-size","","redis-cluster-size"
+            "n",
+            "y",
+            "k8s-cluster-region",
+            "database-cluster-region",
+            "db-size",
+            "",
+            "redis-cluster-size",
         ):
             collector.set_digitalocean()
         self.assertEqual(collector._digitalocean_enabled, True)
@@ -586,7 +596,9 @@ class TestBootstrapCollector(TestCase):
         )
         self.assertEqual(collector.digitalocean_database_cluster_node_size, "db-size")
         self.assertEqual(collector.digitalocean_redis_cluster_region, "fra1")
-        self.assertEqual(collector.digitalocean_redis_cluster_node_size, "redis-cluster-size")
+        self.assertEqual(
+            collector.digitalocean_redis_cluster_node_size, "redis-cluster-size"
+        )
 
     def test_digitalocean_options(self):
         """Test setting the Digitalocean options from options."""
@@ -681,7 +693,7 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(
             collector.postgres_persistent_volume_host_path, "persistent/host/path"
         )
-        self.assertEqual(collector.redis_image,"redis:6.2")
+        self.assertEqual(collector.redis_image, "redis:6.2")
 
     def test_kubernetes_input_no_redis(self):
         """Test setting Kubernets options from input without redis."""
@@ -715,16 +727,18 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(
             collector.postgres_persistent_volume_host_path, "persistent/host/path"
         )
-        self.assertEqual(collector.redis_image,"")
+        self.assertEqual(collector.redis_image, "")
 
-    def set_sentry_no(self):
+    def test_sentry_no(self):
+        """Test not setting Sentry."""
         collector = Collector(
             backend_service_slug="backend-slug", frontend_service_slug="frontend-slug"
         )
         self.assertIsNone(collector.sentry_org)
         with input("n"):
-            collector.set_sentry()    
+            collector.set_sentry()
         self.assertIsNone(collector.sentry_org)
+
     def test_sentry_default(self):
         """Test setting Sentry options from default."""
         collector = Collector(
@@ -762,6 +776,10 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.sentry_url, "https://other-sentry-url.com")
         self.assertEqual(collector.sentry_auth_token, "S0me!tok3n")
 
+    def test_sentry_dsn_no_service_slug(self):
+        """Test setting Sentry DSN options with slug resulting to False."""
+        self.assertIsNone(Collector.get_sentry_dsn(False, "sentry dsn"))
+        
     def test_sentry_dsn_default(self):
         """Test setting Sentry DSN options from default."""
         with input(""):
@@ -928,6 +946,22 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-input")
         collector.set_aws_s3.assert_called_once()
         collector.set_digitalocean_spaces.assert_not_called()
+
+    def test_storage_input_local(self):
+            """Test setting storage options from input."""
+            collector = Collector()
+            collector.set_digitalocean_spaces = mock.MagicMock()
+            collector.set_aws_s3 = mock.MagicMock()
+            with input(
+                "local", {"hidden": "s3_accEss!-input"}, {"hidden": "s3_s3crEt!-input"}
+            ):
+                collector.set_storage()
+            self.assertEqual(collector.media_storage, "local")
+            self.assertFalse(collector.store_secrets)
+            self.assertEqual(collector.s3_access_id, "s3_accEss!-input")
+            self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-input")
+            collector.set_aws_s3.assert_not_called()
+            collector.set_digitalocean_spaces.assert_not_called()
 
     def test_storage_options(self):
         """Test setting storage options from options."""
@@ -1112,6 +1146,7 @@ class TestBootstrapCollector(TestCase):
         collector.set_pact.assert_called_once()
         collector.set_gitlab.assert_called_once()
         collector.set_storage.assert_called_once()
+
     # def test_clean_kubernetes_credentials(self):
     #     """Test cleaning the Kubernetes credentials."""
     #     certificate_path = Path(__file__).parent / "__init__.py"
