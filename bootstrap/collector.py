@@ -345,7 +345,8 @@ class Collector:
             self.set_digitalocean()
         elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
             self.set_kubernetes()
-        else: raise ValueError("Invalid deployment type.")
+        else:
+            raise ValueError("Invalid deployment type.")
 
     def set_digitalocean(self):
         """Set the DigitalOcean options."""
@@ -446,23 +447,18 @@ class Collector:
             self.sentry_auth_token = validate_or_prompt_secret(
                 "Sentry auth token", self.sentry_auth_token
             )
-            self.backend_sentry_dsn = self.get_sentry_dsn(
-                self.backend_service_slug, self.backend_sentry_dsn
+            self.backend_sentry_dsn = self.backend_sentry_dsn or validate_or_prompt_url(
+                f"Sentry DSN of the {self.backend_service_slug} service (leave blank if unused)",
+                self.backend_sentry_dsn,
+                default="",
+                required=False,
             )
-            self.frontend_sentry_dsn = self.get_sentry_dsn(
-                self.frontend_service_slug, self.frontend_sentry_dsn
+            self.frontend_sentry_dsn = self.frontend_sentry_dsn or validate_or_prompt_url(
+                f"Sentry DSN of the {self.frontend_service_slug} service (leave blank if unused)",
+                self.frontend_sentry_dsn,
+                default="",
+                required=False,
             )
-
-    @staticmethod
-    def get_sentry_dsn(service_slug, sentry_dsn):
-        """Set the given service Sentry DSN."""
-
-        return validate_or_prompt_url(
-            f"Sentry DSN of the {service_slug} service (leave blank if unused)",
-            sentry_dsn,
-            default="",
-            required=False,
-        )
 
     def set_pact(self):
         """Set the Pact options."""
@@ -481,7 +477,7 @@ class Collector:
             )
 
     def set_gitlab(self):
-        """Return the GitLab options."""
+        """Set the GitLab options."""
         if self.gitlab_url or (
             self.gitlab_url is None
             and click.confirm(warning("Do you want to use GitLab?"), default=True)
@@ -534,7 +530,6 @@ class Collector:
                 default=MEDIA_STORAGE_DIGITALOCEAN_S3,
                 type=click.Choice(MEDIA_STORAGE_CHOICES, case_sensitive=False),
             ).lower()
-        self.store_secrets = bool(self.gitlab_url or self.vault_url)
         if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
             self.set_digitalocean_spaces()
         elif self.media_storage == MEDIA_STORAGE_AWS_S3:

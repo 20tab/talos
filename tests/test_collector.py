@@ -1,10 +1,9 @@
-"""Project bootstrap tests."""
+"""Bootstrap collector tests."""
 
 from contextlib import contextmanager
 from io import StringIO
 from pathlib import Path
 from unittest import TestCase, mock
-
 from bootstrap.collector import Collector
 from bootstrap.constants import BASE_DIR
 
@@ -538,7 +537,7 @@ class TestBootstrapCollector(TestCase):
         collector.set_kubernetes = mock.MagicMock()
         collector.set_deployment()
         collector.set_kubernetes.assert_called_once()
-    
+
     def test_deployment_invalid(self):
         """Test setting an invalid deployment."""
         collector = Collector(deployment_type="invalid-deployment")
@@ -744,15 +743,19 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(
             backend_service_slug="backend-slug", frontend_service_slug="frontend-slug"
         )
-        collector.get_sentry_dsn = mock.MagicMock()
         self.assertIsNone(collector.sentry_org)
         self.assertIsNone(collector.sentry_url)
         self.assertIsNone(collector.sentry_auth_token)
         with input(
-            "y", "sentry-input-organization", "", {"hidden": "s3ntrY-4uth-t0kEn!"}
+            "y",
+            "sentry-input-organization",
+            "",
+            {"hidden": "s3ntrY-4uth-t0kEn!"},
+            "",
+            "https://backend.sentry.dsn",
+            "https://frontend.sentry.dsn",
         ):
             collector.set_sentry()
-        self.assertEqual(collector.get_sentry_dsn.call_count, 2)
         self.assertEqual(collector.sentry_org, "sentry-input-organization")
         self.assertEqual(collector.sentry_url, "https://sentry.io")
         self.assertEqual(collector.sentry_auth_token, "s3ntrY-4uth-t0kEn!")
@@ -765,29 +768,16 @@ class TestBootstrapCollector(TestCase):
             sentry_org="sentry-options-organization",
             sentry_url="https://other-sentry-url.com",
             sentry_auth_token="S0me!tok3n",
+            backend_sentry_dsn="https://backend.sentry.dsn",
+            frontend_sentry_dsn="https://frontend.sentry.dsn",
         )
-        collector.get_sentry_dsn = mock.MagicMock()
         self.assertEqual(collector.sentry_org, "sentry-options-organization")
         self.assertEqual(collector.sentry_url, "https://other-sentry-url.com")
         self.assertEqual(collector.sentry_auth_token, "S0me!tok3n")
         collector.set_sentry()
-        self.assertEqual(collector.get_sentry_dsn.call_count, 2)
         self.assertEqual(collector.sentry_org, "sentry-options-organization")
         self.assertEqual(collector.sentry_url, "https://other-sentry-url.com")
         self.assertEqual(collector.sentry_auth_token, "S0me!tok3n")
-
-    def test_sentry_dsn_default(self):
-        """Test setting Sentry DSN options from default."""
-        with input(""):
-            self.assertEqual(Collector.get_sentry_dsn("service-slug", "dsn"), "")
-
-    def test_sentry_dsn_input(self):
-        """Test setting Sentry DSN options from input."""
-        with input("https://www.google.com"):
-            self.assertEqual(
-                Collector.get_sentry_dsn("service-slug", "dsn"),
-                "https://www.google.com",
-            )
 
     def test_pact_default(self):
         """Test setting Pact options from default."""
@@ -921,7 +911,6 @@ class TestBootstrapCollector(TestCase):
         with input("", {"hidden": "s3_accEss!"}, {"hidden": "s3_s3crEt!"}):
             collector.set_storage()
         self.assertEqual(collector.media_storage, "digitalocean-s3")
-        self.assertFalse(collector.store_secrets)
         self.assertEqual(collector.s3_access_id, "s3_accEss!")
         self.assertEqual(collector.s3_secret_key, "s3_s3crEt!")
         collector.set_digitalocean_spaces.assert_called_once()
@@ -937,27 +926,25 @@ class TestBootstrapCollector(TestCase):
         ):
             collector.set_storage()
         self.assertEqual(collector.media_storage, "aws-s3")
-        self.assertFalse(collector.store_secrets)
         self.assertEqual(collector.s3_access_id, "s3_accEss!-input")
         self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-input")
         collector.set_aws_s3.assert_called_once()
         collector.set_digitalocean_spaces.assert_not_called()
 
     def test_storage_input_local(self):
-            """Test setting storage options from input."""
-            collector = Collector()
-            collector.set_digitalocean_spaces = mock.MagicMock()
-            collector.set_aws_s3 = mock.MagicMock()
-            with input(
-                "local", {"hidden": "s3_accEss!-input"}, {"hidden": "s3_s3crEt!-input"}
-            ):
-                collector.set_storage()
-            self.assertEqual(collector.media_storage, "local")
-            self.assertFalse(collector.store_secrets)
-            self.assertEqual(collector.s3_access_id, "s3_accEss!-input")
-            self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-input")
-            collector.set_aws_s3.assert_not_called()
-            collector.set_digitalocean_spaces.assert_not_called()
+        """Test setting storage options from input."""
+        collector = Collector()
+        collector.set_digitalocean_spaces = mock.MagicMock()
+        collector.set_aws_s3 = mock.MagicMock()
+        with input(
+            "local", {"hidden": "s3_accEss!-input"}, {"hidden": "s3_s3crEt!-input"}
+        ):
+            collector.set_storage()
+        self.assertEqual(collector.media_storage, "local")
+        self.assertEqual(collector.s3_access_id, "s3_accEss!-input")
+        self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-input")
+        collector.set_aws_s3.assert_not_called()
+        collector.set_digitalocean_spaces.assert_not_called()
 
     def test_storage_options(self):
         """Test setting storage options from options."""
@@ -974,7 +961,6 @@ class TestBootstrapCollector(TestCase):
         with input("2", "s3_accEss-input", "s3_s3crEt!-input"):
             collector.set_storage()
         self.assertEqual(collector.media_storage, "aws-s3")
-        self.assertFalse(collector.store_secrets)
         self.assertEqual(collector.s3_access_id, "s3_accEss!-options")
         self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-options")
         collector.set_aws_s3.assert_called_once()
