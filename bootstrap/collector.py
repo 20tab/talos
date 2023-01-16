@@ -493,7 +493,7 @@ class Collector:
                 self.gitlab_namespace_path,
                 default="",
                 required=False,
-            )
+            ).strip("/")
             self.gitlab_group_slug = slugify(
                 self.gitlab_group_slug
                 or click.prompt("GitLab group slug", default=self.project_slug)

@@ -7,6 +7,7 @@ from bootstrap.collector import Collector
 from bootstrap.constants import BASE_DIR
 from tests.test_utils import mock_input
 
+
 class TestBootstrapCollector(TestCase):
     """Test the bootstrap collector."""
 
@@ -305,7 +306,10 @@ class TestBootstrapCollector(TestCase):
         collector = Collector()
         self.assertIsNone(collector.vault_token)
         self.assertIsNone(collector.vault_url)
-        with mock_input({"hidden": "v4UlTtok3N"}, "https://vault.test.com",), mock.patch(
+        with mock_input(
+            {"hidden": "v4UlTtok3N"},
+            "https://vault.test.com",
+        ), mock.patch(
             "bootstrap.collector.click.confirm", return_value=True
         ) as mocked_confirm:
             collector.set_vault()
