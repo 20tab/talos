@@ -162,9 +162,10 @@ module "monitoring" {
 
   source = "../modules/kubernetes/monitoring"
 
-  grafana_user     = var.grafana_user
-  grafana_password = var.grafana_password
-  grafana_version  = var.grafana_version
+  grafana_user                = var.grafana_user
+  grafana_password            = var.grafana_password
+  grafana_persistence_enabled = var.grafana_persistence_enabled
+  grafana_version             = var.grafana_version
 }
 
 /* Routing */

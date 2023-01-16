@@ -83,6 +83,12 @@ variable "grafana_password" {
   default     = ""
 }
 
+variable "grafana_persistence_enabled" {
+  description = "Tell if the grafana persistence should be enabled."
+  type        = bool
+  default     = false
+}
+
 variable "grafana_user" {
   description = "The Grafana admin username."
   type        = string

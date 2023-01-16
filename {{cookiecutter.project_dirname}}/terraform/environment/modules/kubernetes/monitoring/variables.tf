@@ -13,3 +13,9 @@ variable "grafana_version" {
   description = "The Grafana version."
   type        = string
 }
+
+variable "grafana_persistence_enabled" {
+  description = "Enable grafana persistence."
+  type        = bool
+  default     = false
+}
