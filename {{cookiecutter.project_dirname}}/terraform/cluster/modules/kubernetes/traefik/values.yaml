@@ -1,6 +1,11 @@
+# Custom values for Traefik
+# https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml
+
 logs:
   general:
-    level: "ERROR"
+    level: "INFO"
+  access:
+    enabled: true
 
 providers:
   kubernetesIngress:
