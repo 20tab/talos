@@ -28,7 +28,7 @@ variable "s3_bucket_name" {
 }
 
 variable "s3_host" {
-  description = "The S3 host url."
+  description = "The S3 host."
   type        = string
   default     = ""
 }
