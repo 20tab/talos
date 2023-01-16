@@ -4,8 +4,8 @@ locals {
   s3_storage_enabled = alltrue(
     [
       var.s3_access_id != "",
-      local.s3_bucket_name != "",
-      local.s3_host != "",
+      var.s3_bucket_name != "",
+      var.s3_host != "",
       var.s3_region != "",
       var.s3_secret_key != "",
     ]
