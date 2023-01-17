@@ -14,9 +14,4 @@ loki:
         cache_ttl: 24h # Can be increased for faster performance over longer query periods, uses more disk space
         shared_store: aws
       aws:
-        # bucketnames: <YOUR_DO_SPACES_BUCKET_NAME_HERE>
-        # endpoint: <YOUR_DO_SPACES_BUCKET_ENDPOINT_HERE>  # e.g.: nyc1.digitaloceanspaces.com
-        # region: <YOUR_DO_SPACES_BUCKET_REGION_HERE>      # e.g.: nyc1
-        # access_key_id: <YOUR_DO_SPACES_ACCESS_KEY_HERE>
-        # secret_access_key: <YOURDO_SPACES_SECRET_KEY_HERE>
         s3forcepathstyle: true

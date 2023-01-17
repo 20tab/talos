@@ -41,10 +41,10 @@ resource "helm_release" "loki" {
   chart      = "loki-stack"
   version    = "2.6.4"
 
-  values = concat(
-    [file("${path.module}/loki/values.yaml")], 
-    local.s3_storage_enabled ? [file("${path.module}/loki/s3_storage.yaml")] : [file("${path.module}/loki/pvc_storage.yaml")]
-  )
+  values = [
+    file("${path.module}/loki/values.yaml"),
+    local.s3_storage_enabled ? file("${path.module}/loki/s3_storage.yaml") : file("${path.module}/loki/pvc_storage.yaml")
+  ]
 
   dynamic "set" {
     for_each = local.s3_storage_enabled ? {
