@@ -1,5 +1,16 @@
 locals {
   namespace = kubernetes_namespace_v1.log_storage.metadata[0].name
+
+  s3_storage_enabled = alltrue(
+    [
+      var.s3_access_id != "",
+      var.s3_bucket_name != "",
+      var.s3_host != "",
+      var.s3_region != "",
+      var.s3_secret_key != "",
+    ]
+  )
+
 }
 
 terraform {
@@ -15,15 +26,6 @@ terraform {
   }
 }
 
-/* Kube State Metrics */
-
-resource "helm_release" "kube_state_metrics" {
-  name       = "kube-state-metrics"
-  namespace  = "kube-system"
-  repository = "https://charts.bitnami.com/bitnami"
-  chart      = "kube-state-metrics"
-}
-
 /* Grafana Loki - logs storage */
 
 resource "kubernetes_namespace_v1" "log_storage" {
@@ -37,17 +39,21 @@ resource "helm_release" "loki" {
   namespace  = local.namespace
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
-  version    = "2.6.1"
+  version    = "2.6.4"
+
+  values = [
+    file("${path.module}/loki/values.yaml"),
+    local.s3_storage_enabled ? file("${path.module}/loki/s3_storage.yaml") : file("${path.module}/loki/pvc_storage.yaml")
+  ]
 
   dynamic "set" {
-    for_each = {
-      "promtail.enabled"                                    = "true"
-      "loki.persistence.enabled"                            = "true"
-      "loki.persistence.size"                               = "10Gi"
-      "loki.config.chunk_store_config.max_look_back_period" = "4200h"
-      "loki.config.table_manager.retention_deletes_enabled" = "true"
-      "loki.config.table_manager.retention_period"          = "4200h"
-    }
+    for_each = local.s3_storage_enabled ? {
+      "loki.config.storage_config.aws.access_key_id"      = var.s3_access_id
+      "loki.config.storage_config.aws.bucketnames"        = var.s3_bucket_name
+      "loki.config.storage_config.aws.endpoint"           = var.s3_host
+      "loki.config.storage_config.aws.region"             = var.s3_region
+      "loki.config.storage_config.aws.secret_access_key"  = var.s3_secret_key
+    } : {}
     content {
       name  = set.key
       value = set.value
