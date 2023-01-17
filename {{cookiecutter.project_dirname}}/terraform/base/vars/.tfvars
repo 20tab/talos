@@ -6,4 +6,4 @@
 # k8s_cluster_node_size=""
 # k8s_cluster_version=""
 # redis_cluster_node_count=1
-# redis_cluster_version="6"
+# redis_cluster_version="7"
