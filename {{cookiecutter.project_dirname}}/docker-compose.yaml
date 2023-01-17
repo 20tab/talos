@@ -9,7 +9,8 @@ services:
       context: ./{{ cookiecutter.backend_service_slug }}
       target: ${BACKEND_BUILD_TARGET:-local}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       - CACHE_URL
       - DATABASE_URL
@@ -37,7 +38,8 @@ services:
       context: ./{{ cookiecutter.frontend_service_slug }}
       dockerfile: docker/local.Dockerfile{% if cookiecutter.backend_type != "none" %}
     depends_on:
-      - {{ cookiecutter.backend_service_slug }}{% endif %}
+      {{ cookiecutter.backend_service_slug }}
+        condition: service_started{% endif %}
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
       - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
@@ -63,6 +65,11 @@ services:
       - POSTGRES_DB={{ cookiecutter.project_slug }}
       - POSTGRES_INITDB_ARGS=--no-sync
       - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 3s
+      timeout: 3s
+      retries: 30
     image: postgres:14-bullseye
     volumes:
       - pg_data:/var/lib/postgresql/data
