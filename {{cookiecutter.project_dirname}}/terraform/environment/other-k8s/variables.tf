@@ -84,7 +84,7 @@ variable "grafana_password" {
 }
 
 variable "grafana_persistence_enabled" {
-  description = "Tell if the grafana persistence should be enabled."
+  description = "Enable grafana persistence."
   type        = bool
   default     = false
 }
