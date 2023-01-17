@@ -1,0 +1,10 @@
+## Digitalocean k8s starter kit metrics-server 
+## Ref: https://github.com/digitalocean/Kubernetes-Starter-Kit-Developers/blob/main/07-scaling-application-workloads/assets/manifests/metrics-server-values-v3.8.2.yaml
+
+replicas: 2
+
+apiService:
+  create: true
+
+hostNetwork:
+  enabled: false
