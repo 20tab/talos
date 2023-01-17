@@ -11,7 +11,7 @@ locals {
 
   traefik_hosts = join(", ", [for i in local.domains : "`${i}`"])
 
-  base_middlewares = var.basic_auth_enabled && local.basic_auth_ready ? [{ "name" : "traefik-basic-auth-middleware" }] : []
+  base_middlewares = var.basic_auth_enabled && local.basic_auth_ready ? [{ "name" : "traefik-basic-auth" }] : []
 
   letsencrypt_enabled        = var.letsencrypt_certificate_email != ""
   manual_certificate_enabled = var.tls_certificate_crt != "" && var.tls_certificate_key != ""
@@ -54,7 +54,7 @@ resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
     "apiVersion" = "traefik.containo.us/v1alpha1"
     "kind"       = "Middleware"
     "metadata" = {
-      "name"      = "traefik-basic-auth-middleware"
+      "name"      = "traefik-basic-auth"
       "namespace" = var.namespace
     }
     "spec" = {
@@ -315,7 +315,7 @@ resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "Middleware"
     metadata = {
-      name      = "metrics-basic-auth-middleware"
+      name      = "metrics-basic-auth"
       namespace = "kube-system"
     }
     spec = {
@@ -344,7 +344,7 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
             {
               kind        = "Rule"
               match       = "Host(`${local.traefik_hosts}`) && PathPrefix(`/metrics`)"
-              middlewares = [{ "name" : "metrics-basic-auth-middleware" }]
+              middlewares = [{ "name" : "metrics-basic-auth" }]
               services = [
                 {
                   name = "kube-state-metrics"
