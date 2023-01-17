@@ -162,9 +162,10 @@ module "monitoring" {
 
   source = "../modules/kubernetes/monitoring"
 
-  grafana_user     = var.grafana_user
-  grafana_password = var.grafana_password
-  grafana_version  = var.grafana_version
+  grafana_password            = var.grafana_password
+  grafana_persistence_enabled = var.grafana_persistence_enabled
+  grafana_user                = var.grafana_user
+  grafana_version             = var.grafana_version
 
   s3_region       = var.s3_region
   s3_access_id    = var.s3_access_id

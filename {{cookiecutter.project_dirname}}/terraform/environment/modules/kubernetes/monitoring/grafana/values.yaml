@@ -1,7 +1,13 @@
+## Grafana Helm Chart
+## https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+
+## DO K8s Starter Kit
+## https://github.com/digitalocean/Kubernetes-Starter-Kit-Developers/blob/main/04-setup-observability/assets/manifests/prom-stack-values-v35.5.1.yaml
+
 persistence:
-  type: pvc
-  enabled: false
-  size: 10Gi
+  storageClassName: do-block-storage
+  accessModes: ["ReadWriteOnce"]
+  size: 5Gi
 
 datasources:
   datasources.yaml:

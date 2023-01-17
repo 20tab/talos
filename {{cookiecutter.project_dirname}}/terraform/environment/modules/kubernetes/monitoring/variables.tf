@@ -4,6 +4,12 @@ variable "grafana_password" {
   sensitive   = true
 }
 
+variable "grafana_persistence_enabled" {
+  description = "Enable grafana persistence."
+  type        = bool
+  default     = false
+}
+
 variable "grafana_user" {
   description = "The Grafana admin username."
   type        = string

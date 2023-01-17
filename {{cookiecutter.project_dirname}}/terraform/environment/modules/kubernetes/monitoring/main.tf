@@ -86,9 +86,10 @@ resource "helm_release" "grafana" {
 
   dynamic "set" {
     for_each = {
-      "image.tag"     = var.grafana_version
-      "adminUser"     = var.grafana_user
-      "adminPassword" = var.grafana_password
+      "image.tag"           = var.grafana_version
+      "adminUser"           = var.grafana_user
+      "adminPassword"       = var.grafana_password
+      "persistence.enabled" = var.grafana_persistence_enabled
     }
     content {
       name  = set.key
