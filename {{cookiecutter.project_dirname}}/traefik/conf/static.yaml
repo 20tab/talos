@@ -13,6 +13,8 @@ entryPoints:
 log:
   level: ERROR
 
+ping: true
+
 providers:
   file:
     filename: /traefik/conf/dynamic.yaml
