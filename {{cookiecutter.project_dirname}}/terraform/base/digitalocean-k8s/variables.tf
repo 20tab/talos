@@ -112,7 +112,7 @@ variable "redis_cluster_region" {
 variable "redis_cluster_version" {
   description = "The DigitalOcean Redis cluster major version."
   type        = string
-  default     = "6"
+  default     = "7"
 }
 
 variable "s3_access_id" {
