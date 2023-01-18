@@ -5,7 +5,7 @@ from pathlib import Path
 from time import time
 from unittest import TestCase, mock
 
-from freezegun import freeze_time
+from time_machine import travel
 
 from bootstrap.constants import DUMPS_DIR
 from bootstrap.helpers import (
@@ -93,7 +93,7 @@ class JSONEncoderTestCase(TestCase):
             )
 
 
-@freeze_time("2022-01-13 14:00:00")
+@travel("2022-01-13 14:00:00")
 class DumpOptionsTestCase(TestCase):
     """Test the 'dump_options' function."""
 

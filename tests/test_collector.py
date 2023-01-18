@@ -604,34 +604,34 @@ class TestBootstrapCollector(TestCase):
             digitalocean_database_cluster_node_size="db-size-from-options",
         )
         collector.set_digitalocean_token = mock.MagicMock()
-        self.assertEquals(collector._digitalocean_enabled, False)
-        self.assertEquals(collector.digitalocean_domain_create, False)
-        self.assertEquals(collector.digitalocean_dns_records_create, True)
-        self.assertEquals(
+        self.assertEqual(collector._digitalocean_enabled, False)
+        self.assertEqual(collector.digitalocean_domain_create, False)
+        self.assertEqual(collector.digitalocean_dns_records_create, True)
+        self.assertEqual(
             collector.digitalocean_k8s_cluster_region, "k8s-cluster-region-from-options"
         )
-        self.assertEquals(
+        self.assertEqual(
             collector.digitalocean_database_cluster_region,
             "database-cluster-region-from-options",
         )
-        self.assertEquals(
+        self.assertEqual(
             collector.digitalocean_database_cluster_node_size, "db-size-from-options"
         )
         with mock_input(
             "n", "y", "k8s-cluster-region", "database-cluster-region", "db-size"
         ):
             collector.set_digitalocean()
-        self.assertEquals(collector._digitalocean_enabled, True)
-        self.assertEquals(collector.digitalocean_domain_create, False)
-        self.assertEquals(collector.digitalocean_dns_records_create, True)
-        self.assertEquals(
+        self.assertEqual(collector._digitalocean_enabled, True)
+        self.assertEqual(collector.digitalocean_domain_create, False)
+        self.assertEqual(collector.digitalocean_dns_records_create, True)
+        self.assertEqual(
             collector.digitalocean_k8s_cluster_region, "k8s-cluster-region-from-options"
         )
-        self.assertEquals(
+        self.assertEqual(
             collector.digitalocean_database_cluster_region,
             "database-cluster-region-from-options",
         )
-        self.assertEquals(
+        self.assertEqual(
             collector.digitalocean_database_cluster_node_size, "db-size-from-options"
         )
 
@@ -643,13 +643,13 @@ class TestBootstrapCollector(TestCase):
             {"hidden": "bad"}, {"hidden": "bad2"}, {"hidden": "more-than-8-chars"}
         ):
             collector.set_digitalocean_token()
-        self.assertEquals(collector.digitalocean_token, "more-than-8-chars")
+        self.assertEqual(collector.digitalocean_token, "more-than-8-chars")
 
     def test_digitalocean_token_options(self):
         """Test setting the DigitalOcean token from options."""
         collector = Collector(digitalocean_token="options-token")
         collector.set_digitalocean_token()
-        self.assertEquals(collector.digitalocean_token, "options-token")
+        self.assertEqual(collector.digitalocean_token, "options-token")
 
     def test_kubernetes_input_redis(self):
         """Test setting Kubernets options from input with redis."""

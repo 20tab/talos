@@ -1,28 +1,29 @@
 default_language_version:
-  python: python3
+  python: python3.11
+exclude: ^(\{\{cookiecutter\.project_dirname\}\}.*)$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v4.4.0"
     hooks:
       - id: check-added-large-files
+        args: ["--maxkb=1024"]
       - id: check-case-conflict
       - id: check-docstring-first
       - id: check-json
       - id: check-merge-conflict
-      - id: check-symlinks
       - id: check-toml
-      - id: check-xml
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
       - id: debug-statements
       - id: detect-private-key
         exclude: ^\{\{cookiecutter.project_dirname\}\}\/traefik\/localhost\/key.pem$
       - id: end-of-file-fixer
       - id: file-contents-sorter
-        files: ^(requirements.in)$
+        files: ^(requirements/\w*.in)$
         args: ["--ignore-case", "--unique"]
       - id: fix-byte-order-marker
       - id: fix-encoding-pragma
         args: ["--remove"]
-      - id: forbid-new-submodules
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/asottile/pyupgrade
@@ -40,8 +41,18 @@ repos:
       - id: prettier
         files: ^(?!.*\b(tfvars|tf|yaml|yml)\b)
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.218
+    rev: v0.0.225
     hooks:
       - id: ruff
         args:
           - --fix
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v0.991"
+    hooks:
+      - id: mypy
+        args: ["--no-site-packages"]
+  - repo: https://github.com/trailofbits/pip-audit
+    rev: v2.4.13
+    hooks:
+      - id: pip-audit
+        args: ["--require-hashes", "--requirement", "requirements/local.txt"]
