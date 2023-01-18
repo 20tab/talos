@@ -163,6 +163,7 @@ kubeconfig.yaml
 
 # Locals
 *.local.yaml
+.trivy
 
 # Terraform
 secrets.tf
