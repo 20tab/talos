@@ -84,7 +84,7 @@ class Runner:
     kubernetes_cluster_ca_certificate: str | None = None
     kubernetes_host: str | None = None
     kubernetes_token: str | None = None
-    environment_distribution: str
+    environments_distribution: str
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -122,7 +122,7 @@ class Runner:
     s3_secret_key: str | None = None
     s3_bucket_name: str | None = None
     gitlab_url: str | None = None
-    gitlab_private_token: str | None = None
+    gitlab_token: str | None = None
     gitlab_namespace_path: str | None = None
     gitlab_group_slug: str | None = None
     gitlab_group_owners: str | None = None
@@ -149,14 +149,10 @@ class Runner:
         self.run_id = f"{time():.0f}"
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
-        self.set_stacks()
-        self.set_envs()
-        self.collect_tfvars()
-        self.collect_gitlab_variables()
 
     def set_stacks(self):
         """Set the stacks."""
-        self.stacks = STACKS_CHOICES[self.environment_distribution]
+        self.stacks = STACKS_CHOICES[self.environments_distribution]
 
     def set_envs(self):
         """Set the envs."""
@@ -167,7 +163,7 @@ class Runner:
                 "prefix": self.subdomain_dev,
                 "slug": DEV_ENV_SLUG,
                 "stack_slug": DEV_ENV_STACK_CHOICES.get(
-                    self.environment_distribution, DEV_STACK_SLUG
+                    self.environments_distribution, DEV_STACK_SLUG
                 ),
                 "url": self.project_url_dev,
             },
@@ -177,7 +173,7 @@ class Runner:
                 "prefix": self.subdomain_stage,
                 "slug": STAGE_ENV_SLUG,
                 "stack_slug": STAGE_ENV_STACK_CHOICES.get(
-                    self.environment_distribution, STAGE_STACK_SLUG
+                    self.environments_distribution, STAGE_STACK_SLUG
                 ),
                 "url": self.project_url_stage,
             },
@@ -187,7 +183,7 @@ class Runner:
                 "prefix": self.subdomain_prod,
                 "slug": PROD_ENV_SLUG,
                 "stack_slug": PROD_ENV_STACK_CHOICES.get(
-                    self.environment_distribution, MAIN_STACK_SLUG
+                    self.environments_distribution, MAIN_STACK_SLUG
                 ),
                 "url": self.project_url_prod,
             },
@@ -520,7 +516,7 @@ class Runner:
                 "backend_service_slug": self.backend_service_slug,
                 "backend_type": self.backend_type,
                 "deployment_type": self.deployment_type,
-                "environment_distribution": self.environment_distribution,
+                "environments_distribution": self.environments_distribution,
                 "frontend_service_port": self.frontend_service_port,
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
@@ -556,7 +552,7 @@ class Runner:
         click.echo(info("...creating the GitLab resources with Terraform"))
         env = {
             "TF_VAR_gitlab_url": self.gitlab_url,
-            "TF_VAR_gitlab_token": self.gitlab_private_token,
+            "TF_VAR_gitlab_token": self.gitlab_token,
             "TF_VAR_group_maintainers": self.gitlab_group_maintainers,
             "TF_VAR_group_name": self.project_name,
             "TF_VAR_group_namespace_path": self.gitlab_namespace_path,
@@ -772,13 +768,13 @@ class Runner:
         )
         options = {
             "deployment_type": self.deployment_type,
-            "environment_distribution": self.environment_distribution,
+            "environments_distribution": self.environments_distribution,
             "gid": self.gid,
             "gitlab_url": self.gitlab_url,
             "gitlab_group_path": str(
                 Path(self.gitlab_namespace_path) / self.gitlab_group_slug
             ),
-            "gitlab_private_token": self.gitlab_private_token,
+            "gitlab_token": self.gitlab_token,
             "logs_dir": str(self.logs_dir.resolve()),
             "output_dir": str(self.service_dir.resolve()),
             "project_dirname": service_slug,
@@ -839,6 +835,10 @@ class Runner:
     def run(self):
         """Run the bootstrap."""
         click.echo(highlight(f"Initializing the {self.service_slug} service:"))
+        self.set_stacks()
+        self.set_envs()
+        self.collect_tfvars()
+        self.collect_gitlab_variables()
         self.init_service()
         self.create_env_file()
         if self.terraform_backend == TERRAFORM_BACKEND_TFC:

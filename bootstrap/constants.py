@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-DUMPS_DIR = Path(__file__).parent.parent / ".dumps"
+BASE_DIR = Path(__file__).parent.parent
+DUMPS_DIR = BASE_DIR / ".dumps"
 
 # Stacks
 
@@ -102,11 +103,11 @@ DEPLOYMENT_TYPE_CHOICES = [DEPLOYMENT_TYPE_DIGITALOCEAN, DEPLOYMENT_TYPE_OTHER]
 
 # Environments distribution
 
-ENVIRONMENT_DISTRIBUTION_DEFAULT = "1"
+ENVIRONMENTS_DISTRIBUTION_DEFAULT = "1"
 
-ENVIRONMENT_DISTRIBUTION_CHOICES = [ENVIRONMENT_DISTRIBUTION_DEFAULT, "2", "3"]
+ENVIRONMENTS_DISTRIBUTION_CHOICES = [ENVIRONMENTS_DISTRIBUTION_DEFAULT, "2", "3"]
 
-ENVIRONMENT_DISTRIBUTION_PROMPT = """Choose the environments distribution:
+ENVIRONMENTS_DISTRIBUTION_PROMPT = """Choose the environments distribution:
   1 - All environments share the same stack (Default)
   2 - Dev and Stage environments share the same stack, Prod has its own
   3 - Each environment has its own stack
@@ -148,3 +149,20 @@ TERRAFORM_BACKEND_CHOICES = [TERRAFORM_BACKEND_TFC, TERRAFORM_BACKEND_GITLAB]
 # GitLab
 
 GITLAB_URL_DEFAULT = "https://gitlab.com"
+
+# Dump
+
+DUMP_EXCLUDED_OPTIONS = (
+    "backend_sentry_dsn",
+    "digitalocean_token",
+    "frontend_sentry_dsn",
+    "gitlab_token",
+    "kubernetes_token",
+    "pact_broker_password",
+    "s3_access_id",
+    "s3_secret_key",
+    "sentry_auth_token",
+    "service_dir",
+    "terraform_cloud_token",
+    "vault_token",
+)

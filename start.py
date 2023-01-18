@@ -1,24 +1,21 @@
 #!/usr/bin/env python
 """Initialize a template based web project."""
 
-import os
+from dataclasses import asdict
 from pathlib import Path
 
 import click
 
-from bootstrap.collector import collect
+from bootstrap.collector import Collector
 from bootstrap.constants import (
     DEPLOYMENT_TYPE_CHOICES,
-    ENVIRONMENT_DISTRIBUTION_CHOICES,
+    ENVIRONMENTS_DISTRIBUTION_CHOICES,
     GITLAB_TOKEN_ENV_VAR,
     MEDIA_STORAGE_CHOICES,
     VAULT_TOKEN_ENV_VAR,
 )
 from bootstrap.exceptions import BootstrapError
-from bootstrap.helpers import slugify_option
-from bootstrap.runner import Runner
-
-OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
+from bootstrap.helpers import dump_options, load_options, slugify_option
 
 
 @click.command()
@@ -26,7 +23,8 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--gid", type=int)
 @click.option(
     "--output-dir",
-    default=OUTPUT_DIR,
+    default=".",
+    envvar="OUTPUT_BASE_DIR",
     type=click.Path(
         exists=True, path_type=Path, file_okay=False, readable=True, writable=True
     ),
@@ -64,7 +62,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--kubernetes-host")
 @click.option("--kubernetes-token")
 @click.option(
-    "--environment-distribution", type=click.Choice(ENVIRONMENT_DISTRIBUTION_CHOICES)
+    "--environments-distribution", type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES)
 )
 @click.option("--project-domain")
 @click.option("--subdomain-dev")
@@ -98,9 +96,9 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--digitalocean-redis-cluster-node-size")
 @click.option("--sentry-org")
 @click.option("--sentry-url")
+@click.option("--sentry-auth-token")
 @click.option("--backend-sentry-dsn")
 @click.option("--frontend-sentry-dsn")
-@click.option("--sentry-auth-token")
 @click.option("--pact-broker-url")
 @click.option("--pact-broker-username")
 @click.option("--pact-broker-password")
@@ -114,7 +112,7 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--s3-secret-key")
 @click.option("--s3-bucket-name")
 @click.option("--gitlab-url")
-@click.option("--gitlab-private-token", envvar=GITLAB_TOKEN_ENV_VAR)
+@click.option("--gitlab-token", envvar=GITLAB_TOKEN_ENV_VAR)
 @click.option("--gitlab-namespace-path")
 @click.option("--gitlab-group-slug")
 @click.option("--gitlab-group-owners")
@@ -125,8 +123,12 @@ OUTPUT_DIR = os.getenv("OUTPUT_BASE_DIR") or "."
 @click.option("--quiet", is_flag=True)
 def main(**options):
     """Run the setup."""
+    options.update(load_options())
     try:
-        Runner(**collect(**options)).run()
+        collector = Collector(**options)
+        collector.collect()
+        dump_options(asdict(collector))
+        collector.launch_runner()
     except BootstrapError as e:
         raise click.Abort() from e
 
