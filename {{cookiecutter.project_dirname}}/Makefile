@@ -23,8 +23,8 @@ trivy_target = `arg="$(filter-out $@,$(MAKECMDGOALS))" && echo $${arg:-${1}}`
 trivy:  ## Run image vulnerabilities scan with 'trivy'
 	docker run --rm \
 	--entrypoint="" \
-	--env CUSTOM_GID=`id -g` \
-	--env CUSTOM_UID=`id -u` \
+	--env CUSTOM_GID=`id --group` \
+	--env CUSTOM_UID=`id --user` \
 	--env REPORT_NAME=$(call trivy_target) \
 	--env TARGET_IMAGE={{ cookiecutter.project_slug }}_$(call trivy_target):latest \
 	--env TRIVY_CACHE_DIR=.trivycache/ \
