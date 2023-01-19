@@ -20,7 +20,7 @@ rebuild:  ## Rebuild container
 
 trivy_target = `arg="$(filter-out $@,$(MAKECMDGOALS))" && echo $${arg:-${1}}`
 .PHONY: trivy
-trivy:  ## Run image vulnerabilities scan with 'trivy'
+trivy:  ## Run image vulnerabilities scan with ex. 'make trivy backend'
 	docker run --rm \
 	--entrypoint="" \
 	--env CUSTOM_GID=`id --group` \
