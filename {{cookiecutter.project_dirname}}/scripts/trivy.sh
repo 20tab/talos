@@ -15,4 +15,4 @@ time trivy image \
     --exit-code 0 \
     --security-checks vuln \
     ${TARGET_IMAGE}
-chown -R ${CUSTOM_UID}:${CUSTOM_GID} /app/.trivy
+chown --recursive ${CUSTOM_UID}:${CUSTOM_GID} /app/.trivy
