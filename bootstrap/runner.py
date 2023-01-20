@@ -770,11 +770,11 @@ class Runner:
             "deployment_type": self.deployment_type,
             "environments_distribution": self.environments_distribution,
             "gid": self.gid,
-            "gitlab_url": self.gitlab_url,
-            "gitlab_group_path": str(
+            "gitlab_namespace_path": str(
                 Path(self.gitlab_namespace_path) / self.gitlab_group_slug
             ),
             "gitlab_token": self.gitlab_token,
+            "gitlab_url": self.gitlab_url,
             "logs_dir": str(self.logs_dir.resolve()),
             "output_dir": str(self.service_dir.resolve()),
             "project_dirname": service_slug,
