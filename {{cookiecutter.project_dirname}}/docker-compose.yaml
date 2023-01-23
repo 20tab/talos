@@ -38,7 +38,7 @@ services:
       context: ./{{ cookiecutter.frontend_service_slug }}
       dockerfile: docker/local.Dockerfile{% if cookiecutter.backend_type != "none" %}
     depends_on:
-      {{ cookiecutter.backend_service_slug }}
+      {{ cookiecutter.backend_service_slug }}:
         condition: service_started{% endif %}
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
