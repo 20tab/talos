@@ -534,12 +534,13 @@ class Collector:
             self.set_digitalocean_spaces()
         elif self.media_storage == MEDIA_STORAGE_AWS_S3:
             self.set_aws_s3()
-        self.s3_access_id = validate_or_prompt_secret(
-            "S3 Access Key ID", self.s3_access_id
-        )
-        self.s3_secret_key = validate_or_prompt_secret(
-            "S3 Secret Access Key", self.s3_secret_key
-        )
+        if "s3" in self.media_storage:
+            self.s3_access_id = validate_or_prompt_secret(
+                "S3 Access Key ID", self.s3_access_id
+            )
+            self.s3_secret_key = validate_or_prompt_secret(
+                "S3 Secret Access Key", self.s3_secret_key
+            )
 
     def set_digitalocean_spaces(self):
         """Set the DigitalOcean Spaces options."""

@@ -924,17 +924,28 @@ class TestBootstrapCollector(TestCase):
         collector.set_digitalocean_spaces.assert_not_called()
 
     def test_storage_input_local(self):
-        """Test setting storage options from input."""
+        """Test setting up local storage from input."""
         collector = Collector()
         collector.set_digitalocean_spaces = mock.MagicMock()
         collector.set_aws_s3 = mock.MagicMock()
-        with mock_input(
-            "local", {"hidden": "s3_accEss!-input"}, {"hidden": "s3_s3crEt!-input"}
-        ):
+        with mock_input("local"):
             collector.set_storage()
         self.assertEqual(collector.media_storage, "local")
-        self.assertEqual(collector.s3_access_id, "s3_accEss!-input")
-        self.assertEqual(collector.s3_secret_key, "s3_s3crEt!-input")
+        self.assertIsNone(collector.s3_access_id)
+        self.assertIsNone(collector.s3_secret_key)
+        collector.set_aws_s3.assert_not_called()
+        collector.set_digitalocean_spaces.assert_not_called()
+
+    def test_storage_input_none(self):
+        """Test setting up no storage from input."""
+        collector = Collector()
+        collector.set_digitalocean_spaces = mock.MagicMock()
+        collector.set_aws_s3 = mock.MagicMock()
+        with mock_input("none"):
+            collector.set_storage()
+        self.assertEqual(collector.media_storage, "local")
+        self.assertIsNone(collector.s3_access_id)
+        self.assertIsNone(collector.s3_secret_key)
         collector.set_aws_s3.assert_not_called()
         collector.set_digitalocean_spaces.assert_not_called()
 
