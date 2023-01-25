@@ -213,9 +213,6 @@ module "metrics" {
   count = var.stack_slug == "main" && var.env_slug == "prod" ? 1 : 0
 
   source = "../modules/kubernetes/metrics"
-
-  basic_auth_username = var.basic_auth_username
-  basic_auth_password = var.basic_auth_password
 }
 
 /* Secrets */
