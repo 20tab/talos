@@ -48,11 +48,11 @@ resource "helm_release" "loki" {
 
   dynamic "set" {
     for_each = local.s3_storage_enabled ? {
-      "loki.config.storage_config.aws.access_key_id"      = var.s3_access_id
-      "loki.config.storage_config.aws.bucketnames"        = var.s3_bucket_name
-      "loki.config.storage_config.aws.endpoint"           = var.s3_host
-      "loki.config.storage_config.aws.region"             = var.s3_region
-      "loki.config.storage_config.aws.secret_access_key"  = var.s3_secret_key
+      "loki.config.storage_config.aws.access_key_id"     = var.s3_access_id
+      "loki.config.storage_config.aws.bucketnames"       = var.s3_bucket_name
+      "loki.config.storage_config.aws.endpoint"          = var.s3_host
+      "loki.config.storage_config.aws.region"            = var.s3_region
+      "loki.config.storage_config.aws.secret_access_key" = var.s3_secret_key
     } : {}
     content {
       name  = set.key
