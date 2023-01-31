@@ -60,3 +60,7 @@ repos:
     hooks:
       - id: pip-audit
         args: ["--require-hashes", "--requirement", "requirements/local.txt"]
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: "v1.77.0"
+    hooks:
+      - id: terraform_fmt

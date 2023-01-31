@@ -10,12 +10,12 @@ terraform {
 /* Metrics Server */
 
 resource "helm_release" "metrics_server" {
-  name              = "metrics-server"
-  namespace         = "metrics-server"
-  repository        = "https://kubernetes-sigs.github.io/metrics-server"
-  chart             = "metrics-server"
-  create_namespace  = true
-  version           = "3.8.2"
+  name             = "metrics-server"
+  namespace        = "metrics-server"
+  repository       = "https://kubernetes-sigs.github.io/metrics-server"
+  chart            = "metrics-server"
+  create_namespace = true
+  version          = "3.8.2"
 
   values = [file("${path.module}/metrics-server/values.yaml")]
 }

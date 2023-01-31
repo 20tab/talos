@@ -167,11 +167,11 @@ module "monitoring" {
   grafana_user                = var.grafana_user
   grafana_version             = var.grafana_version
 
-  s3_region       = var.s3_region
-  s3_access_id    = var.s3_access_id
-  s3_secret_key   = var.s3_secret_key
-  s3_bucket_name  = local.s3_bucket_name
-  s3_host         = local.s3_host
+  s3_region      = var.s3_region
+  s3_access_id   = var.s3_access_id
+  s3_secret_key  = var.s3_secret_key
+  s3_bucket_name = local.s3_bucket_name
+  s3_host        = local.s3_host
 }
 
 /* Routing */
