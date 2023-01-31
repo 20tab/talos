@@ -179,6 +179,7 @@ module "monitoring" {
 module "routing" {
   source = "../modules/kubernetes/routing"
 
+  env_slug  = var.env_slug
   namespace = local.namespace
 
   project_domain = var.project_domain
@@ -204,15 +205,6 @@ module "routing" {
   tls_certificate_key           = var.tls_certificate_key
 
   monitoring_subdomain = var.monitoring_subdomain
-}
-
-
-/* Metrics */
-
-module "metrics" {
-  count = var.stack_slug == "main" && var.env_slug == "prod" ? 1 : 0
-
-  source = "../modules/kubernetes/metrics"
 }
 
 /* Secrets */

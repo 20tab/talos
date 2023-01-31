@@ -296,7 +296,7 @@ resource "kubernetes_secret_v1" "metrics_basic_auth" {
   count = local.basic_auth_ready ? 1 : 0
 
   metadata {
-    name      = "metrics-basic-auth"
+    name      = "metrics-basic-auth-${var.env_slug}"
     namespace = "kube-system"
   }
 
@@ -315,7 +315,7 @@ resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "Middleware"
     metadata = {
-      name      = "metrics-basic-auth"
+      name      = "metrics-basic-auth-${var.env_slug}"
       namespace = "kube-system"
     }
     spec = {
@@ -333,7 +333,7 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
     apiVersion = "traefik.containo.us/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
-      name      = "metrics"
+      name      = "metrics-${var.env_slug}"
       namespace = "kube-system"
     }
     spec = merge(
@@ -343,8 +343,8 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
           local.basic_auth_ready ? [
             {
               kind        = "Rule"
-              match       = "Host(`${local.traefik_hosts}`) && PathPrefix(`/metrics`)"
-              middlewares = [{ "name" : "metrics-basic-auth" }]
+              match       = "Host(${local.traefik_hosts}) && PathPrefix(`/metrics`)"
+              middlewares = [{ "name" : "metrics-basic-auth-${var.env_slug}" }]
               services = [
                 {
                   name = "kube-state-metrics"
@@ -354,7 +354,7 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
           }] : [],
           [{
             kind        = "Rule"
-            match       = "Host(`${local.traefik_hosts}`) && PathPrefix(`/healthz`)"
+            match       = "Host(${local.traefik_hosts}) && PathPrefix(`/healthz`)"
             middlewares = []
             services = [
               {
