@@ -1,35 +1,30 @@
 http:
   routers:{% if cookiecutter.frontend_type != 'none' %}{% if cookiecutter.backend_type != 'none' %}
-    {{ cookiecutter.backend_service_slug }}-admin:
-      rule: "PathPrefix(`/admin`)"
-      service: {{ cookiecutter.backend_service_slug }}
-    {{ cookiecutter.backend_service_slug }}-static:
-      rule: "PathPrefix(`/static`)"
-      service: {{ cookiecutter.backend_service_slug }}
-    {{ cookiecutter.backend_service_slug }}-api:
-      rule: "PathPrefix(`/api`)"
-      service: {{ cookiecutter.backend_service_slug }}
-    {{ cookiecutter.backend_service_slug }}-debug:
-      rule: "PathPrefix(`/__debug__`)"
+    {{ cookiecutter.backend_service_slug }}:
+      rule: |
+        PathPrefix(`/__debug__`) ||
+        PathPrefix(`/admin`) ||
+        PathPrefix(`/api`) ||{% if cookiecutter.media_storage == 'local' %}
+        PathPrefix(`/media`) ||{% endif %}
+        PathPrefix(`/static`)
       service: {{ cookiecutter.backend_service_slug }}{% endif %}
     {{ cookiecutter.frontend_service_slug }}:
-      rule: "PathPrefix(`/`)"
-      service: {{ cookiecutter.frontend_service_slug }}{% if cookiecutter.frontend_type == 'nextjs' %}
-    {{ cookiecutter.frontend_service_slug }}-sockjs-node:
-      rule: "PathPrefix(`/sockjs-node`)"
-      service: {{ cookiecutter.frontend_service_slug }}{% endif %}{% else %}
+      rule: |
+        PathPrefix(`/`){% if cookiecutter.frontend_type == 'nextjs' %} ||
+        PathPrefix(`/sockjs-node`){% endif %}
+      service: {{ cookiecutter.frontend_service_slug }}{% else %}
     {{ cookiecutter.backend_service_slug }}:
-      rule: "PathPrefix(`/`)"
+      rule: PathPrefix(`/`)
       service: {{ cookiecutter.backend_service_slug }}{% endif %}
   services:{% if cookiecutter.backend_type != 'none' %}
     {{ cookiecutter.backend_service_slug }}:
       loadBalancer:
         servers:
-        - url: "http://{{ cookiecutter.backend_service_slug }}:8000/"{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+          - url: "http://{{ cookiecutter.backend_service_slug }}:8000/"{% endif %}{% if cookiecutter.frontend_type != 'none' %}
     {{ cookiecutter.frontend_service_slug }}:
       loadBalancer:
         servers:
-        - url: "http://{{ cookiecutter.frontend_service_slug }}:3000/"{% endif %}
+          - url: "http://{{ cookiecutter.frontend_service_slug }}:3000/"{% endif %}
 
 tls:
   certificates:
