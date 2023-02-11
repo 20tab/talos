@@ -27,7 +27,7 @@ black==22.12.0 \
     --hash=sha256:9eedd20838bd5d75b80c9f5487dbcb06836a43833a37846cf1d8c1cc01cef59d \
     --hash=sha256:c116eed0efb9ff870ded8b62fe9f28dd61ef6e9ddd28d83d7d264a38417dcee2 \
     --hash=sha256:d30b212bffeb1e252b31dd269dfae69dd17e06d92b87ad26e23890f3efea366f
-    # via -r requirements/local.in
+    # via -r local.in
 build==0.10.0 \
     --hash=sha256:af266720050a66c893a6096a2f410989eeac74ff9a68ba194b3f6473e8e26171 \
     --hash=sha256:d5b71264afdb5951d6704482aac78de887c80691c52b88a9ad195983ca2c9269
@@ -138,14 +138,14 @@ click==8.1.3 \
     --hash=sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e \
     --hash=sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48
     # via
-    #   -r requirements/common.in
+    #   -r common.in
     #   black
     #   cookiecutter
     #   pip-tools
 cookiecutter==2.1.1 \
     --hash=sha256:9f3ab027cec4f70916e28f03470bdb41e637a3ad354b4d65c765d93aad160022 \
     --hash=sha256:f3982be8d9c53dac1261864013fdec7f83afd2e42ede6f6dd069c5e149c540d5
-    # via -r requirements/common.in
+    # via -r common.in
 coverage[toml]==7.0.5 \
     --hash=sha256:051afcbd6d2ac39298d62d340f94dbb6a1f31de06dfaf6fcef7b759dd3860c45 \
     --hash=sha256:0a1890fca2962c4f1ad16551d660b46ea77291fba2cc21c024cd527b9d9c8809 \
@@ -198,7 +198,7 @@ coverage[toml]==7.0.5 \
     --hash=sha256:ef14d75d86f104f03dea66c13188487151760ef25dd6b2dbd541885185f05f40 \
     --hash=sha256:f26648e1b3b03b6022b48a9b910d0ae209e2d51f50441db5dce5b530fad6d9b1 \
     --hash=sha256:f67472c09a0c7486e27f3275f617c964d25e35727af952869dd496b9b5b7f6a3
-    # via -r requirements/test.in
+    # via -r test.in
 decorator==5.1.1 \
     --hash=sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330 \
     --hash=sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186
@@ -225,10 +225,10 @@ idna==3.4 \
     --hash=sha256:814f528e8dead7d329833b91c5faa87d60bf71824cd12a7530b5526063d02cb4 \
     --hash=sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2
     # via requests
-ipython==8.8.0 \
-    --hash=sha256:da01e6df1501e6e7c32b5084212ddadd4ee2471602e2cf3e0190f4de6b0ea481 \
-    --hash=sha256:f3bf2c08505ad2c3f4ed5c46ae0331a8547d36bf4b21a451e8ae80c0791db95b
-    # via -r requirements/local.in
+ipython==8.10.0 \
+    --hash=sha256:b13a1d6c1f5818bd388db53b7107d17454129a70de2b87481d555daede5eb49e \
+    --hash=sha256:b38c31e8fc7eff642fc7c597061fff462537cf2314e3225a19c906b7b0d8a345
+    # via -r local.in
 jedi==0.18.2 \
     --hash=sha256:203c1fd9d969ab8f2119ec0a3342e0b49910045abe6af0a3ae83a5764d54639e \
     --hash=sha256:bae794c30d07f6d910d32a7048af09b5a39ed740918da923c6b780790ebac612
@@ -330,7 +330,7 @@ mypy==0.991 \
     --hash=sha256:d13674f3fb73805ba0c45eb6c0c3053d218aa1f7abead6e446d474529aafc372 \
     --hash=sha256:de32edc9b0a7e67c2775e574cb061a537660e51210fbf6006b0b36ea695ae9bb \
     --hash=sha256:e62ebaad93be3ad1a828a11e90f0e76f15449371ffeecca4a0a0b9adc99abcef
-    # via -r requirements/test.in
+    # via -r test.in
 mypy-extensions==0.4.3 \
     --hash=sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d \
     --hash=sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8
@@ -364,7 +364,7 @@ pickleshare==0.7.5 \
 pip-tools==6.12.1 \
     --hash=sha256:88efb7b29a923ffeac0713e6f23ef8529cc6175527d42b93f73756cc94387293 \
     --hash=sha256:f0c0c0ec57b58250afce458e2e6058b1f30a4263db895b7d72fd6311bf1dc6f7
-    # via -r requirements/local.in
+    # via -r local.in
 platformdirs==2.6.2 \
     --hash=sha256:83c8f6d04389165de7c9b6f0c682439697887bca0aa2f1c87ef1826be3584490 \
     --hash=sha256:e1fea1fe471b9ff8332e229df3cb7de4f53eeea4998d3b6bfff542115e998bd2
@@ -374,7 +374,7 @@ platformdirs==2.6.2 \
 pre-commit==2.21.0 \
     --hash=sha256:31ef31af7e474a8d8995027fefdfcf509b5c913ff31f2015b4ec4beb26a6f658 \
     --hash=sha256:e2f91727039fc39a92f58a588a25b87f936de6567eed4f0e673e0507edc75bad
-    # via -r requirements/local.in
+    # via -r local.in
 prompt-toolkit==3.0.36 \
     --hash=sha256:3e163f254bef5a03b146397d7c1963bd3e2812f0964bb9a24e6ec761fd28db63 \
     --hash=sha256:aa64ad242a462c5ff0363a7b9cfe696c20d55d9fc60c11fd8e632d064804d305
@@ -424,7 +424,7 @@ pydantic==1.10.4 \
     --hash=sha256:f2f7eb6273dd12472d7f218e1fef6f7c7c2f00ac2e1ecde4db8824c457300416 \
     --hash=sha256:fdf88ab63c3ee282c76d652fc86518aacb737ff35796023fae56a65ced1a5978 \
     --hash=sha256:fdf8d759ef326962b4678d89e275ffc55b7ce59d917d9f72233762061fd04a2d
-    # via -r requirements/common.in
+    # via -r common.in
 pygments==2.14.0 \
     --hash=sha256:b3ed06a9e8ac9a9aae5a6f5dbe78a8a58655d17b43b93c078f094ddc476ae297 \
     --hash=sha256:fa7bd7bd2771287c0de303af8bfdfc731f51bd2c6a47ab69d117138893b82717
@@ -443,7 +443,7 @@ python-slugify==7.0.0 \
     --hash=sha256:003aee64f9fd955d111549f96c4b58a3f40b9319383c70fad6277a4974bbf570 \
     --hash=sha256:7a0f21a39fa6c1c4bf2e5984c9b9ae944483fd10b54804cb0e23a3ccd4954f0b
     # via
-    #   -r requirements/common.in
+    #   -r common.in
     #   cookiecutter
 pyyaml==6.0 \
     --hash=sha256:01b45c0191e6d66c470b6cf1b9531a771a83c1c4208272ead47a3ae4f2f603bf \
@@ -510,7 +510,7 @@ ruff==0.0.225 \
     --hash=sha256:c2b67c55cb810756847ec0d01145f50470ff6f20f729b0a57216637463e58226 \
     --hash=sha256:df0b37c2a5830087f3b915c353602d2c370e4778470e4509b2332dbf7a48bd59 \
     --hash=sha256:fda14be1b8ea0a2bf4998cb12580fbd64f335f41cad1896b06a29beb6167bd61
-    # via -r requirements/test.in
+    # via -r test.in
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
@@ -579,7 +579,7 @@ time-machine==2.9.0 \
     --hash=sha256:fcdef7687aed5c4331c9808f4a414a41987441c3e7a2ba554e4dccfa4218e788 \
     --hash=sha256:fd72c0b2e7443fff6e4481991742b72c17f73735e5fdd176406ca48df187a5c9 \
     --hash=sha256:fe013942ab7f3241fcbe66ee43222d47f499d1e0cb69e913791c52e638ddd7f0
-    # via -r requirements/test.in
+    # via -r test.in
 traitlets==5.8.1 \
     --hash=sha256:32500888f5ff7bbf3b9267ea31748fa657aaf34d56d85e60f91dda7dc7f5785b \
     --hash=sha256:a1ca5df6414f8b5760f7c5f256e326ee21b581742114545b462b35ffe3f04861
@@ -589,7 +589,7 @@ traitlets==5.8.1 \
 types-python-slugify==7.0.0.1 \
     --hash=sha256:3644bb44a25847ba5c8f9d15757f1d4b76064857c30e93517723618bd1152a19 \
     --hash=sha256:6b2d16e1465896df0e3685bd38eab7b8f945a3a7c18c4a2c2ef391b0e48dfce8
-    # via -r requirements/local.in
+    # via -r local.in
 typing-extensions==4.4.0 \
     --hash=sha256:1511434bb92bf8dd198c12b1cc812e800d4181cfcb867674e0f8279cc93087aa \
     --hash=sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e
@@ -602,7 +602,7 @@ urllib3==1.26.14 \
     # via requests
 validators==0.20.0 \
     --hash=sha256:24148ce4e64100a2d5e267233e23e7afeb55316b47d30faae7eb6e7292bc226a
-    # via -r requirements/common.in
+    # via -r common.in
 virtualenv==20.17.1 \
     --hash=sha256:ce3b1684d6e1a20a3e5ed36795a97dfc6af29bc3970ca8dab93e11ac6094b3c4 \
     --hash=sha256:f8b927684efc6f1cc206c9db297a570ab9ad0e51c16fa9e45487d36d1905c058
