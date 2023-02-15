@@ -1,10 +1,6 @@
 [tool.black]
 target-version = ["py311"]
 
-[tool.mypy]
-ignore_missing_imports = true
-python_version = "3.11"
-
 [tool.coverage.html]
 title = "Talos - Coverage"
 show_contexts = true
@@ -20,6 +16,10 @@ omit = [
     "venv/*",
 ]
 source = ["."]
+
+[tool.mypy]
+ignore_missing_imports = true
+python_version = "3.11"
 
 [tool.ruff]
  extend-exclude = [
