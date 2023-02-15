@@ -21,11 +21,12 @@ cd ~/projects
 git clone git@github.com:20tab/talos.git
 ```
 
-Then, install the following requirements
-| Requirements | Instructions |
-|--|--|
-|🌎 Terraform | [Install Guide](https://learn.hashicorp.com/tutorials/terraform/install-cli) |
-|🐍 Python Dependencies | `pip install -r talos/requirements/common.txt` |
+Then, install the following requirements:
+
+| Requirements           | Instructions                                                                 |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| 🌎 Terraform           | [Install Guide](https://learn.hashicorp.com/tutorials/terraform/install-cli) |
+| 🐍 Python Dependencies | `pip install -r talos/requirements/common.txt`                               |
 
 ## 🔑 Credentials
 
