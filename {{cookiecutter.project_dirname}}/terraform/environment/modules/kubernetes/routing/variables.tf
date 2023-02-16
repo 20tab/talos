@@ -41,6 +41,11 @@ variable "basic_auth_username" {
   default     = ""
 }
 
+variable "env_slug" {
+  description = "The environment slug (e.g. 'prod')."
+  type        = string
+}
+
 variable "frontend_service_extra_middlewares" {
   description = "The frontend service additional middlewares."
   type        = list(string)

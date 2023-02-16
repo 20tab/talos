@@ -105,6 +105,7 @@ module "monitoring" {
 module "routing" {
   source = "../modules/kubernetes/routing"
 
+  env_slug  = var.env_slug
   namespace = local.namespace
 
   project_domain = var.project_domain

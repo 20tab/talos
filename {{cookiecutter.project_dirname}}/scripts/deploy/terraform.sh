@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-if [ "${DEBUG_OUTPUT}" == "true" ]; then
+if [ "${DEBUG_OUTPUT}" = "true" ]; then
     set -x
 fi
 
@@ -21,8 +21,8 @@ JQ_PLAN='
 export TF_IN_AUTOMATION=true
 
 init() {
-  cd ${TF_ROOT}
-  if [ "${TERRAFORM_BACKEND}" == "terraform-cloud" ]; then
+  cd "${TF_ROOT}"
+  if [ "${TERRAFORM_BACKEND}" = "terraform-cloud" ]; then
     terraform init "${@}" -input=false
   else
     terraform init "${@}" -input=false -reconfigure
@@ -36,7 +36,7 @@ case "${1}" in
   ;;
   "destroy")
     init
-    terraform "${@}" ${TERRAFORM_VAR_FILE_ARGS} -auto-approve
+    terraform "${@}" -auto-approve
   ;;
   "fmt")
     terraform "${@}" -check -diff -recursive
@@ -48,11 +48,11 @@ case "${1}" in
   ;;
   "plan")
     init
-    terraform "${@}" ${TERRAFORM_VAR_FILE_ARGS} -input=false -out="${plan_cache}"
+    terraform "${@}" -input=false -out="${plan_cache}"
   ;;
   "plan-json")
     init
-    terraform plan ${TERRAFORM_VAR_FILE_ARGS} -input=false -out="${plan_cache}"
+    terraform plan -input=false -out="${plan_cache}"
     terraform show -json "${plan_cache}" | \
       jq -r "${JQ_PLAN}" \
       > "${plan_json}"

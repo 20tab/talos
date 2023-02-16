@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 export TF_CLI_CONFIG_FILE="${TF_ROOT}/cloud.tfc"
-cat << EOF > ${TF_CLI_CONFIG_FILE}
+cat << EOF > "${TF_CLI_CONFIG_FILE}"
 {
   "credentials": {
     "app.terraform.io": {
