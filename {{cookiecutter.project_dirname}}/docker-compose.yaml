@@ -1,4 +1,4 @@
-version: "3.4"
+version: "3.9"
 
 services:
 {% if cookiecutter.backend_type != "none" %}
@@ -29,29 +29,37 @@ services:
       - PACT_BROKER_URL
       - PACT_PROVIDER_NAME{% endif %}
       - PYTHONBREAKPOINT
+      - PYTHONDEVMODE
     user: ${USER:-appuser}
     volumes:
       - ./{{ cookiecutter.backend_service_slug }}:/app{% endif %}
 {% if cookiecutter.frontend_type != "none" %}
   {{ cookiecutter.frontend_service_slug }}:
     build:
+      args:
+        GROUP_ID: ${GROUP_ID:-1000}
+        USER_ID: ${USER_ID:-1000}
+        USER: ${USER:-appuser}
       context: ./{{ cookiecutter.frontend_service_slug }}
-      dockerfile: docker/local.Dockerfile{% if cookiecutter.backend_type != "none" %}
-    depends_on:
-      {{ cookiecutter.backend_service_slug }}:
-        condition: service_started{% endif %}
+      dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}{% if cookiecutter.backend_type != "none" %}
+    healthcheck:
+      test: wget -O- -q http://localhost:3000/api/health/ || exit 1
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
       - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
       - REACT_ENVIRONMENT=${REACT_ENVIRONMENT:-Development}
+    user: ${USER:-appuser}
     volumes:
-      - ./{{ cookiecutter.frontend_service_slug }}:/app{% endif %}
+      - ./{{ cookiecutter.frontend_service_slug }}:/app
+      - /app/node_modules{% endif %}
 
   traefik:
     image: traefik:v2.6
     depends_on:{% if cookiecutter.backend_type != 'none' %}
-      - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-      - {{ cookiecutter.frontend_service_slug }}{% endif %}
+      {{ cookiecutter.backend_service_slug }}:
+        condition: service_started{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+      {{ cookiecutter.frontend_service_slug }}:
+        condition: service_healthy{% endif %}
     volumes:
       - ./traefik/:/traefik/:ro
     command:
