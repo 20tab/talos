@@ -236,15 +236,15 @@ resource "kubernetes_secret_v1" "database_url" {
   }
 }
 
-resource "kubernetes_secret_v1" "cache_url" {
+resource "kubernetes_secret_v1" "redis_url" {
   count = var.use_redis ? 1 : 0
 
   metadata {
-    name      = "cache-url"
+    name      = "redis-url"
     namespace = local.namespace
   }
   data = {
-    CACHE_URL = "${data.digitalocean_database_cluster.redis[0].private_uri}?key_prefix=${var.env_slug}"
+    REDIS_URL = data.digitalocean_database_cluster.redis[0].private_uri
   }
 }
 
