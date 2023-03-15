@@ -133,14 +133,6 @@ module "routing" {
   monitoring_subdomain = var.monitoring_subdomain
 }
 
-/* Metrics */
-
-module "metrics" {
-  count = var.stack_slug == "main" && var.env_slug == "prod" ? 1 : 0
-
-  source = "../modules/kubernetes/metrics"
-}
-
 /* Secrets */
 
 resource "kubernetes_secret_v1" "regcred" {
