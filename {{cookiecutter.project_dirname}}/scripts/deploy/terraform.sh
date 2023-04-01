@@ -1,7 +1,9 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+set -e
 
 if [ "${DEBUG_OUTPUT}" = "true" ]; then
-    set -x
+    set -ex
 fi
 
 plan_cache="plan.cache"

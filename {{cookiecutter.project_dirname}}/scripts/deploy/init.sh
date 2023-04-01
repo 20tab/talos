@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+set -e
 
 export TF_VAR_env_slug="${ENV_SLUG}"
 export TF_VAR_project_slug="${PROJECT_SLUG}"
