@@ -30,6 +30,7 @@ services:
       - PACT_PROVIDER_NAME{% endif %}
       - PYTHONBREAKPOINT
       - PYTHONDEVMODE
+      - PYTHONTRACEMALLOC
     user: ${USER:-appuser}
     volumes:
       - ./{{ cookiecutter.backend_service_slug }}:/app{% endif %}
