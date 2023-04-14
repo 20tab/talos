@@ -3,7 +3,7 @@
 set -e
 
 if [ "${DEBUG_OUTPUT}" = "true" ]; then
-    set -ex
+    set -x
 fi
 
 plan_cache="plan.cache"
