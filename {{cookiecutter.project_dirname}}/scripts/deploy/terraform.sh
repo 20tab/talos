@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+set -e
 
 if [ "${DEBUG_OUTPUT}" = "true" ]; then
     set -x
