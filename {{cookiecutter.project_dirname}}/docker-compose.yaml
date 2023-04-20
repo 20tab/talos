@@ -31,6 +31,11 @@ services:
       - PYTHONBREAKPOINT
       - PYTHONDEVMODE
       - PYTHONTRACEMALLOC
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/api/health/"]
+      interval: 60s
+      timeout: 3s
+      retries: 5
     user: ${USER:-appuser}
     volumes:
       - ./{{ cookiecutter.backend_service_slug }}:/app{% endif %}
