@@ -100,15 +100,6 @@ module "monitoring" {
   s3_host        = var.s3_host
 }
 
-
-/* Metrics */
-
-module "metrics" {
-  count = var.stack_slug == "main" && var.env_slug == "prod" ? 1 : 0
-
-  source = "../modules/kubernetes/metrics"
-}
-
 /* Routing */
 
 module "routing" {
