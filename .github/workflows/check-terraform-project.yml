@@ -1,0 +1,41 @@
+
+
+name: Check Terraform project
+on: push
+jobs:
+  terraform-checks:
+    name: Run terraform project checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: hashicorp/setup-terraform@v1
+    - name: Check project tf base digitalocean-k8s
+      run: |
+        cd \{\{cookiecutter.project_dirname\}\}/terraform/base/digitalocean-k8s
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
+    - name: Check project tf cluster digitalocean-k8s
+      run: |
+        cd \{\{cookiecutter.project_dirname\}\}/terraform/cluster/digitalocean-k8s
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
+    - name: Check project tf cluster other-k8s
+      run: |
+        cd \{\{cookiecutter.project_dirname\}\}/terraform/cluster/digitalocean-k8s
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
+    - name: Check project tf environment digitalocean-k8s
+      run: |
+        cd \{\{cookiecutter.project_dirname\}\}/terraform/environment/digitalocean-k8s
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
+    - name: Check project environment other-k8s
+      run: |
+        cd \{\{cookiecutter.project_dirname\}\}/terraform/environment/other-k8s
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
