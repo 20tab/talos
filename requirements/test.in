@@ -4,3 +4,4 @@ coverage[toml]~=7.1.0
 mypy~=1.0.0
 ruff~=0.0.0
 time-machine~=2.9.0
+types-python-slugify~=8.0.0

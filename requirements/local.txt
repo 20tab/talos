@@ -588,7 +588,7 @@ traitlets==5.9.0 \
 types-python-slugify==8.0.0.2 \
     --hash=sha256:9e81f49eac8c805f924695de559fb8dc123ccbd15adb47d40ceaec51c739f044 \
     --hash=sha256:de237b01c69ad3a57ae36a0e8a6a0c65b47bac529483007c1cae2d424cb07cc8
-    # via -r requirements/local.in
+    # via -r requirements/test.in
 typing-extensions==4.5.0 \
     --hash=sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb \
     --hash=sha256:fb33085c39dd998ac16d1431ebc293a8b3eedd00fd4a32de0ff79002c19511b4
