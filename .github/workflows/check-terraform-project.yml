@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: hashicorp/setup-terraform@v1
+    - uses: hashicorp/setup-terraform@v2
     - name: Check project tf base digitalocean-k8s
       run: |
         cd \{\{cookiecutter.project_dirname\}\}/terraform/base/digitalocean-k8s
