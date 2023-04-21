@@ -1,7 +1,14 @@
-
-
 name: Check Terraform project
-on: push
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
 jobs:
   terraform-checks:
     name: Run terraform project checks
