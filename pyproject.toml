@@ -18,6 +18,9 @@ omit = [
 source = ["."]
 
 [tool.mypy]
+enable_error_code = [
+     "truthy-bool",
+ ]
 ignore_missing_imports = true
 python_version = "3.11"
 
