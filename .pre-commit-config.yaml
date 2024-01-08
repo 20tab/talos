@@ -56,10 +56,16 @@ repos:
       - id: mypy
         args: ["--no-site-packages"]
   - repo: https://github.com/trailofbits/pip-audit
-    rev: v2.4.14
+    rev: v2.6.3
     hooks:
       - id: pip-audit
-        args: ["--require-hashes", "--requirement", "requirements/local.txt"]
+        args:
+          [
+            "--require-hashes",
+            "--disable-pip",
+            "--requirement",
+            "requirements/local.txt",
+          ]
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: "v1.77.0"
     hooks:
