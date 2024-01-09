@@ -318,7 +318,7 @@ class Collector:
         ):
             self.subdomain_monitoring = slugify(
                 self.subdomain_monitoring
-                or click.prompt("Monitorng domain prefix", default="logs")
+                or click.prompt("Monitoring domain prefix", default="logs")
             )
 
     def set_letsencrypt(self):
