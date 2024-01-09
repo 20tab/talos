@@ -69,6 +69,8 @@ cd ~/projects
 docker run --interactive --tty --rm --volume $PWD:/data 20tab/talos:latest
 ```
 
+On a non-AMD64 architecture, the `--platform linux/amd64` can be passed to force emulation.
+
 ### 👨‍💻 Shell command
 
 ```console
