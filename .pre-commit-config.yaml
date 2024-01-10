@@ -1,5 +1,5 @@
 default_language_version:
-  python: python3.11
+  python: python3.12
 exclude: ^(\{\{cookiecutter\.project_dirname\}\}.*)$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -30,7 +30,7 @@ repos:
     rev: "v3.3.1"
     hooks:
       - id: pyupgrade
-        args: [--py311-plus]
+        args: [--py312-plus]
   - repo: https://github.com/psf/black
     rev: "23.1.0"
     hooks:
