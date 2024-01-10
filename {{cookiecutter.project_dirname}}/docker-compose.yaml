@@ -75,7 +75,7 @@ services:
       interval: 60s
       timeout: 5s
       retries: 5
-    image: traefik:v2.6
+    image: traefik:v2.10
     ports:
       - "${LOCAL_HTTPS_PORT:-8443}:8443"
       - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
