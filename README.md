@@ -265,7 +265,7 @@ If you don't want DigitalOcean DNS configuration the following args are required
 | local           | Docker Volume are used to store media       | `--media-storage=local`                      |
 | none            | Project have no media                       | `--media-storage=none`                       |
 
-### 🌊 DigitalOcean Kubernates
+### 🌊 DigitalOcean Kubernetes
 
 [DigitalOcean API Slugs](https://slugs.do-api.dev/)
 [DigitalOcean Database Slugs](https://docs.digitalocean.com/reference/api/api-reference/#tag/Databases)
