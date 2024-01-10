@@ -331,7 +331,7 @@ Disabled args
 
 #### Kubernetes cluster CA certificate
 
-`--kubernetes-cluster-ca-certificate={{absolute-path-to-certificarte}}`
+`--kubernetes-cluster-ca-certificate={{absolute-path-to-certificate}}`
 
 #### Kubernetes host
 
