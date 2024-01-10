@@ -69,7 +69,7 @@ services:
       - "--configFile=/traefik/conf/static.yaml"
     depends_on:{% if cookiecutter.backend_type != 'none' %}
       {{ cookiecutter.backend_service_slug }}:
-        condition: service_started{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+        condition: service_healthy{% endif %}{% if cookiecutter.frontend_type != 'none' %}
       {{ cookiecutter.frontend_service_slug }}:
         condition: service_healthy{% endif %}
     healthcheck:
