@@ -50,7 +50,7 @@ services:
       context: ./{{ cookiecutter.frontend_service_slug }}
       dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}{% if cookiecutter.backend_type != "none" %}
     healthcheck:
-      test: wget -O- -q http://localhost:3000/{{ cookiecutter.frontend_service_slug }}/health/ || exit 1
+      test: wget -O- -q http://localhost:3000/{{ cookiecutter.frontend_service_slug }}/health || exit 1
       interval: 30s
       timeout: 5s
       start_period: 5s
