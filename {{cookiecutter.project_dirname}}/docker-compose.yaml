@@ -49,16 +49,16 @@ services:
         USER: ${USER:-appuser}
       context: ./{{ cookiecutter.frontend_service_slug }}
       dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}{% if cookiecutter.backend_type != "none" %}
+    environment:
+      - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
+      - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
+      - REACT_ENVIRONMENT=${REACT_ENVIRONMENT:-Development}
     healthcheck:
       test: wget -O- -q http://localhost:3000/{{ cookiecutter.frontend_service_slug }}/health || exit 1
       interval: 30s
       timeout: 5s
       start_period: 5s
       retries: 5
-    environment:
-      - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
-      - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
-      - REACT_ENVIRONMENT=${REACT_ENVIRONMENT:-Development}
     user: ${USER:-appuser}
     volumes:
       - ./{{ cookiecutter.frontend_service_slug }}:/app
