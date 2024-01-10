@@ -32,9 +32,10 @@ services:
       - PYTHONDEVMODE
       - PYTHONTRACEMALLOC
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8000/backend/health/"]
-      interval: 60s
-      timeout: 3s
+      test: curl --fail --head http://backend:8000/backend/health/ || exit 1
+      interval: 30s
+      start_period: 5s
+      timeout: 5s
       retries: 5
     user: ${USER:-appuser}
     volumes:
@@ -50,8 +51,9 @@ services:
       dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}{% if cookiecutter.backend_type != "none" %}
     healthcheck:
       test: wget -O- -q http://localhost:3000/frontend/health/ || exit 1
-      interval: 5s
-      timeout: 3s
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
       retries: 5
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
@@ -72,8 +74,9 @@ services:
         condition: service_healthy{% endif %}
     healthcheck:
       test: ["CMD", "traefik" ,"healthcheck", "--ping"]
-      interval: 60s
+      interval: 30s
       timeout: 5s
+      start_period: 5s
       retries: 5
     image: traefik:v2.10
     ports:
