@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+set -e
 
 # If TF_USERNAME is unset then default to GITLAB_USER_LOGIN
 TF_USERNAME="${TF_USERNAME:-${GITLAB_USER_LOGIN}}"

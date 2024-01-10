@@ -1,9 +1,9 @@
 default_language_version:
-  python: python3.11
+  python: python3.12
 exclude: ^(\{\{cookiecutter\.project_dirname\}\}.*)$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.4.0"
+    rev: "v4.5.0"
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=1024"]
@@ -27,40 +27,46 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/asottile/pyupgrade
-    rev: "v3.3.1"
+    rev: "v3.15.0"
     hooks:
       - id: pyupgrade
-        args: [--py311-plus]
+        args: [--py312-plus]
   - repo: https://github.com/psf/black
     rev: "23.1.0"
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v3.0.0-alpha.4"
+    rev: "v4.0.0-alpha.8"
     hooks:
       - id: prettier
         files: ^(?!.*\b(tfvars|tf|yaml|yml)\b)
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.246
+    rev: v0.1.11
     hooks:
       - id: ruff
         args:
           - --fix
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "0.9.1"
+    rev: "1.5.3"
     hooks:
       - id: pyproject-fmt
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.0.0"
+    rev: "v1.8.0"
     hooks:
       - id: mypy
         args: ["--no-site-packages"]
   - repo: https://github.com/trailofbits/pip-audit
-    rev: v2.4.14
+    rev: v2.6.3
     hooks:
       - id: pip-audit
-        args: ["--require-hashes", "--requirement", "requirements/local.txt"]
+        args:
+          [
+            "--require-hashes",
+            "--disable-pip",
+            "--requirement",
+            "requirements/local.txt",
+          ]
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: "v1.77.0"
+    rev: "v1.86.0"
     hooks:
       - id: terraform_fmt

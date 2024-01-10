@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+set -e
 
 # init.sh must be sourced to let it export env vars
 . "${PROJECT_DIR}"/scripts/deploy/init.sh
