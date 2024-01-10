@@ -49,7 +49,16 @@ python_version = "3.12"
     "D417",
     "E501",
  ]
- select = ["B", "C", "D", "E", "F", "I", "W", "B9"]
+ select = [
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "I",
+    "W",
+    "B9"
+]
  target-version = "py312"
 
 [tool.ruff.isort]
