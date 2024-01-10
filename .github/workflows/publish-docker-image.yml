@@ -27,5 +27,5 @@ jobs:
           context: .
           push: true
           target: "base"
-          tags: ${{ steps.meta.outputs.tags }},20tab/talos-nextjs:latest
+          tags: ${{ steps.meta.outputs.tags }},20tab/talos:latest
           labels: ${{ steps.meta.outputs.labels }}

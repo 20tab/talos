@@ -1,5 +1,5 @@
 -r common.in
-coverage[toml]~=7.1.0
-mypy~=1.0.0
+coverage[toml]~=7.4.0
+mypy~=1.8.0
 ruff~=0.0.0
 time-machine~=2.9.0
