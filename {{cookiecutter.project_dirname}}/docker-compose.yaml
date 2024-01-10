@@ -32,7 +32,7 @@ services:
       - PYTHONDEVMODE
       - PYTHONTRACEMALLOC
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8000/api/health/"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/backend/health/"]
       interval: 60s
       timeout: 3s
       retries: 5
