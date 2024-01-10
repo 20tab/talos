@@ -66,7 +66,7 @@ cd ~/projects
 ### 🐋 Docker
 
 ```console
-docker run --interactive --tty --rm --volume $PWD:/data 20tab/talos:latest
+docker run --interactive --tty --rm --volume $PWD/.dumps:/app/.dumps --volume $PWD/.logs:/app/.logs --volume $PWD:/data 20tab/talos:latest
 ```
 
 **Note:** On a non-AMD64 architecture, `--platform linux/amd64` can be passed to force emulation.
