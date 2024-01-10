@@ -49,7 +49,10 @@ services:
       context: ./{{ cookiecutter.frontend_service_slug }}
       dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}{% if cookiecutter.backend_type != "none" %}
     healthcheck:
-      test: wget -O- -q http://localhost:3000/api/health/ || exit 1
+      test: wget -O- -q http://localhost:3000/frontend/health/ || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 5
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
       - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
