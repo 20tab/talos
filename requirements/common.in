@@ -1,5 +1,5 @@
 click~=8.1.0
 cookiecutter~=2.5.0
 pydantic~=1.10.0
-python-slugify~=8.0.0
+types-python-slugify~=8.0.0
 validators~=0.20.0
