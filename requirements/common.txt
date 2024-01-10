@@ -247,7 +247,9 @@ python-dateutil==2.8.2 \
 python-slugify==8.0.1 \
     --hash=sha256:70ca6ea68fe63ecc8fa4fcf00ae651fc8a5d02d93dcd12ae6d4fc7ca46c4d395 \
     --hash=sha256:ce0d46ddb668b3be82f4ed5e503dbc33dd815d83e2eb6824211310d3fb172a27
-    # via cookiecutter
+    # via
+    #   -r requirements/common.in
+    #   cookiecutter
 pyyaml==6.0.1 \
     --hash=sha256:04ac92ad1925b2cff1db0cfebffb6ffc43457495c9b3c39d3fcae417d7125dc5 \
     --hash=sha256:062582fca9fabdd2c8b54a3ef1c978d786e0f6b3a1510e0ac93ef59e0ddae2bc \
@@ -320,10 +322,6 @@ types-python-dateutil==2.8.19.20240106 \
     --hash=sha256:1f8db221c3b98e6ca02ea83a58371b22c374f42ae5bbdf186db9c9a76581459f \
     --hash=sha256:efbbdc54590d0f16152fa103c9879c7d4a00e82078f6e2cf01769042165acaa2
     # via arrow
-types-python-slugify==8.0.0.3 \
-    --hash=sha256:2353c161c79ab6cce955b50720c6cd03586ec297558122236d130e4a19f21209 \
-    --hash=sha256:868e6610ab9a01c01b2ccc1b982363e694d6bbb4fcf32e0d82688c89dceb4e2c
-    # via -r requirements/common.in
 typing-extensions==4.9.0 \
     --hash=sha256:23478f88c37f27d76ac8aee6c905017a143b0b1b886c3c9f66bc2fd94f9f5783 \
     --hash=sha256:af72aea155e91adfc61c3ae9e0e342dbc0cba726d6cba4b6c72c1f34e47291cd
