@@ -215,7 +215,7 @@ The following arguments can be appended to the Docker and shell commands
 
 | Value            | Description                                 | Argument                             |
 | ---------------- | ------------------------------------------- | ------------------------------------ |
-| digitalocean-k8s | [DigitalOcean](#🌊-digitalocean-kubernates) | `--deployment-type=digitalocean-k8s` |
+| digitalocean-k8s | [DigitalOcean](#🌊-digitalocean-kubernetes) | `--deployment-type=digitalocean-k8s` |
 | other-k8s        | [Other Kubernetes](#☸️-other-kubernetes)    | `--deployment-type=other-k8s`        |
 
 #### Terraform backend
