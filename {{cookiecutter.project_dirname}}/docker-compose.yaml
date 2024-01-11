@@ -48,7 +48,7 @@ services:
         USER_ID: ${USER_ID:-1000}
         USER: ${USER:-appuser}
       context: ./{{ cookiecutter.frontend_service_slug }}
-      dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}{% if cookiecutter.backend_type != "none" %}
+      dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
       - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
