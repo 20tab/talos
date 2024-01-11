@@ -29,36 +29,61 @@ services:
       - PACT_BROKER_URL
       - PACT_PROVIDER_NAME{% endif %}
       - PYTHONBREAKPOINT
+      - PYTHONDEVMODE
+      - PYTHONTRACEMALLOC
+    healthcheck:
+      test: curl --fail --head http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}/{{ cookiecutter.backend_service_slug }}/health/ || exit 1
+      interval: 30s
+      start_period: 5s
+      timeout: 5s
+      retries: 5
     user: ${USER:-appuser}
     volumes:
       - ./{{ cookiecutter.backend_service_slug }}:/app{% endif %}
 {% if cookiecutter.frontend_type != "none" %}
   {{ cookiecutter.frontend_service_slug }}:
     build:
+      args:
+        GROUP_ID: ${GROUP_ID:-1000}
+        USER_ID: ${USER_ID:-1000}
+        USER: ${USER:-appuser}
       context: ./{{ cookiecutter.frontend_service_slug }}
-      dockerfile: docker/local.Dockerfile{% if cookiecutter.backend_type != "none" %}
-    depends_on:
-      {{ cookiecutter.backend_service_slug }}:
-        condition: service_started{% endif %}
+      dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}{% if cookiecutter.backend_type != "none" %}
     environment:
       - INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL:-http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}{{ '}' }}
       - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
       - REACT_ENVIRONMENT=${REACT_ENVIRONMENT:-Development}
+    healthcheck:
+      test: wget -O- -q http://{{ cookiecutter.frontend_service_slug }}:{{ cookiecutter.frontend_service_port }}/{{ cookiecutter.frontend_service_slug }}/health || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+    user: ${USER:-appuser}
     volumes:
-      - ./{{ cookiecutter.frontend_service_slug }}:/app{% endif %}
+      - ./{{ cookiecutter.frontend_service_slug }}:/app
+      - /app/node_modules{% endif %}
 
   traefik:
-    image: traefik:v2.6
-    depends_on:{% if cookiecutter.backend_type != 'none' %}
-      - {{ cookiecutter.backend_service_slug }}{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-      - {{ cookiecutter.frontend_service_slug }}{% endif %}
-    volumes:
-      - ./traefik/:/traefik/:ro
     command:
       - "--configFile=/traefik/conf/static.yaml"
+    depends_on:{% if cookiecutter.backend_type != 'none' %}
+      {{ cookiecutter.backend_service_slug }}:
+        condition: service_healthy{% endif %}{% if cookiecutter.frontend_type != 'none' %}
+      {{ cookiecutter.frontend_service_slug }}:
+        condition: service_healthy{% endif %}
+    healthcheck:
+      test: ["CMD", "traefik" ,"healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+    image: traefik:v2.10
     ports:
       - "${LOCAL_HTTPS_PORT:-8443}:8443"
       - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
+    volumes:
+      - ./traefik/:/traefik/:ro
 
   postgres:
     environment:
