@@ -32,7 +32,7 @@ services:
       - PYTHONDEVMODE
       - PYTHONTRACEMALLOC
     healthcheck:
-      test: curl --fail --head http://{{ cookiecutter.backend_service_slug }}:8000/{{ cookiecutter.backend_service_slug }}/health/ || exit 1
+      test: curl --fail --head http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}/{{ cookiecutter.backend_service_slug }}/health/ || exit 1
       interval: 30s
       start_period: 5s
       timeout: 5s
@@ -54,7 +54,7 @@ services:
       - NEXT_PUBLIC_PROJECT_URL=${PROJECT_URL:-https://localhost:8443}
       - REACT_ENVIRONMENT=${REACT_ENVIRONMENT:-Development}
     healthcheck:
-      test: wget -O- -q http://{{ cookiecutter.frontend_service_slug }}:3000/{{ cookiecutter.frontend_service_slug }}/health || exit 1
+      test: wget -O- -q http://{{ cookiecutter.frontend_service_slug }}:{{ cookiecutter.frontend_service_port }}/{{ cookiecutter.frontend_service_slug }}/health || exit 1
       interval: 30s
       timeout: 5s
       start_period: 5s
