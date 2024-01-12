@@ -436,9 +436,7 @@ ruff==0.1.12 \
     --hash=sha256:d41e9f100b50526d80b076fc9c103c729387ff3f10f63606ed1038c30a372a40 \
     --hash=sha256:f193f460e231e63af5fc7516897cf5ab257cbda72ae83cf9a654f1c80c3b758a \
     --hash=sha256:fbb1c002eeacb60161e51d77b2274c968656599477a1c8c65066953276e8ee2b
-    # via
-    #   -r requirements/common.in
-    #   -r requirements/test.in
+    # via -r requirements/common.in
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
