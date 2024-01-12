@@ -12,7 +12,7 @@ The Talos script can be run either using Docker or a Python virtual environment.
 
 In order to run Talos via Docker, a working [Docker installation](https://docs.docker.com/get-docker/) is the only requirement.
 
-### 👨‍💻 Shell command
+### 🐍 Virtual environment
 
 In order to run Talos as a shell command, first clone the repository in a local projects directory
 
