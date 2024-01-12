@@ -180,7 +180,7 @@ cython_debug/
 .DS_Store
 
 # Ruff
- .ruff_cache
+.ruff_cache
 
 # Terraform
 .terraform*
