@@ -4,8 +4,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG OUTPUT_BASE_DIR=/data
 ENV OUTPUT_BASE_DIR=${OUTPUT_BASE_DIR}
 WORKDIR /app
-COPY ./requirements/common.txt requirements/common.txt
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update \
+    && apt-get install --assume-yes --no-install-recommends \
         curl \
         git \
         gnupg \
@@ -17,7 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update \
     && apt-get install --assume-yes --no-install-recommends \
         terraform \
-    && python3 -m pip install --no-cache-dir --upgrade pip setuptools \
+    && rm -rf /var/lib/apt/lists/*
+COPY ./requirements/common.txt requirements/common.txt
+RUN python3 -m pip install --no-cache-dir --upgrade pip setuptools \
     && python3 -m pip install --no-cache-dir -r requirements/common.txt
 COPY . .
 RUN mkdir ${OUTPUT_BASE_DIR}
