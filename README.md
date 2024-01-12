@@ -6,7 +6,7 @@
 
 ## 🧩 Requirements
 
-The Talos script can be run either using Docker or as a local shell command.
+The Talos script can be run either using Docker or a Python virtual environment.
 
 ### 🐋 Docker
 
@@ -19,16 +19,21 @@ In order to run Talos as a shell command, first clone the repository in a local 
 ```console
 cd ~/projects
 git clone git@github.com:20tab/talos.git
+cd talos
 ```
 
-Then, install the following requirements:
+Then, create and activate a virtual environment and install the requirements:
 
-| Requirements           | Instructions                                                                 |
-| ---------------------- | ---------------------------------------------------------------------------- |
-| 🌎 Terraform           | [Install Guide](https://learn.hashicorp.com/tutorials/terraform/install-cli) |
-| 🐍 Python Dependencies | `pip install -r talos/requirements/common.txt`                               |
+```console
+python3.12 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip setuptools
+python3 -m pip install -r requirements/common.txt
+```
 
-## 🔑 Credentials
+The `terraform` cli package is required, unless you want to generate a project only locally. To install it we suggest to use the official [install guide](https://learn.hashicorp.com/tutorials/terraform/install-cli).
+
+## 🔑 Credentials (optional)
 
 ### 🌊 DigitalOcean
 
@@ -57,7 +62,7 @@ If the Terraform Cloud integration is enabled, a User API token is required.<br/
 
 ## 🚀️ Quickstart
 
-Change to the projects directory, for example
+Change to the projects directory, for example:
 
 ```console
 cd ~/projects
@@ -71,9 +76,10 @@ docker run --interactive --tty --rm --volume $PWD/.dumps:/app/.dumps --volume $P
 
 **Note:** On a non-AMD64 architecture, `--platform linux/amd64` can be passed to force emulation.
 
-### 👨‍💻 Shell command
+### 🐍 Virtual environment
 
 ```console
+source talos/.venv/bin/activate
 ./talos/start.py
 ```
 
