@@ -1,0 +1,36 @@
+name: Check Terraform bootstrap
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-checks:
+    name: Run terraform bootstrap checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: hashicorp/setup-terraform@v2
+    - name: Check tf gitlab
+      run: |
+        cd terraform/gitlab
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
+    - name: Check tf terraform-cloud
+      run: |
+        cd terraform/terraform-cloud
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
+    - name: Check tf vault
+      run: |
+        cd terraform/vault
+        terraform init -backend=false -lock=false -reconfigure
+        terraform fmt -check
+        terraform validate
