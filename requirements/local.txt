@@ -154,7 +154,7 @@ cookiecutter==2.5.0 \
     --hash=sha256:8aa2f12ed11bc05628651e9dc4353a10571dd9908aaaaeec959a2b9ea465a5d2 \
     --hash=sha256:e61e9034748e3f41b8bd2c11f00d030784b48711c4d5c42363c50989a65331ec
     # via -r requirements/common.in
-coverage[toml]==7.4.0 \
+coverage==7.4.0 \
     --hash=sha256:04387a4a6ecb330c1878907ce0dc04078ea72a869263e53c72a1ba5bbdf380ca \
     --hash=sha256:0676cd0ba581e514b7f726495ea75aba3eb20899d824636c6f59b0ed2f88c471 \
     --hash=sha256:0e8d06778e8fbffccfe96331a3946237f87b1e1d359d7fbe8b06b96c95a5407a \
