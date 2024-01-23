@@ -10,12 +10,15 @@ services:
       target: ${BACKEND_BUILD_TARGET:-local}
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_healthy{% if cookiecutter.local_s3_storage == "true" %}
+      minio:
+        condition: service_healthy{% endif %}
     environment:
       - CACHE_URL
       - DATABASE_URL
       - DJANGO_ADMINS
-      - DJANGO_ALLOWED_HOSTS
+      - DJANGO_ALLOWED_HOSTS{% if "s3" in cookiecutter.media_storage %}
+      - DJANGO_AWS_S3_URL{% endif %}
       - DJANGO_CONFIGURATION
       - DJANGO_DEBUG
       - DJANGO_DEFAULT_FROM_EMAIL
@@ -39,7 +42,10 @@ services:
       retries: 5
     user: ${USER:-appuser}
     volumes:
-      - ./{{ cookiecutter.backend_service_slug }}:/app{% endif %}
+      - ./{{ cookiecutter.backend_service_slug }}:/app{% endif %}{% if cookiecutter.local_s3_storage == "true" %}
+    networks:
+      custom:
+        ipv4_address: 172.20.0.10{% endif %}
 {% if cookiecutter.frontend_type != "none" %}
   {{ cookiecutter.frontend_service_slug }}:
     build:
@@ -97,7 +103,39 @@ services:
       retries: 30
     image: postgres:14-bullseye
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data{% if cookiecutter.local_s3_storage == "true" %}
+    networks:
+      custom:
+        ipv4_address: 172.20.0.11
+
+  minio:
+    command: minio server /var/lib/minio/data --console-address ":9001"
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_BUCKET_NAME={{ cookiecutter.project_slug }}
+      - MINIO_ROOT_USER=minio-admin
+      - MINIO_ROOT_PASSWORD=minio-admin
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    image: minio/minio:latest
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio_data:/var/lib/minio/data
+    networks:
+      custom:
+        ipv4_address: 172.20.0.13{% endif %}
 
 volumes:
-  pg_data: {}
+  pg_data: {}{% if cookiecutter.local_s3_storage == "true" %}
+  minio_data: {}
+
+networks:
+  custom:
+    ipam:
+      config:
+      - subnet: 172.20.0.0/16{% endif %}
