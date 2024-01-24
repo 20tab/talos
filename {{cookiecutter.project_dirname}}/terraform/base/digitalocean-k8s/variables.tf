@@ -109,6 +109,7 @@ variable "redis_cluster_region" {
   type        = string
   default     = ""
 }
+
 variable "redis_cluster_version" {
   description = "The DigitalOcean Redis cluster major version."
   type        = string
