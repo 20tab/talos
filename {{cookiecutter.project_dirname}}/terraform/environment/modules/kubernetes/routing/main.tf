@@ -11,6 +11,14 @@ locals {
 
   traefik_hosts = join(", ", [for i in local.domains : "`${i}`"])
 
+  secondary_domains_traefik_hosts = join(", ", [for i in var.secondary_domains : "`${i}`"])
+
+  http_redirect_traefik_hosts = join(", ", [for i in concat(
+    local.domains,
+    var.secondary_domains,
+    local.monitoring_domain != "" ? [local.monitoring_domain] : [],
+  ) : "`${i}`"])
+
   base_middlewares = var.basic_auth_enabled && local.basic_auth_ready ? [{ "name" : "traefik-basic-auth" }] : []
 
   letsencrypt_enabled        = var.letsencrypt_certificate_email != ""
@@ -61,27 +69,6 @@ resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
       "basicAuth" = {
         "removeHeader" = true
         "secret"       = kubernetes_secret_v1.traefik_basic_auth[0].metadata[0].name
-      }
-    }
-  }
-}
-
-/* HTTPS Redirect */
-
-resource "kubernetes_manifest" "middleware_redirect_to_https" {
-  count = local.tls_enabled ? 1 : 0
-
-  manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
-    kind       = "Middleware"
-    metadata = {
-      name      = "redirect-to-https"
-      namespace = var.namespace
-    }
-    spec = {
-      redirectScheme = {
-        scheme    = "https"
-        permanent = true
       }
     }
   }
@@ -155,13 +142,13 @@ resource "kubernetes_manifest" "certificate" {
         kind = "Issuer"
       }
       dnsNames = concat(
-        local.domains, local.monitoring_domain != "" ? [local.monitoring_domain] : []
+        local.domains, var.secondary_domains, local.monitoring_domain != "" ? [local.monitoring_domain] : []
       )
     }
   }
 }
 
-/* Traefik Ingress Route */
+/* Main Ingress Route */
 
 resource "kubernetes_manifest" "main_ingress_route" {
   manifest = {
@@ -257,39 +244,6 @@ resource "kubernetes_manifest" "monitoring_ingress_route" {
   }
 }
 
-resource "kubernetes_manifest" "ingressroute_redirect_to_https" {
-  count = local.tls_enabled ? 1 : 0
-
-  manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
-    kind       = "IngressRoute"
-    metadata = {
-      name      = "redirect-to-https"
-      namespace = var.namespace
-    }
-    spec = merge(
-      {
-        entryPoints = ["web"]
-        routes = [
-          {
-            kind  = "Rule"
-            match = "Host(${local.traefik_hosts})"
-            middlewares = [
-              { name = "redirect-to-https" }
-            ]
-            services = [
-              {
-                name = coalesce(var.frontend_service_slug, var.backend_service_slug)
-                port = coalesce(var.frontend_service_port, var.backend_service_port)
-              }
-            ]
-          }
-        ]
-      }
-    )
-  }
-}
-
 /* Metrics Ingress Route */
 
 resource "kubernetes_secret_v1" "metrics_basic_auth" {
@@ -368,6 +322,123 @@ resource "kubernetes_manifest" "metrics_ingress_route" {
       local.tls_secret_name != "" ? {
         tls = {
           secretName = local.tls_secret_name
+        }
+      } : {}
+    )
+  }
+}
+
+/* HTTPS Redirect */
+
+resource "kubernetes_manifest" "middleware_redirect_to_https" {
+  count = local.tls_enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "Middleware"
+    metadata = {
+      name      = "redirect-to-https"
+      namespace = var.namespace
+    }
+    spec = {
+      redirectScheme = {
+        scheme    = "https"
+        permanent = true
+      }
+    }
+  }
+}
+
+resource "kubernetes_manifest" "ingressroute_redirect_to_https" {
+  count = local.tls_enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "redirect-to-https"
+      namespace = var.namespace
+    }
+    spec = merge(
+      {
+        entryPoints = ["web"]
+        routes = [
+          {
+            kind  = "Rule"
+            match = "Host(${local.http_redirect_traefik_hosts})"
+            middlewares = [
+              { name = "redirect-to-https" }
+            ]
+            services = [
+              {
+                name = coalesce(var.frontend_service_slug, var.backend_service_slug)
+                port = coalesce(var.frontend_service_port, var.backend_service_port)
+              }
+            ]
+          }
+        ]
+      }
+    )
+  }
+}
+
+/* Secondary Domains Redirect */
+
+resource "kubernetes_manifest" "middleware_secondary_domains_redirect" {
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "Middleware"
+    metadata = {
+      name      = "redirect-secondary-domains"
+      namespace = var.namespace
+    }
+    spec = {
+      redirectRegex = {
+        regex = join(
+          "", [
+            "^(https?)://(?:",
+            join("|", [for i in var.secondary_domains : replace(i, ".", "\\.")]),
+            ")(.*)$"
+          ]
+        )
+        replacement = "$1://${local.domains[0]}$2"
+      }
+    }
+  }
+
+  computed_fields = ["metadata.labels.domain", "metadata.name"]
+}
+
+resource "kubernetes_manifest" "ingressroute_secondary_domains_redirect" {
+  manifest = {
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "IngressRoute"
+    metadata = {
+      name      = "redirect-secondary-domains"
+      namespace = var.namespace
+    }
+    spec = merge(
+      {
+        entryPoints = local.tls_enabled ? ["websecure"] : ["web"]
+        routes = [
+          {
+            kind  = "Rule"
+            match = "Host(${local.secondary_domains_traefik_hosts})"
+            middlewares = [
+              { name = "redirect-secondary-domains" },
+            ]
+            services = [
+              {
+                name = coalesce(var.frontend_service_slug, var.backend_service_slug)
+                port = coalesce(var.frontend_service_port, var.backend_service_port)
+              }
+            ]
+          }
+        ]
+      },
+      local.letsencrypt_enabled ? {
+        tls = {
+          secretName = "tls-letsencrypt"
         }
       } : {}
     )
