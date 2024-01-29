@@ -98,6 +98,17 @@ variable "project_domain" {
   type        = string
 }
 
+variable "secondary_domains" {
+  description = "An optional list of secondary domains to redirect to the main one."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.subdomains) > 0
+    error_message = "At least one subdomain must be specified."
+  }
+}
+
 variable "subdomains" {
   description = "The subdomains associated to the environment."
   type        = list(string)

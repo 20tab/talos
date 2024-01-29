@@ -224,6 +224,17 @@ variable "s3_secret_key" {
   sensitive   = true
 }
 
+variable "secondary_domains" {
+  description = "An optional list of secondary domains to redirect to the main one."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.subdomains) > 0
+    error_message = "At least one subdomain must be specified."
+  }
+}
+
 variable "stack_slug" {
   description = "The stack slug (e.g. 'main')."
   type        = string

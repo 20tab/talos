@@ -131,6 +131,8 @@ module "routing" {
   tls_certificate_key           = var.tls_certificate_key
 
   monitoring_subdomain = var.monitoring_subdomain
+
+  secondary_domains = var.secondary_domains
 }
 
 /* Secrets */
