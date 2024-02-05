@@ -128,7 +128,7 @@ services:
       - minio_data:/var/lib/minio/data
     networks:
       custom:
-        ipv4_address: 172.20.0.13{% endif %}
+        ipv4_address: 172.20.0.12{% endif %}
 
 volumes:
   pg_data: {}{% if cookiecutter.local_s3_storage == "true" %}
