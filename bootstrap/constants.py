@@ -75,7 +75,7 @@ BACKEND_TEMPLATE_URLS = {
 
 FRONTEND_TEMPLATE_URLS = {
     "nextjs": "https://github.com/20tab/nextjs-continuous-delivery",
-    "nextjs-light": "https://github.com/20tab/react-continuous-delivery",
+    "nextjs-light": "https://github.com/20tab/nextjs-light-continuous-delivery",
 }
 
 SUBREPOS_DIR = Path(__file__).parent.parent / ".subrepos"
