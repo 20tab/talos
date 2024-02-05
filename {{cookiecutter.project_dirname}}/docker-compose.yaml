@@ -120,7 +120,7 @@ services:
       interval: 3s
       timeout: 3s
       retries: 30
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-01-31T20-20-33Z
     ports:
       - 9000:9000
       - 9001:9001
