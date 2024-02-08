@@ -74,7 +74,8 @@ BACKEND_TEMPLATE_URLS = {
 }
 
 FRONTEND_TEMPLATE_URLS = {
-    "nextjs": "https://github.com/20tab/nextjs-continuous-delivery"
+    "nextjs": "https://github.com/20tab/nextjs-continuous-delivery",
+    "nextjs-light": "https://github.com/20tab/nextjs-light-continuous-delivery",
 }
 
 SUBREPOS_DIR = Path(__file__).parent.parent / ".subrepos"
@@ -91,7 +92,9 @@ BACKEND_TYPE_CHOICES = [BACKEND_TYPE_DEFAULT, EMPTY_SERVICE_TYPE]
 
 FRONTEND_TYPE_DEFAULT = "nextjs"
 
-FRONTEND_TYPE_CHOICES = [FRONTEND_TYPE_DEFAULT, EMPTY_SERVICE_TYPE]
+FRONTEND_TYPE_LIGHT = "nextjs-light"
+
+FRONTEND_TYPE_CHOICES = [FRONTEND_TYPE_DEFAULT, FRONTEND_TYPE_LIGHT, EMPTY_SERVICE_TYPE]
 
 # Deployment type
 
