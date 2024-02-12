@@ -102,6 +102,7 @@ class Collector:
     pact_broker_username: str | None = None
     pact_broker_password: str | None = None
     media_storage: str | None = None
+    local_s3_storage: bool | None = None
     s3_region: str | None = None
     s3_host: str | None = None
     s3_access_id: str | None = None
@@ -541,6 +542,10 @@ class Collector:
             self.s3_secret_key = validate_or_prompt_secret(
                 "S3 Secret Access Key", self.s3_secret_key
             )
+            if self.local_s3_storage is None:
+                self.local_s3_storage = click.confirm(
+                    warning("Do you want to use the local S3 storage?"), default=False
+                )
 
     def set_digitalocean_spaces(self):
         """Set the DigitalOcean Spaces options."""
@@ -627,6 +632,7 @@ class Collector:
             pact_broker_username=self.pact_broker_username,
             pact_broker_password=self.pact_broker_password,
             media_storage=self.media_storage,
+            local_s3_storage=self.local_s3_storage,
             s3_region=self.s3_region,
             s3_host=self.s3_host,
             s3_access_id=self.s3_access_id,
