@@ -228,11 +228,6 @@ variable "secondary_domains" {
   description = "An optional list of secondary domains to redirect to the main one."
   type        = list(string)
   default     = []
-
-  validation {
-    condition     = length(var.subdomains) > 0
-    error_message = "At least one subdomain must be specified."
-  }
 }
 
 variable "stack_slug" {
@@ -244,6 +239,11 @@ variable "subdomains" {
   description = "The subdomains associated to the environment."
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.subdomains) > 0
+    error_message = "At least one subdomain must be specified."
+  }
 }
 
 variable "tls_certificate_crt" {
