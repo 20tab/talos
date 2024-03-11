@@ -22,7 +22,7 @@ services:
 
 .terraform:
   script:
-  - >
+    - >
       docker run --rm
       -u `id -u`
       -v ${PWD}:${PWD}
