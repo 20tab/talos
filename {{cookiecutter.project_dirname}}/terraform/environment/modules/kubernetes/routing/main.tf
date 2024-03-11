@@ -27,7 +27,7 @@ locals {
 
   tls_secret_name = local.tls_enabled ? "tls-certificate" : ""
 
-  redirects_service_port = var.frontend_service_paths != [] ? var.frontend_service_port : var.backend_service_port
+  redirects_service_port = var.frontend_service_slug != "" ? var.frontend_service_port : var.backend_service_port
 }
 
 terraform {
