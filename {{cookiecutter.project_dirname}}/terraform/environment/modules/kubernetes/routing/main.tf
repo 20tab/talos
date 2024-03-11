@@ -440,7 +440,7 @@ resource "kubernetes_manifest" "ingressroute_secondary_domains_redirect" {
       },
       local.letsencrypt_enabled ? {
         tls = {
-          secretName = "tls-letsencrypt"
+          secretName = local.tls_secret_name
         }
       } : {}
     )
