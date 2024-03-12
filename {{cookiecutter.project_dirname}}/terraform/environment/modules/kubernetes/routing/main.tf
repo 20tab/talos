@@ -26,6 +26,8 @@ locals {
   tls_enabled                = local.manual_certificate_enabled || local.letsencrypt_enabled
 
   tls_secret_name = local.tls_enabled ? "tls-certificate" : ""
+
+  redirects_service_port = var.frontend_service_slug != "" ? var.frontend_service_port : var.backend_service_port
 }
 
 terraform {
@@ -372,7 +374,7 @@ resource "kubernetes_manifest" "ingressroute_redirect_to_https" {
             services = [
               {
                 name = coalesce(var.frontend_service_slug, var.backend_service_slug)
-                port = coalesce(var.frontend_service_port, var.backend_service_port)
+                port = local.redirects_service_port
               }
             ]
           }
@@ -430,7 +432,7 @@ resource "kubernetes_manifest" "ingressroute_secondary_domains_redirect" {
             services = [
               {
                 name = coalesce(var.frontend_service_slug, var.backend_service_slug)
-                port = coalesce(var.frontend_service_port, var.backend_service_port)
+                port = local.redirects_service_port
               }
             ]
           }
@@ -438,7 +440,7 @@ resource "kubernetes_manifest" "ingressroute_secondary_domains_redirect" {
       },
       local.letsencrypt_enabled ? {
         tls = {
-          secretName = "tls-letsencrypt"
+          secretName = local.tls_secret_name
         }
       } : {}
     )
