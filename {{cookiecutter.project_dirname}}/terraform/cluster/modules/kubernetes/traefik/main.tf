@@ -16,8 +16,9 @@ resource "helm_release" "traefik" {
   chart            = "traefik"
   namespace        = "traefik"
   create_namespace = true
-  repository       = "https://helm.traefik.io/traefik"
+  repository       = "https://traefik.github.io/charts"
   timeout          = 900
+  version          = var.traefik_helm_chart_version
 
   values = [
     file("${path.module}/values.yaml"),
@@ -43,7 +44,7 @@ resource "helm_release" "cert_manager" {
   namespace        = "cert-manager"
   create_namespace = true
   repository       = "https://charts.jetstack.io"
-  version          = "1.7.2"
+  version          = "1.14.4"
 
   set {
     name  = "installCRDs"
