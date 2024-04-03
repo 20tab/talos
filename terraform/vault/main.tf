@@ -5,7 +5,7 @@ terraform {
   required_providers {
     vault = {
       source  = "hashicorp/vault"
-      version = "~>3.11.0"
+      version = "4.2.0"
     }
   }
 }
@@ -16,7 +16,7 @@ provider "vault" {
   token = var.vault_token
 
   dynamic "auth_login_oidc" {
-    for_each = var.vault_token == "" ? ["default"] : []
+    for_each = toset(var.vault_token == "" ? ["default"] : [])
 
     content {
       role = auth_login_oidc.value
