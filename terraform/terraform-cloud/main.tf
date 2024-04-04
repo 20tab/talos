@@ -43,7 +43,7 @@ terraform {
   required_providers {
     tfe = {
       source  = "hashicorp/tfe"
-      version = "~> 0.37"
+      version = "~> 0.53"
     }
   }
 }
@@ -70,12 +70,16 @@ resource "tfe_organization" "main" {
 
 /* Workspaces */
 
-resource "tfe_workspace" "test" {
+resource "tfe_workspace" "main" {
   for_each = { for i in local.workspaces : i.name => i }
 
-  name           = each.value.name
-  description    = each.value.description
-  organization   = local.organization.name
+  name         = each.value.name
+  description  = each.value.description
+  organization = local.organization.name
+  tag_names    = each.value.tags
+}
+
+resource "tfe_workspace_settings" "main-settings" {
+  workspace_id   = tfe_workspace.main.id
   execution_mode = "local"
-  tag_names      = each.value.tags
 }

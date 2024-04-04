@@ -128,7 +128,7 @@ variable "grafana_user" {
 variable "grafana_version" {
   description = "The Grafana version."
   type        = string
-  default     = "9.4.1"
+  default     = "10.2.0"
 }
 
 variable "letsencrypt_certificate_email" {
@@ -231,14 +231,14 @@ variable "subdomains" {
 }
 
 variable "tls_certificate_crt" {
-  description = "The TLS certificate .crt file content."
+  description = "The base64-encoded PEM-formatted TLS full certificate."
   type        = string
   sensitive   = true
   default     = ""
 }
 
 variable "tls_certificate_key" {
-  description = "The TLS certificate .key file content."
+  description = "The base64-encoded PEM-formatted TLS private key."
   type        = string
   sensitive   = true
   default     = ""

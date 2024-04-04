@@ -102,6 +102,12 @@ variable "secondary_domains" {
   description = "An optional list of secondary domains to redirect to the main one."
   type        = list(string)
   default     = []
+}
+
+variable "subdomains" {
+  description = "The subdomains associated to the environment."
+  type        = list(string)
+  default     = []
 
   validation {
     condition     = length(var.subdomains) > 0
@@ -109,21 +115,15 @@ variable "secondary_domains" {
   }
 }
 
-variable "subdomains" {
-  description = "The subdomains associated to the environment."
-  type        = list(string)
-  default     = []
-}
-
 variable "tls_certificate_crt" {
-  description = "The TLS certificate .crt file content."
+  description = "The base64-encoded PEM-formatted TLS full certificate."
   type        = string
   sensitive   = true
   default     = ""
 }
 
 variable "tls_certificate_key" {
-  description = "The TLS certificate .key file content."
+  description = "The base64-encoded PEM-formatted TLS private key."
   type        = string
   sensitive   = true
   default     = ""
