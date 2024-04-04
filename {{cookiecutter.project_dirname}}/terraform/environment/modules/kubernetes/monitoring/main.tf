@@ -36,10 +36,11 @@ resource "kubernetes_namespace_v1" "log_storage" {
 
 resource "helm_release" "loki" {
   name       = "loki"
-  namespace  = local.namespace
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki-stack"
-  version    = "2.9.10"
+  version    = "2.10.2"
+
+  namespace  = local.namespace
 
   values = [
     file("${path.module}/loki/values.yaml"),
@@ -79,9 +80,11 @@ resource "kubernetes_config_map_v1" "k8s_logs_dashboard" {
 
 resource "helm_release" "grafana" {
   name       = "grafana"
-  namespace  = local.namespace
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana"
+  version    = "7.3.7"
+
+  namespace  = local.namespace
 
   values = [file("${path.module}/grafana/values.yaml")]
 

@@ -59,16 +59,16 @@ resource "kubernetes_manifest" "traefik_basic_auth_middleware" {
   count = var.basic_auth_enabled && local.basic_auth_ready ? 1 : 0
 
   manifest = {
-    "apiVersion" = "traefik.containo.us/v1alpha1"
-    "kind"       = "Middleware"
-    "metadata" = {
-      "name"      = "traefik-basic-auth"
-      "namespace" = var.namespace
+    apiVersion = "traefik.io/v1alpha1"
+    kind       = "Middleware"
+    metadata = {
+      name      = "traefik-basic-auth"
+      namespace = var.namespace
     }
-    "spec" = {
-      "basicAuth" = {
-        "removeHeader" = true
-        "secret"       = kubernetes_secret_v1.traefik_basic_auth[0].metadata[0].name
+    spec = {
+      basicAuth = {
+        removeHeader = true
+        secret       = kubernetes_secret_v1.traefik_basic_auth[0].metadata[0].name
       }
     }
   }
@@ -152,7 +152,7 @@ resource "kubernetes_manifest" "certificate" {
 
 resource "kubernetes_manifest" "main_ingress_route" {
   manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
+    apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
       name      = "main"
@@ -213,7 +213,7 @@ resource "kubernetes_manifest" "monitoring_ingress_route" {
   count = local.monitoring_domain != "" ? 1 : 0
 
   manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
+    apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
       name      = "monitoring"
@@ -266,7 +266,7 @@ resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
   count = local.basic_auth_ready ? 1 : 0
 
   manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
+    apiVersion = "traefik.io/v1alpha1"
     kind       = "Middleware"
     metadata = {
       name      = "metrics-basic-auth-${var.env_slug}"
@@ -284,7 +284,7 @@ resource "kubernetes_manifest" "metrics_basic_auth_middleware" {
 resource "kubernetes_manifest" "metrics_ingress_route" {
 
   manifest = {
-    apiVersion = "traefik.containo.us/v1alpha1"
+    apiVersion = "traefik.io/v1alpha1"
     kind       = "IngressRoute"
     metadata = {
       name      = "metrics-${var.env_slug}"

@@ -11,11 +11,13 @@ terraform {
 
 resource "helm_release" "metrics_server" {
   name             = "metrics-server"
-  namespace        = "metrics-server"
   repository       = "https://kubernetes-sigs.github.io/metrics-server"
   chart            = "metrics-server"
+  version          = "3.12.0"
+
+  namespace        = "metrics-server"
+
   create_namespace = true
-  version          = "3.8.2"
 
   values = [file("${path.module}/metrics-server/values.yaml")]
 }
@@ -24,7 +26,9 @@ resource "helm_release" "metrics_server" {
 
 resource "helm_release" "kube_state_metrics" {
   name       = "kube-state-metrics"
-  namespace  = "kube-system"
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "kube-state-metrics"
+  version    = "3.16.2"
+
+  namespace  = "kube-system"
 }

@@ -66,13 +66,13 @@ variable "k8s_cluster_node_min_vcpus" {
 variable "k8s_cluster_node_max_memory" {
   description = "The DigitalOcean Kubernetes nodes candidate maximum memory (in GB)."
   type        = number
-  default     = 16
+  default     = 256
 }
 
 variable "k8s_cluster_node_max_vcpus" {
   description = "The DigitalOcean Kubernetes nodes candidate maximum number of vCPUs."
   type        = number
-  default     = 4
+  default     = 48
 }
 
 variable "k8s_cluster_node_size" {

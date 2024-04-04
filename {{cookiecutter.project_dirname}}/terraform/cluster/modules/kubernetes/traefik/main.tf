@@ -13,12 +13,14 @@ terraform {
 
 resource "helm_release" "traefik" {
   name             = "traefik"
+  repository       = "https://traefik.github.io/charts"
   chart            = "traefik"
+  version          = var.traefik_helm_chart_version
+
   namespace        = "traefik"
   create_namespace = true
-  repository       = "https://traefik.github.io/charts"
+
   timeout          = 900
-  version          = var.traefik_helm_chart_version
 
   values = [
     file("${path.module}/values.yaml"),
@@ -40,11 +42,12 @@ resource "helm_release" "cert_manager" {
   count = var.letsencrypt_certificate_email != "" ? 1 : 0
 
   name             = "cert-manager"
+  repository       = "https://charts.jetstack.io"
   chart            = "cert-manager"
+  version          = "1.14.4"
+
   namespace        = "cert-manager"
   create_namespace = true
-  repository       = "https://charts.jetstack.io"
-  version          = "1.14.4"
 
   set {
     name  = "installCRDs"

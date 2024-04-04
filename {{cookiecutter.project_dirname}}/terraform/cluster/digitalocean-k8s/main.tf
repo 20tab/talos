@@ -64,8 +64,9 @@ module "traefik" {
 
 resource "helm_release" "reloader" {
   name       = "reloader"
-  chart      = "reloader"
   repository = "https://stakater.github.io/stakater-charts"
+  chart      = "reloader"
+  version    = "1.0.74"
 }
 
 /* Metrics */
