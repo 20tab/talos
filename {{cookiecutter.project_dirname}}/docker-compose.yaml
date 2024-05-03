@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 {% if cookiecutter.backend_type != "none" %}
   {{ cookiecutter.backend_service_slug }}:

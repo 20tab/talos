@@ -2,7 +2,7 @@
 
 set -e
 
-vault_token=$(curl --silent --request POST --data "role=${VAULT_ROLE}" --data "jwt=${CI_JOB_JWT_V2}" "${VAULT_ADDR%/}"/v1/auth/gitlab-jwt/login | jq -r .auth.client_token)
+vault_token=$(curl --silent --request POST --data "role=${VAULT_ROLE}" --data "jwt=${VAULT_ID_TOKEN}" "${VAULT_ADDR%/}"/v1/auth/gitlab-jwt/login | jq -r .auth.client_token)
 
 secrets_data="{}"
 

@@ -20,7 +20,10 @@ image:
 services:
   - docker:20-dind
 
-.terraform:
+.terraform:{% if cookiecutter.use_vault == "true" %}
+  id_tokens:
+    VAULT_ID_TOKEN:
+      aud: ${VAULT_ADDR}{% endif %}
   script:
     - >
       docker run --rm
@@ -29,16 +32,14 @@ services:
       -w ${PWD}{% if cookiecutter.terraform_backend == "gitlab" %}
       -e CI_API_V4_URL
       -e CI_COMMIT_SHA
-      -e CI_JOB_ID{% if cookiecutter.use_vault == "true" %}
-      -e CI_JOB_JWT_V2{% endif %}
+      -e CI_JOB_ID
       -e CI_JOB_STAGE
       -e CI_JOB_TOKEN
       -e CI_PROJECT_ID
       -e CI_PROJECT_NAME
       -e CI_PROJECT_NAMESPACE
       -e CI_PROJECT_PATH
-      -e CI_PROJECT_URL{% elif cookiecutter.use_vault == "true" %}
-      -e CI_JOB_JWT_V2{% endif %}
+      -e CI_PROJECT_URL
       -e ENV_SLUG
       -e PROJECT_DIR=${CI_PROJECT_DIR}
       -e PROJECT_SLUG={{ cookiecutter.project_slug }}
@@ -67,6 +68,7 @@ services:
       -e TF_WORKSPACE{% endif %}{% if cookiecutter.terraform_backend == "terraform-cloud" and cookiecutter.use_vault == "false" %}
       -e TFC_TOKEN{% endif %}{% if cookiecutter.use_vault == "true" %}
       -e VAULT_ADDR
+      -e VAULT_ID_TOKEN
       -e VAULT_ROLE
       -e VAULT_SECRETS
       -e VAULT_SECRETS_PREFIX
