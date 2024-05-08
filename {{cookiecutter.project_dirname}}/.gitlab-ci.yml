@@ -39,7 +39,7 @@ services:
       -e CI_PROJECT_NAME
       -e CI_PROJECT_NAMESPACE
       -e CI_PROJECT_PATH
-      -e CI_PROJECT_URL
+      -e CI_PROJECT_URL{% endif %}
       -e ENV_SLUG
       -e PROJECT_DIR=${CI_PROJECT_DIR}
       -e PROJECT_SLUG={{ cookiecutter.project_slug }}
