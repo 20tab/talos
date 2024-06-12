@@ -70,3 +70,9 @@ repos:
     rev: "v1.86.0"
     hooks:
       - id: terraform_fmt
+      - id: terraform_validate
+        args:
+          - --tf-init-args=-backend=false
+          - --tf-init-args=-lock=false
+          - --tf-init-args=-upgrade
+          - --hook-config=--retry-once-with-cleanup=true
