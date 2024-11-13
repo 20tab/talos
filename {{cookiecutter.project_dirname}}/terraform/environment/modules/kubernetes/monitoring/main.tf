@@ -54,7 +54,7 @@ resource "helm_release" "loki" {
       "loki.config.storage_config.aws.endpoint"          = var.s3_host
       "loki.config.storage_config.aws.region"            = var.s3_region
       "loki.config.storage_config.aws.secret_access_key" = var.s3_secret_key
-    } : map()
+    } : {}
 
     content {
       name  = set.key
