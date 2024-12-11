@@ -79,7 +79,9 @@ resource "tfe_workspace" "main" {
   tag_names    = each.value.tags
 }
 
-resource "tfe_workspace_settings" "main-settings" {
-  workspace_id   = tfe_workspace.main.id
+resource "tfe_workspace_settings" "main" {
+  for_each = tfe_workspace.main
+
+  workspace_id   = each.value.id
   execution_mode = "local"
 }
