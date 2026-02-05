@@ -10,7 +10,7 @@ variable "project_slug" {
 
 variable "secrets" {
   description = "The secrets."
-  type        = map(map(string))
+  type        = map(map(any))
   default     = {}
 }
 
