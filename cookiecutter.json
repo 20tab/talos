@@ -20,40 +20,26 @@
   "opentofu_component_version": "3.11.0",
   "opentofu_version": "1.10.6",
   "resources": {
-    "stacks": [
-      [
-        {
-          "name": "main",
-          "slug": "main"
-        }
-      ]
-    ],
     "envs": [
       {
         "name": "development",
         "slug": "dev",
-        "stack_slug": "main",
         "cluster_slug": "dev",
         "host": ""
       },
       {
         "name": "staging",
         "slug": "stage",
-        "stack_slug": "main",
         "cluster_slug": "dev",
         "host": ""
       },
       {
         "name": "production",
         "slug": "prod",
-        "stack_slug": "main",
         "cluster_slug": "main",
         "host": ""
       }
     ]
   },
-  "deployment_type": ["digitalocean-k8s", "other-k8s"],
-  "environments_distribution": "1",
-  "tfvars": {},
   "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }
