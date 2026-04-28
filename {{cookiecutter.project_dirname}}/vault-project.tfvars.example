@@ -1,0 +1,9 @@
+{%- set svc_list = [] %}
+{%- if cookiecutter.backend_type != 'none' %}{% set _ = svc_list.append(cookiecutter.backend_service_slug) %}{% endif %}
+{%- if cookiecutter.frontend_type != 'none' %}{% set _ = svc_list.append(cookiecutter.frontend_service_slug) %}{% endif %}
+project_admin_users    = []
+project_name           = "{{ cookiecutter.project_name }}"
+project_namespace_path = ""
+project_slug           = "{{ cookiecutter.project_slug }}"
+services               = {{ svc_list | tojson }}
+vault_address          = "https://vault.20tab.com/"
