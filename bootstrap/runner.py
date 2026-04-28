@@ -32,9 +32,14 @@ from bootstrap.constants import (
     MAIN_STACK_NAME,
     MAIN_STACK_SLUG,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
+    MINOS_PLATFORM_IMAGE,
+    MINOS_SERVICE_IMAGE,
+    OPENTOFU_COMPONENT_VERSION,
+    OPENTOFU_VERSION,
     PROD_ENV_NAME,
     PROD_ENV_SLUG,
     PROD_ENV_STACK_CHOICES,
+    PYTHON_VERSION_DEFAULT,
     SERVICE_SLUG_DEFAULT,
     STACKS_CHOICES,
     STAGE_ENV_NAME,
@@ -89,6 +94,11 @@ class Runner:
     clusters: list[str] | None = None
     cluster_core_providers: dict[str, list[str]] | None = None
     env_to_cluster: dict[str, str] | None = None
+    python_version: str = PYTHON_VERSION_DEFAULT
+    minos_platform_image: str = MINOS_PLATFORM_IMAGE
+    minos_service_image: str = MINOS_SERVICE_IMAGE
+    opentofu_component_version: str = OPENTOFU_COMPONENT_VERSION
+    opentofu_version: str = OPENTOFU_VERSION
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -539,9 +549,14 @@ class Runner:
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
                 "media_storage": self.media_storage,
+                "minos_platform_image": self.minos_platform_image,
+                "minos_service_image": self.minos_service_image,
+                "opentofu_component_version": self.opentofu_component_version,
+                "opentofu_version": self.opentofu_version,
                 "project_dirname": self.project_dirname,
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
+                "python_version": self.python_version,
                 "resources": {"envs": self.envs, "stacks": self.stacks},
                 "service_slug": self.service_slug,
                 "terraform_backend": self.terraform_backend,
@@ -553,6 +568,52 @@ class Runner:
             output_dir=self.output_dir,
             no_input=True,
         )
+        self.render_minos_per_cluster_files()
+
+    def render_minos_per_cluster_files(self):
+        """Write per-cluster minos tfvars skeletons (core/{provider}.tfvars + kubernetes.tfvars)."""
+        click.echo(info("...generating per-cluster minos files"))
+        clusters = self.clusters or []
+        cluster_core_providers = self.cluster_core_providers or {}
+        letsencrypt_email = self.letsencrypt_certificate_email or "tech@20tab.com"
+        platform_dir = self.output_dir / self.project_dirname / "minos"
+        for cluster in clusters:
+            cluster_full = f"{self.project_slug}-{cluster}"
+            cluster_dir = platform_dir / cluster
+            (cluster_dir / "core").mkdir(parents=True, exist_ok=True)
+            namespaces = sorted(
+                {f"{self.project_slug}-{env['slug']}" for env in self.envs if env.get("cluster_slug") == cluster}
+            )
+            traefik_host = (
+                f"proxy-{cluster}.{self.project_domain}" if self.project_domain else ""
+            )
+            for provider in cluster_core_providers.get(cluster, []):
+                if provider == "digitalocean":
+                    (cluster_dir / "core" / "digitalocean.tfvars").write_text(
+                        f'cluster_slug                  = "{cluster_full}"\n'
+                        'create_database               = true\n'
+                        'create_valkey                 = false\n'
+                        'database_cluster_node_size    = "db-s-1vcpu-2gb"\n'
+                        'database_cluster_storage_size = 10\n'
+                        'k8s_cluster_node_count        = 1\n'
+                        'k8s_cluster_node_size         = "s-2vcpu-4gb"\n'
+                        f'project_name                  = "{self.project_name}"\n'
+                    )
+                elif provider == "aws":
+                    (cluster_dir / "core" / "aws.tfvars").write_text(
+                        f'cluster_slug                  = "{cluster_full}"\n'
+                        'iam_permissions_boundary_name = ""\n'
+                        'iam_user_name_prefix          = ""\n'
+                        'iam_users                     = {}\n'
+                        'kms_keys                      = {}\n'
+                    )
+            (cluster_dir / "kubernetes.tfvars").write_text(
+                f'cluster_slug                        = "{cluster_full}"\n'
+                'managed_secrets                     = {}\n'
+                f'namespaces                          = {json.dumps(namespaces)}\n'
+                f'traefik_dashboard_host              = "{traefik_host}"\n'
+                f'traefik_dashboard_letsencrypt_email = "{letsencrypt_email}"\n'
+            )
 
     def create_env_file(self):
         """Create the final env file from its template."""
