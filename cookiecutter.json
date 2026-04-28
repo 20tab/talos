@@ -14,6 +14,17 @@
   "media_storage": ["digitalocean-s3", "aws-s3", "local", "none"],
   "use_pact": "false",
   "use_vault": "false",
+  "python_version": "3.14",
+  "minos_platform_image": "registry.gitlab.com/20tab-open/minos/platform:latest",
+  "minos_service_image": "registry.gitlab.com/20tab-open/minos/service:latest",
+  "opentofu_component_version": "3.11.0",
+  "opentofu_version": "1.10.6",
+  "clusters": ["dev", "main"],
+  "cluster_core_providers": {
+    "dev": ["aws", "digitalocean"],
+    "main": ["aws", "digitalocean"]
+  },
+  "services": [],
   "resources": {
     "stacks": [
       [
@@ -27,17 +38,23 @@
       {
         "name": "development",
         "slug": "dev",
-        "stack_slug": "main"
+        "stack_slug": "main",
+        "cluster_slug": "dev",
+        "host": ""
       },
       {
         "name": "staging",
         "slug": "stage",
-        "stack_slug": "main"
+        "stack_slug": "main",
+        "cluster_slug": "dev",
+        "host": ""
       },
       {
         "name": "production",
         "slug": "prod",
-        "stack_slug": "main"
+        "stack_slug": "main",
+        "cluster_slug": "main",
+        "host": ""
       }
     ]
   },
