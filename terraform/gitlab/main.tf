@@ -197,26 +197,6 @@ resource "gitlab_group_variable" "vars" {
   masked    = lookup(each.value, "masked", false)
 }
 
-resource "gitlab_group_variable" "registry_password" {
-  count = var.use_vault ? 0 : 1
-
-  group     = local.group_id
-  key       = "REGISTRY_PASSWORD"
-  value     = gitlab_deploy_token.regcred.token
-  protected = true
-  masked    = true
-}
-
-resource "gitlab_group_variable" "registry_username" {
-  count = var.use_vault ? 0 : 1
-
-  group     = local.group_id
-  key       = "REGISTRY_USERNAME"
-  value     = gitlab_deploy_token.regcred.username
-  protected = true
-  masked    = true
-}
-
 /* Project Variables */
 
 resource "gitlab_project_variable" "vars" {
