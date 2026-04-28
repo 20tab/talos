@@ -153,6 +153,54 @@ TERRAFORM_BACKEND_CHOICES = [TERRAFORM_BACKEND_TFC, TERRAFORM_BACKEND_GITLAB]
 
 GITLAB_URL_DEFAULT = "https://gitlab.com"
 
+# Clusters
+
+CLUSTER_DEV_SLUG = "dev"
+
+CLUSTER_MAIN_SLUG = "main"
+
+CLUSTERS_DEFAULT = [CLUSTER_DEV_SLUG, CLUSTER_MAIN_SLUG]
+
+# Core providers (per cluster, multi-select)
+
+CORE_PROVIDER_AWS = "aws"
+
+CORE_PROVIDER_DIGITALOCEAN = "digitalocean"
+
+CORE_PROVIDER_CHOICES = [CORE_PROVIDER_AWS, CORE_PROVIDER_DIGITALOCEAN]
+
+# Environment-to-cluster mapping
+
+ENV_NAMES = [DEV_ENV_NAME, STAGE_ENV_NAME, PROD_ENV_NAME]
+
+ENV_TO_CLUSTER_DEFAULT: dict[str, str] = {
+    DEV_ENV_NAME: CLUSTER_DEV_SLUG,
+    STAGE_ENV_NAME: CLUSTER_DEV_SLUG,
+    PROD_ENV_NAME: CLUSTER_MAIN_SLUG,
+}
+
+# Vault — auth roles are shared 20tab-wide on the gitlab-jwt backend
+
+VAULT_PLATFORM_ROLE = "platform-gitlab-job"
+
+VAULT_SERVICE_ROLE = "service-gitlab-job"
+
+# Minos
+
+MINOS_PLATFORM_IMAGE = "registry.gitlab.com/20tab-open/minos/platform:latest"
+
+MINOS_SERVICE_IMAGE = "registry.gitlab.com/20tab-open/minos/service:latest"
+
+# OpenTofu
+
+OPENTOFU_COMPONENT_VERSION = "3.11.0"
+
+OPENTOFU_VERSION = "1.10.6"
+
+# Python
+
+PYTHON_VERSION_DEFAULT = "3.14"
+
 # Dump
 
 DUMP_EXCLUDED_OPTIONS = (
