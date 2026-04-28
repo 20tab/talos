@@ -1,0 +1,134 @@
+stages:
+  - core:plan
+  - core:apply
+  - kubernetes:plan
+  - kubernetes:apply
+
+variables:
+  GITLAB_TOFU_INIT_NO_RECONFIGURE: true
+  PROJECT_DIR: "${CI_PROJECT_DIR}"
+  PROJECT_SLUG: {{ cookiecutter.project_slug }}
+  TF_CLOUD_HOSTNAME: app.terraform.io
+  TF_CLOUD_ORGANIZATION: {{ cookiecutter.terraform_cloud_organization }}
+  TOFU_BACKEND: terraform-cloud
+  VAULT_ROLE: "platform-gitlab-job"
+  VAULT_SECRETS_PREFIX: "platforms/${CLUSTER}"
+
+include:
+  - component: ${CI_SERVER_FQDN}/components/opentofu/job-templates@{{ cookiecutter.opentofu_component_version }}
+    inputs:
+      version: {{ cookiecutter.opentofu_component_version }}
+      opentofu_version: {{ cookiecutter.opentofu_version }}
+
+workflow:
+  rules:
+    - if: $CLUSTER == null || $CLUSTER == ""
+      when: never
+    - if: $CI_PIPELINE_SOURCE != "web" || $CI_COMMIT_BRANCH != "main"
+      when: never
+    - when: always
+
+before_script:
+  - export TF_CLI_ARGS_plan="${TF_CLI_ARGS_plan} ${TOFU_VAR_FILE_ARGS}"
+
+.core:
+  parallel:
+    matrix:
+      - CORE_PROVIDER: ["aws", "digitalocean"]
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
+    VAULT_ID_TOKEN:
+      aud: ${VAULT_ADDR}
+  image: {{ cookiecutter.minos_platform_image }}
+  variables:
+    AWS_WEB_IDENTITY_TOKEN_FILE: "/tmp/web_identity_token"
+    GITLAB_TOFU_ROOT_DIR: "${CI_PROJECT_DIR}/tofu/core/${CORE_PROVIDER}"
+    TF_WORKSPACE: "${PROJECT_SLUG}_platform_${CLUSTER}_core_${CORE_PROVIDER}"
+    TOFU_ROOT_PATH: "tofu/core/${CORE_PROVIDER}"
+    TOFU_VAR_FILES: "${CORE_PROVIDER}.tfvars"
+    TOFU_VARS_PATH: "minos/${CLUSTER}/core"
+    VAULT_SECRETS: ${CORE_PROVIDER}
+  rules:
+    - exists:
+        - minos/${CLUSTER}/core/${CORE_PROVIDER}.tfvars
+      when: manual
+  environment:
+    name: ${CLUSTER}
+
+core:plan:
+  stage: core:plan
+  extends: [.opentofu:plan, .core]
+
+core:apply:
+  stage: core:apply
+  extends: [.opentofu:apply, .core]
+  needs:
+    - job: core:plan
+  variables:
+    TOFU_OUTPUTS_FILE: "${CI_PROJECT_DIR}/tofu/kubernetes/${CORE_PROVIDER}.auto.tfvars.json"
+  after_script:
+    - gitlab-tofu output -json | jq 'map_values(.value)' > "${TOFU_OUTPUTS_FILE}"
+  artifacts:
+    access: none
+    paths:
+      - "${TOFU_OUTPUTS_FILE}"
+    expire_in: 1h
+
+.kubernetes:
+  id_tokens:
+    VAULT_ID_TOKEN:
+      aud: ${VAULT_ADDR}
+  image: {{ cookiecutter.minos_platform_image }}
+  variables:
+    GITLAB_TOFU_ROOT_DIR: "${CI_PROJECT_DIR}/tofu/kubernetes"
+    TF_WORKSPACE: "${PROJECT_SLUG}_platform_${CLUSTER}_kubernetes"
+    TOFU_ROOT_PATH: tofu/kubernetes
+    TOFU_VAR_FILES: kubernetes.tfvars
+    TOFU_VARS_PATH: "minos/${CLUSTER}"
+    VAULT_SECRETS: "digitalocean"
+  rules:
+    - &kubernetes-rule
+      exists:
+        - minos/${CLUSTER}/kubernetes.tfvars
+      when: manual
+  environment:
+    name: ${CLUSTER}
+
+.kubernetes:plan:
+  stage: kubernetes:plan
+  extends: [.opentofu:plan, .kubernetes]
+  needs:
+    - job: core:apply
+      artifacts: true
+      parallel:
+        matrix:
+          - CORE_PROVIDER: [aws, digitalocean]
+
+kubernetes-base:plan:
+  extends: [.kubernetes:plan]
+  rules:
+    - <<: *kubernetes-rule
+      variables:
+        TF_CLI_ARGS_plan: >
+          -target=helm_release.traefik
+          -target=helm_release.cert_manager
+
+kubernetes-full:plan:
+  stage: kubernetes:plan
+  extends: [.kubernetes:plan]
+
+.kubernetes:apply:
+  stage: kubernetes:apply
+  extends: [.opentofu:apply, .kubernetes]
+  allow_failure: true
+
+kubernetes-base:apply:
+  extends: [.kubernetes:apply]
+  needs:
+    - job: kubernetes-base:plan
+
+kubernetes-full:apply:
+  extends: [.kubernetes:apply]
+  needs:
+    - job: kubernetes-full:plan
