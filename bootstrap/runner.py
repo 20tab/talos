@@ -9,8 +9,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass, field
 from functools import partial
-from itertools import groupby
-from operator import itemgetter
 from pathlib import Path
 from time import time
 
@@ -419,25 +417,18 @@ class Runner:
                 env_slug=env_slug,
             )
 
-    def register_vault_stack_secret(
-        self, stack_name, stack_envs_names, secret_name, secret_data
-    ):
-        """Register a Vault stack secret locally, optionally copying it to the envs."""
-        self.vault_secrets[f"stacks/{stack_name}/{secret_name}"] = secret_data
-        [
-            self.register_vault_environment_secret(i, secret_name, secret_data)
-            for i in stack_envs_names
-        ]
+    def register_vault_platform_secret(self, cluster_slug, secret_name, secret_data):
+        """Register a Vault platform secret at platforms/{cluster}/{name}."""
+        self.vault_secrets[f"platforms/{cluster_slug}/{secret_name}"] = secret_data
 
     def register_vault_environment_secret(self, env_name, secret_name, secret_data):
         """Register a Vault environment secret locally."""
         self.vault_secrets[f"envs/{env_name}/{secret_name}"] = secret_data
 
-    def collect_vault_stack_secrets(self, stack_name, stack_envs_names):
-        """Collect the Vault secrets for the given stack."""
-        self.digitalocean_token and self.register_vault_stack_secret(
-            stack_name,
-            stack_envs_names,
+    def collect_vault_platform_secrets(self, cluster_slug):
+        """Collect the Vault secrets for the given cluster (platform layer)."""
+        self.digitalocean_token and self.register_vault_platform_secret(
+            cluster_slug,
             "digitalocean",
             {"digitalocean_token": self.digitalocean_token},
         )
@@ -451,33 +442,7 @@ class Runner:
             self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and s3_secret.update(
                 s3_host=self.s3_host
             )
-            self.register_vault_stack_secret(
-                stack_name, stack_envs_names, "s3", s3_secret
-            )
-        (
-            self.subdomain_monitoring
-            and stack_name == MAIN_STACK_NAME
-            and self.register_vault_stack_secret(
-                stack_name,
-                stack_envs_names,
-                "monitoring",
-                {"grafana_password": secrets.token_urlsafe(12)},
-            )
-        )
-        (
-            self.deployment_type == DEPLOYMENT_TYPE_OTHER
-            and self.register_vault_stack_secret(
-                stack_name,
-                "k8s",
-                {
-                    "kubernetes_cluster_ca_certificate": base64.b64encode(
-                        Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                    ).decode(),
-                    "kubernetes_host": self.kubernetes_host,
-                    "kubernetes_token": self.kubernetes_token,
-                },
-            )
-        )
+            self.register_vault_platform_secret(cluster_slug, "s3", s3_secret)
 
     def collect_vault_environment_secrets(self, env_name):
         """Collect the Vault secrets for the given environment."""
@@ -520,18 +485,14 @@ class Runner:
                 "registry_username": gitlab_terraform_outputs["registry_username"],
                 "registry_password": gitlab_terraform_outputs["registry_password"],
             }
-        stacks_mapping = {i["slug"]: i["name"] for i in self.stacks}
-        for stack_slug, stack_envs in groupby(self.envs, key=itemgetter("stack_slug")):
-            stack_name = stacks_mapping[stack_slug]
-            stack_envs_names = []
-            for env in stack_envs:
-                env_name = env["name"]
-                self.collect_vault_environment_secrets(env_name)
-                regcred and self.register_vault_environment_secret(
-                    env_name, f"{self.service_slug}/regcred", regcred
-                )
-                stack_envs_names.append(env_name)
-            self.collect_vault_stack_secrets(stack_name, stack_envs_names)
+        for cluster_slug in self.clusters or []:
+            self.collect_vault_platform_secrets(cluster_slug)
+        for env in self.envs:
+            env_name = env["name"]
+            self.collect_vault_environment_secrets(env_name)
+            regcred and self.register_vault_environment_secret(
+                env_name, f"{self.service_slug}/regcred", regcred
+            )
         self.pact_broker_url and self.collect_vault_pact_secrets()
 
     def init_service(self):
