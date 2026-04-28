@@ -12,6 +12,8 @@ from bootstrap.constants import (
     AWS_S3_REGION_DEFAULT,
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
+    CLUSTERS_DEFAULT,
+    CORE_PROVIDER_CHOICES,
     DEPLOYMENT_TYPE_CHOICES,
     DEPLOYMENT_TYPE_DIGITALOCEAN,
     DEPLOYMENT_TYPE_OTHER,
@@ -19,6 +21,8 @@ from bootstrap.constants import (
     DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
     EMPTY_SERVICE_TYPE,
+    ENV_NAMES,
+    ENV_TO_CLUSTER_DEFAULT,
     ENVIRONMENTS_DISTRIBUTION_CHOICES,
     ENVIRONMENTS_DISTRIBUTION_DEFAULT,
     ENVIRONMENTS_DISTRIBUTION_PROMPT,
@@ -71,6 +75,9 @@ class Collector:
     kubernetes_host: str | None = None
     kubernetes_token: str | None = None
     environments_distribution: str | None = None
+    clusters: list[str] | None = None
+    cluster_core_providers: dict[str, list[str]] | None = None
+    env_to_cluster: dict[str, str] | None = None
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -139,6 +146,8 @@ class Collector:
         self.set_vault()
         self.set_deployment_type()
         self.set_environments_distribution()
+        self.set_clusters()
+        self.set_envs()
         self.set_domain_and_urls()
         self.set_letsencrypt()
         self.set_deployment()
@@ -291,6 +300,40 @@ class Collector:
                 ENVIRONMENTS_DISTRIBUTION_PROMPT,
                 default=ENVIRONMENTS_DISTRIBUTION_DEFAULT,
                 type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES),
+            )
+
+    def set_clusters(self):
+        """Set the clusters and per-cluster core providers."""
+        if not self.clusters:
+            raw = click.prompt(
+                "Comma-separated cluster slugs",
+                default=",".join(CLUSTERS_DEFAULT),
+            )
+            self.clusters = [slugify(c) for c in raw.split(",") if c.strip()]
+        self.cluster_core_providers = self.cluster_core_providers or {}
+        for cluster in self.clusters:
+            if cluster in self.cluster_core_providers:
+                continue
+            raw = click.prompt(
+                f"Comma-separated core providers for cluster '{cluster}'",
+                default=",".join(CORE_PROVIDER_CHOICES),
+            )
+            self.cluster_core_providers[cluster] = [
+                p.strip().lower()
+                for p in raw.split(",")
+                if p.strip().lower() in CORE_PROVIDER_CHOICES
+            ]
+
+    def set_envs(self):
+        """Set the environment-to-cluster mapping (one cluster slug per environment)."""
+        self.env_to_cluster = self.env_to_cluster or {}
+        for env_name in ENV_NAMES:
+            if env_name in self.env_to_cluster:
+                continue
+            self.env_to_cluster[env_name] = click.prompt(
+                f"Cluster slug hosting the '{env_name}' environment",
+                default=ENV_TO_CLUSTER_DEFAULT[env_name],
+                type=click.Choice(self.clusters, case_sensitive=False),
             )
 
     def set_domain_and_urls(self):
@@ -596,6 +639,9 @@ class Collector:
             kubernetes_host=self.kubernetes_host,
             kubernetes_token=self.kubernetes_token,
             environments_distribution=self.environments_distribution,
+            clusters=self.clusters,
+            cluster_core_providers=self.cluster_core_providers,
+            env_to_cluster=self.env_to_cluster,
             project_domain=self.project_domain,
             subdomain_dev=self.subdomain_dev,
             subdomain_stage=self.subdomain_stage,

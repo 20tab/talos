@@ -26,6 +26,7 @@ from bootstrap.constants import (
     DEV_ENV_STACK_CHOICES,
     DEV_STACK_SLUG,
     DUMPS_DIR,
+    ENV_TO_CLUSTER_DEFAULT,
     FRONTEND_TEMPLATE_URLS,
     GITLAB_URL_DEFAULT,
     MAIN_STACK_NAME,
@@ -85,6 +86,9 @@ class Runner:
     kubernetes_host: str | None = None
     kubernetes_token: str | None = None
     environments_distribution: str
+    clusters: list[str] | None = None
+    cluster_core_providers: dict[str, list[str]] | None = None
+    env_to_cluster: dict[str, str] | None = None
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -156,6 +160,11 @@ class Runner:
 
     def set_envs(self):
         """Set the envs."""
+        env_to_cluster = self.env_to_cluster or ENV_TO_CLUSTER_DEFAULT
+
+        def _host(url: str) -> str:
+            return (url or "").removeprefix("https://").removeprefix("http://").rstrip("/")
+
         self.envs = [
             {
                 "basic_auth_enabled": True,
@@ -165,6 +174,8 @@ class Runner:
                 "stack_slug": DEV_ENV_STACK_CHOICES.get(
                     self.environments_distribution, DEV_STACK_SLUG
                 ),
+                "cluster_slug": env_to_cluster.get(DEV_ENV_NAME),
+                "host": _host(self.project_url_dev),
                 "url": self.project_url_dev,
             },
             {
@@ -175,6 +186,8 @@ class Runner:
                 "stack_slug": STAGE_ENV_STACK_CHOICES.get(
                     self.environments_distribution, STAGE_STACK_SLUG
                 ),
+                "cluster_slug": env_to_cluster.get(STAGE_ENV_NAME),
+                "host": _host(self.project_url_stage),
                 "url": self.project_url_stage,
             },
             {
@@ -185,6 +198,8 @@ class Runner:
                 "stack_slug": PROD_ENV_STACK_CHOICES.get(
                     self.environments_distribution, MAIN_STACK_SLUG
                 ),
+                "cluster_slug": env_to_cluster.get(PROD_ENV_NAME),
+                "host": _host(self.project_url_prod),
                 "url": self.project_url_prod,
             },
         ]
