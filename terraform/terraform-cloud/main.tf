@@ -68,12 +68,16 @@ resource "tfe_organization" "main" {
   email = var.admin_email
 }
 
-/* Project (groups all workspaces and inherits the local execution mode) */
+/* Project (groups all workspaces; default execution mode is set on tfe_project_settings) */
 
 resource "tfe_project" "main" {
-  organization           = local.organization.name
-  name                   = var.project_slug
-  description            = "${var.project_name} project workspaces."
+  organization = local.organization.name
+  name         = var.project_slug
+  description  = "${var.project_name} project workspaces."
+}
+
+resource "tfe_project_settings" "main" {
+  project_id             = tfe_project.main.id
   default_execution_mode = "local"
 }
 
