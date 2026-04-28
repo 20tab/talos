@@ -12,16 +12,15 @@ from bootstrap.constants import (
     AWS_S3_REGION_DEFAULT,
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
-    DEPLOYMENT_TYPE_CHOICES,
-    DEPLOYMENT_TYPE_DIGITALOCEAN,
-    DEPLOYMENT_TYPE_OTHER,
+    CLUSTERS_DEFAULT,
+    CORE_PROVIDER_CHOICES,
+    CORE_PROVIDER_DIGITALOCEAN,
     DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
     EMPTY_SERVICE_TYPE,
-    ENVIRONMENTS_DISTRIBUTION_CHOICES,
-    ENVIRONMENTS_DISTRIBUTION_DEFAULT,
-    ENVIRONMENTS_DISTRIBUTION_PROMPT,
+    ENV_NAMES,
+    ENV_TO_CLUSTER_DEFAULT,
     FRONTEND_TYPE_CHOICES,
     FRONTEND_TYPE_DEFAULT,
     GITLAB_URL_DEFAULT,
@@ -57,7 +56,6 @@ class Collector:
     frontend_type: str | None = None
     frontend_service_slug: str | None = None
     frontend_service_port: int | None = None
-    deployment_type: str | None = None
     terraform_backend: str | None = None
     terraform_cloud_hostname: str | None = None
     terraform_cloud_token: str | None = None
@@ -67,10 +65,9 @@ class Collector:
     vault_token: str | None = None
     vault_url: str | None = None
     digitalocean_token: str | None = None
-    kubernetes_cluster_ca_certificate: str | None = None
-    kubernetes_host: str | None = None
-    kubernetes_token: str | None = None
-    environments_distribution: str | None = None
+    clusters: list[str] | None = None
+    cluster_core_providers: dict[str, list[str]] | None = None
+    env_to_cluster: dict[str, str] | None = None
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -124,7 +121,6 @@ class Collector:
         """Finalize initialization."""
         self._service_dir = None
         self._digitalocean_enabled = False
-        self._other_kubernetes_enabled = False
 
     def collect(self):
         """Collect options."""
@@ -137,8 +133,8 @@ class Collector:
         self.set_use_redis()
         self.set_terraform()
         self.set_vault()
-        self.set_deployment_type()
-        self.set_environments_distribution()
+        self.set_clusters()
+        self.set_envs()
         self.set_domain_and_urls()
         self.set_letsencrypt()
         self.set_deployment()
@@ -271,26 +267,38 @@ class Collector:
             )
             self.vault_url = validate_or_prompt_url("Vault address", self.vault_url)
 
-    def set_deployment_type(self):
-        """Set the deployment type option."""
-        if self.deployment_type not in DEPLOYMENT_TYPE_CHOICES:
-            self.deployment_type = click.prompt(
-                "Deploy type",
-                default=DEPLOYMENT_TYPE_DIGITALOCEAN,
-                type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
-            ).lower()
+    def set_clusters(self):
+        """Set the clusters and per-cluster core providers."""
+        if not self.clusters:
+            raw = click.prompt(
+                "Comma-separated cluster slugs",
+                default=",".join(CLUSTERS_DEFAULT),
+            )
+            self.clusters = [slugify(c) for c in raw.split(",") if c.strip()]
+        self.cluster_core_providers = self.cluster_core_providers or {}
+        for cluster in self.clusters:
+            if cluster in self.cluster_core_providers:
+                continue
+            raw = click.prompt(
+                f"Comma-separated core providers for cluster '{cluster}'",
+                default=",".join(CORE_PROVIDER_CHOICES),
+            )
+            self.cluster_core_providers[cluster] = [
+                p.strip().lower()
+                for p in raw.split(",")
+                if p.strip().lower() in CORE_PROVIDER_CHOICES
+            ]
 
-    def set_environments_distribution(self):
-        """Set the environments distribution option."""
-        # TODO: forcing a single stack when deployment is `k8s-other` should be removed,
-        #       and `set_deployment_type` merged with `set_deployment`
-        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            self.environments_distribution = "1"
-        elif self.environments_distribution not in ENVIRONMENTS_DISTRIBUTION_CHOICES:
-            self.environments_distribution = click.prompt(
-                ENVIRONMENTS_DISTRIBUTION_PROMPT,
-                default=ENVIRONMENTS_DISTRIBUTION_DEFAULT,
-                type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES),
+    def set_envs(self):
+        """Set the environment-to-cluster mapping (one cluster slug per environment)."""
+        self.env_to_cluster = self.env_to_cluster or {}
+        for env_name in ENV_NAMES:
+            if env_name in self.env_to_cluster:
+                continue
+            self.env_to_cluster[env_name] = click.prompt(
+                f"Cluster slug hosting the '{env_name}' environment",
+                default=ENV_TO_CLUSTER_DEFAULT[env_name],
+                type=click.Choice(self.clusters, case_sensitive=False),
             )
 
     def set_domain_and_urls(self):
@@ -341,12 +349,11 @@ class Collector:
 
     def set_deployment(self):
         """Set the deployment options."""
-        if "digitalocean" in self.deployment_type:
+        if any(
+            CORE_PROVIDER_DIGITALOCEAN in providers
+            for providers in (self.cluster_core_providers or {}).values()
+        ):
             self.set_digitalocean()
-        elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            self.set_kubernetes()
-        else:
-            raise ValueError("Invalid deployment type.")
 
     def set_digitalocean(self):
         """Set the DigitalOcean options."""
@@ -392,44 +399,6 @@ class Collector:
         self.digitalocean_token = validate_or_prompt_secret(
             "DigitalOcean token", self.digitalocean_token
         )
-
-    def set_kubernetes(self):
-        """Set the Kubernetes options."""
-        self._other_kubernetes_enabled = True
-        # TODO: these settings should be different for each stack
-        self.kubernetes_cluster_ca_certificate = (
-            self.kubernetes_cluster_ca_certificate
-            or click.prompt(
-                "Kubernetes cluster CA certificate",
-                type=click.Path(dir_okay=False, exists=True, resolve_path=True),
-            )
-        )
-        self.kubernetes_host = self.kubernetes_host or validate_or_prompt_url(
-            "Kubernetes host", self.kubernetes_host
-        )
-        self.kubernetes_token = self.kubernetes_token or validate_or_prompt_secret(
-            "Kubernetes token", self.kubernetes_token
-        )
-        self.postgres_image = self.postgres_image or click.prompt(
-            "Postgres Docker image", default="postgres:14"
-        )
-        self.postgres_persistent_volume_capacity = (
-            self.postgres_persistent_volume_capacity
-            or click.prompt("Postgres K8s PersistentVolume capacity", default="10Gi")
-        )
-        self.postgres_persistent_volume_claim_capacity = (
-            self.postgres_persistent_volume_claim_capacity or ""
-        )
-        self.postgres_persistent_volume_host_path = (
-            self.postgres_persistent_volume_host_path
-            or click.prompt("Postgres K8s PersistentVolume host path")
-        )
-        if self.use_redis:
-            self.redis_image = self.redis_image or click.prompt(
-                "Redis Docker image", default="redis:6.2"
-            )
-        else:
-            self.redis_image = ""
 
     def set_sentry(self):
         """Set the Sentry options."""
@@ -582,7 +551,6 @@ class Collector:
             frontend_type=self.frontend_type,
             frontend_service_slug=self.frontend_service_slug,
             frontend_service_port=self.frontend_service_port,
-            deployment_type=self.deployment_type,
             terraform_backend=self.terraform_backend,
             terraform_cloud_hostname=self.terraform_cloud_hostname,
             terraform_cloud_token=self.terraform_cloud_token,
@@ -592,10 +560,9 @@ class Collector:
             vault_token=self.vault_token,
             vault_url=self.vault_url,
             digitalocean_token=self.digitalocean_token,
-            kubernetes_cluster_ca_certificate=self.kubernetes_cluster_ca_certificate,
-            kubernetes_host=self.kubernetes_host,
-            kubernetes_token=self.kubernetes_token,
-            environments_distribution=self.environments_distribution,
+            clusters=self.clusters,
+            cluster_core_providers=self.cluster_core_providers,
+            env_to_cluster=self.env_to_cluster,
             project_domain=self.project_domain,
             subdomain_dev=self.subdomain_dev,
             subdomain_stage=self.subdomain_stage,

@@ -345,65 +345,6 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.vault_url, "https://vault.test.com")
         self.assertEqual(len(mocked_confirm.mock_calls), 1)
 
-    def test_deployment_type_from_default(self):
-        """Test collecting the deployment type from its default value."""
-        collector = Collector()
-        self.assertIsNone(collector.deployment_type)
-        with mock_input(""):
-            collector.set_deployment_type()
-        self.assertEqual(collector.deployment_type, "digitalocean-k8s")
-
-    def test_deployment_type_from_input(self):
-        """Test collecting the deployment type from user input."""
-        collector = Collector()
-        self.assertIsNone(collector.deployment_type)
-        with mock_input("bad-deployment-type", "yet-another-bad-value", "other-k8s"):
-            collector.set_deployment_type()
-        self.assertEqual(collector.deployment_type, "other-k8s")
-
-    def test_deployment_type_from_options(self):
-        """Test collecting the deployment type from the collected options."""
-        collector = Collector(deployment_type="other-k8s")
-        self.assertEqual(collector.deployment_type, "other-k8s")
-        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
-            collector.set_deployment_type()
-        self.assertEqual(collector.deployment_type, "other-k8s")
-        mocked_prompt.assert_not_called()
-
-    def test_environments_distribution_for_other_k8s_deployment(self):
-        """Test collecting the environments distribution for other-k8s deployment."""
-        collector = Collector(deployment_type="other-k8s")
-        self.assertIsNone(collector.environments_distribution)
-        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
-            collector.set_environments_distribution()
-        self.assertEqual(collector.environments_distribution, "1")
-        mocked_prompt.assert_not_called()
-
-    def test_environments_distribution_from_default(self):
-        """Test collecting the environments distribution from its default value."""
-        collector = Collector()
-        self.assertIsNone(collector.environments_distribution)
-        with mock_input(""):
-            collector.set_environments_distribution()
-        self.assertEqual(collector.environments_distribution, "1")
-
-    def test_environments_distribution_from_input(self):
-        """Test collecting the environments distribution from user input."""
-        collector = Collector()
-        self.assertIsNone(collector.environments_distribution)
-        with mock_input("one", "yet-another-bad-value", "3"):
-            collector.set_environments_distribution()
-        self.assertEqual(collector.environments_distribution, "3")
-
-    def test_environments_distribution_from_options(self):
-        """Test collecting the environments distribution from the collected options."""
-        collector = Collector(environments_distribution="2")
-        self.assertEqual(collector.environments_distribution, "2")
-        with mock.patch("bootstrap.collector.click.prompt") as mocked_prompt:
-            collector.set_environments_distribution()
-        self.assertEqual(collector.environments_distribution, "2")
-        mocked_prompt.assert_not_called()
-
     def test_set_domain_and_urls_from_default(self):
         """Test collecting the domain and urls options from default."""
         collector = Collector(project_slug="test-project")
@@ -517,23 +458,20 @@ class TestBootstrapCollector(TestCase):
         mocked_prompt.assert_not_called()
 
     def test_deployment_digitalocean(self):
-        """Test setting a DigitalOcean deployment."""
-        collector = Collector(deployment_type="digitalocean-k8s")
+        """Test that a cluster with digitalocean provider triggers set_digitalocean."""
+        collector = Collector(
+            cluster_core_providers={"dev": ["digitalocean"], "main": ["digitalocean"]}
+        )
         collector.set_digitalocean = mock.MagicMock()
         collector.set_deployment()
         collector.set_digitalocean.assert_called_once()
 
-    def test_deployment_other_k8s(self):
-        """Test setting a generic Kubernetes deployment."""
-        collector = Collector(deployment_type="other-k8s")
-        collector.set_kubernetes = mock.MagicMock()
+    def test_deployment_aws_only(self):
+        """Test that a cluster without digitalocean does not trigger set_digitalocean."""
+        collector = Collector(cluster_core_providers={"main": ["aws"]})
+        collector.set_digitalocean = mock.MagicMock()
         collector.set_deployment()
-        collector.set_kubernetes.assert_called_once()
-
-    def test_deployment_invalid(self):
-        """Test setting an invalid deployment."""
-        collector = Collector(deployment_type="invalid-deployment")
-        self.assertRaises(ValueError, collector.set_deployment)
+        collector.set_digitalocean.assert_not_called()
 
     def test_digitalocean_default(self):
         """Test setting the Digitalocean options from default."""
@@ -650,75 +588,6 @@ class TestBootstrapCollector(TestCase):
         collector = Collector(digitalocean_token="options-token")
         collector.set_digitalocean_token()
         self.assertEqual(collector.digitalocean_token, "options-token")
-
-    def test_kubernetes_input_redis(self):
-        """Test setting Kubernets options from input with redis."""
-        collector = Collector(use_redis=True)
-        collector.set_digitalocean_token = mock.MagicMock()
-        self.assertFalse(collector._other_kubernetes_enabled)
-        self.assertIsNone(collector.kubernetes_cluster_ca_certificate)
-        self.assertIsNone(collector.kubernetes_host)
-        self.assertIsNone(collector.kubernetes_token)
-        self.assertIsNone(collector.postgres_image)
-        self.assertIsNone(collector.postgres_persistent_volume_capacity)
-        self.assertIsNone(collector.postgres_persistent_volume_claim_capacity)
-        self.assertIsNone(collector.postgres_persistent_volume_host_path)
-        certificate_path = str(BASE_DIR / "tests/fake_certificate")
-        with mock_input(
-            certificate_path,
-            "https://www.google.com",
-            {"hidden": "toKenl0ngeR!"},
-            "",
-            "",
-            "persistent/host/path",
-            "",
-        ):
-            collector.set_kubernetes()
-        self.assertTrue(collector._other_kubernetes_enabled)
-        self.assertEqual(collector.kubernetes_cluster_ca_certificate, certificate_path)
-        self.assertEqual(collector.kubernetes_host, "https://www.google.com")
-        self.assertEqual(collector.kubernetes_token, "toKenl0ngeR!")
-        self.assertEqual(collector.postgres_image, "postgres:14")
-        self.assertEqual(collector.postgres_persistent_volume_capacity, "10Gi")
-        self.assertEqual(collector.postgres_persistent_volume_claim_capacity, "")
-        self.assertEqual(
-            collector.postgres_persistent_volume_host_path, "persistent/host/path"
-        )
-        self.assertEqual(collector.redis_image, "redis:6.2")
-
-    def test_kubernetes_input_no_redis(self):
-        """Test setting Kubernets options from input without redis."""
-        collector = Collector(use_redis=False)
-        collector.set_digitalocean_token = mock.MagicMock()
-        self.assertFalse(collector._other_kubernetes_enabled)
-        self.assertIsNone(collector.kubernetes_cluster_ca_certificate)
-        self.assertIsNone(collector.kubernetes_host)
-        self.assertIsNone(collector.kubernetes_token)
-        self.assertIsNone(collector.postgres_image)
-        self.assertIsNone(collector.postgres_persistent_volume_capacity)
-        self.assertIsNone(collector.postgres_persistent_volume_claim_capacity)
-        self.assertIsNone(collector.postgres_persistent_volume_host_path)
-        certificate_path = str(BASE_DIR / "tests/fake_certificate")
-        with mock_input(
-            certificate_path,
-            "https://www.google.com",
-            {"hidden": "toKenl0ngeR!"},
-            "",
-            "",
-            "persistent/host/path",
-        ):
-            collector.set_kubernetes()
-        self.assertTrue(collector._other_kubernetes_enabled)
-        self.assertEqual(collector.kubernetes_cluster_ca_certificate, certificate_path)
-        self.assertEqual(collector.kubernetes_host, "https://www.google.com")
-        self.assertEqual(collector.kubernetes_token, "toKenl0ngeR!")
-        self.assertEqual(collector.postgres_image, "postgres:14")
-        self.assertEqual(collector.postgres_persistent_volume_capacity, "10Gi")
-        self.assertEqual(collector.postgres_persistent_volume_claim_capacity, "")
-        self.assertEqual(
-            collector.postgres_persistent_volume_host_path, "persistent/host/path"
-        )
-        self.assertEqual(collector.redis_image, "")
 
     def test_sentry_no(self):
         """Test not setting Sentry."""
@@ -1062,8 +931,6 @@ class TestBootstrapCollector(TestCase):
         """Test getting the runner."""
         collector = Collector(
             backend_type="django",
-            deployment_type="digitalocean-k8s",
-            environments_distribution="1",
             frontend_type="nextjs",
             media_storage="local",
             project_dirname="project_dirname",
@@ -1078,8 +945,6 @@ class TestBootstrapCollector(TestCase):
         collector._service_dir = Path(".")
         runner = collector.get_runner()
         self.assertEqual(runner.backend_type, "django")
-        self.assertEqual(runner.deployment_type, "digitalocean-k8s")
-        self.assertEqual(runner.environments_distribution, "1")
         self.assertEqual(runner.frontend_type, "nextjs")
         self.assertEqual(runner.media_storage, "local")
         self.assertEqual(runner.project_dirname, "project_dirname")
@@ -1103,8 +968,8 @@ class TestBootstrapCollector(TestCase):
         collector.set_use_redis = mock.MagicMock()
         collector.set_terraform = mock.MagicMock()
         collector.set_vault = mock.MagicMock()
-        collector.set_deployment_type = mock.MagicMock()
-        collector.set_environments_distribution = mock.MagicMock()
+        collector.set_clusters = mock.MagicMock()
+        collector.set_envs = mock.MagicMock()
         collector.set_domain_and_urls = mock.MagicMock()
         collector.set_letsencrypt = mock.MagicMock()
         collector.set_deployment = mock.MagicMock()
@@ -1122,8 +987,8 @@ class TestBootstrapCollector(TestCase):
         collector.set_use_redis.assert_called_once()
         collector.set_terraform.assert_called_once()
         collector.set_vault.assert_called_once()
-        collector.set_deployment_type.assert_called_once()
-        collector.set_environments_distribution.assert_called_once()
+        collector.set_clusters.assert_called_once()
+        collector.set_envs.assert_called_once()
         collector.set_domain_and_urls.assert_called_once()
         collector.set_letsencrypt.assert_called_once()
         collector.set_deployment.assert_called_once()

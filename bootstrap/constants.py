@@ -5,35 +5,6 @@ from pathlib import Path
 BASE_DIR = Path(__file__).parent.parent
 DUMPS_DIR = BASE_DIR / ".dumps"
 
-# Stacks
-
-# BEWARE: stack names must be suitable for inclusion in Vault paths
-
-DEV_STACK_NAME = "development"
-
-DEV_STACK_SLUG = "dev"
-
-STAGE_STACK_NAME = "staging"
-
-STAGE_STACK_SLUG = "stage"
-
-MAIN_STACK_NAME = "main"
-
-MAIN_STACK_SLUG = "main"
-
-STACKS_CHOICES = {
-    "1": [{"name": MAIN_STACK_NAME, "slug": MAIN_STACK_SLUG}],
-    "2": [
-        {"name": DEV_STACK_NAME, "slug": DEV_STACK_SLUG},
-        {"name": MAIN_STACK_NAME, "slug": MAIN_STACK_SLUG},
-    ],
-    "3": [
-        {"name": DEV_STACK_NAME, "slug": DEV_STACK_SLUG},
-        {"name": STAGE_STACK_NAME, "slug": STAGE_STACK_SLUG},
-        {"name": MAIN_STACK_NAME, "slug": MAIN_STACK_SLUG},
-    ],
-}
-
 # Environments
 
 # BEWARE: environment names must be suitable for inclusion in Vault paths
@@ -42,24 +13,15 @@ DEV_ENV_NAME = "development"
 
 DEV_ENV_SLUG = "dev"
 
-DEV_ENV_STACK_CHOICES: dict[str, str] = {
-    "1": MAIN_STACK_SLUG,
-}
-
 STAGE_ENV_NAME = "staging"
 
 STAGE_ENV_SLUG = "stage"
-
-STAGE_ENV_STACK_CHOICES: dict[str, str] = {
-    "1": MAIN_STACK_SLUG,
-    "2": DEV_STACK_SLUG,
-}
 
 PROD_ENV_NAME = "production"
 
 PROD_ENV_SLUG = "prod"
 
-PROD_ENV_STACK_CHOICES: dict[str, str] = {}
+ENV_NAMES = [DEV_ENV_NAME, STAGE_ENV_NAME, PROD_ENV_NAME]
 
 # Env vars
 
@@ -95,26 +57,6 @@ FRONTEND_TYPE_DEFAULT = "nextjs"
 FRONTEND_TYPE_LIGHT = "nextjs-light"
 
 FRONTEND_TYPE_CHOICES = [FRONTEND_TYPE_DEFAULT, FRONTEND_TYPE_LIGHT, EMPTY_SERVICE_TYPE]
-
-# Deployment type
-
-DEPLOYMENT_TYPE_DIGITALOCEAN = "digitalocean-k8s"
-
-DEPLOYMENT_TYPE_OTHER = "other-k8s"
-
-DEPLOYMENT_TYPE_CHOICES = [DEPLOYMENT_TYPE_DIGITALOCEAN, DEPLOYMENT_TYPE_OTHER]
-
-# Environments distribution
-
-ENVIRONMENTS_DISTRIBUTION_DEFAULT = "1"
-
-ENVIRONMENTS_DISTRIBUTION_CHOICES = [ENVIRONMENTS_DISTRIBUTION_DEFAULT, "2", "3"]
-
-ENVIRONMENTS_DISTRIBUTION_PROMPT = """Choose the environments distribution:
-  1 - All environments share the same stack (Default)
-  2 - Dev and Stage environments share the same stack, Prod has its own
-  3 - Each environment has its own stack
-"""
 
 # DigitalOcean services
 
@@ -153,6 +95,56 @@ TERRAFORM_BACKEND_CHOICES = [TERRAFORM_BACKEND_TFC, TERRAFORM_BACKEND_GITLAB]
 
 GITLAB_URL_DEFAULT = "https://gitlab.com"
 
+# Clusters
+
+CLUSTER_DEV_SLUG = "dev"
+
+CLUSTER_MAIN_SLUG = "main"
+
+CLUSTERS_DEFAULT = [CLUSTER_DEV_SLUG, CLUSTER_MAIN_SLUG]
+
+# Core providers (per cluster, multi-select)
+
+CORE_PROVIDER_AWS = "aws"
+
+CORE_PROVIDER_DIGITALOCEAN = "digitalocean"
+
+CORE_PROVIDER_CHOICES = [CORE_PROVIDER_AWS, CORE_PROVIDER_DIGITALOCEAN]
+
+# Environment-to-cluster mapping
+
+ENV_TO_CLUSTER_DEFAULT: dict[str, str] = {
+    DEV_ENV_NAME: CLUSTER_DEV_SLUG,
+    STAGE_ENV_NAME: CLUSTER_DEV_SLUG,
+    PROD_ENV_NAME: CLUSTER_MAIN_SLUG,
+}
+
+# Vault — auth roles are shared 20tab-wide on the gitlab-jwt backend
+
+VAULT_PLATFORM_ROLE = "platform-gitlab-job"
+
+VAULT_SERVICE_ROLE = "service-gitlab-job"
+
+# Minos
+
+MINOS_PLATFORM_IMAGE = "registry.gitlab.com/20tab-open/minos/platform:latest"
+
+MINOS_SERVICE_IMAGE = "registry.gitlab.com/20tab-open/minos/service:latest"
+
+# OpenTofu
+
+OPENTOFU_COMPONENT_VERSION = "3.11.0"
+
+OPENTOFU_VERSION = "1.10.6"
+
+# Python
+
+PYTHON_VERSION_DEFAULT = "3.14"
+
+# Node
+
+NODE_VERSION_DEFAULT = "24.14.0"
+
 # Dump
 
 DUMP_EXCLUDED_OPTIONS = (
@@ -160,7 +152,6 @@ DUMP_EXCLUDED_OPTIONS = (
     "digitalocean_token",
     "frontend_sentry_dsn",
     "gitlab_token",
-    "kubernetes_token",
     "pact_broker_password",
     "s3_access_id",
     "s3_secret_key",

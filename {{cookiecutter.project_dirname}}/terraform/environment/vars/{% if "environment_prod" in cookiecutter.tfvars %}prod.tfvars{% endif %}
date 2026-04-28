@@ -1,3 +1,0 @@
-{% for item in cookiecutter.tfvars.environment_prod|sort %}{{ item }}
-{% endfor %}# grafana_user="admin"
-# grafana_version="9.4.1"

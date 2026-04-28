@@ -1,9 +1,0 @@
-terraform {
-  cloud {
-    organization = "{{ cookiecutter.terraform_cloud_organization }}"
-
-    workspaces {
-      tags = ["project:{{ cookiecutter.project_slug }}"]
-    }
-  }
-}

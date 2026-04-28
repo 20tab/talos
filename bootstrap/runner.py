@@ -9,8 +9,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass, field
 from functools import partial
-from itertools import groupby
-from operator import itemgetter
 from pathlib import Path
 from time import time
 
@@ -20,31 +18,29 @@ from pydantic import validate_arguments
 
 from bootstrap.constants import (
     BACKEND_TEMPLATE_URLS,
-    DEPLOYMENT_TYPE_OTHER,
     DEV_ENV_NAME,
     DEV_ENV_SLUG,
-    DEV_ENV_STACK_CHOICES,
-    DEV_STACK_SLUG,
     DUMPS_DIR,
+    ENV_TO_CLUSTER_DEFAULT,
     FRONTEND_TEMPLATE_URLS,
     GITLAB_URL_DEFAULT,
-    MAIN_STACK_NAME,
-    MAIN_STACK_SLUG,
     MEDIA_STORAGE_DIGITALOCEAN_S3,
+    MINOS_PLATFORM_IMAGE,
+    MINOS_SERVICE_IMAGE,
+    NODE_VERSION_DEFAULT,
+    OPENTOFU_COMPONENT_VERSION,
+    OPENTOFU_VERSION,
     PROD_ENV_NAME,
     PROD_ENV_SLUG,
-    PROD_ENV_STACK_CHOICES,
+    PYTHON_VERSION_DEFAULT,
     SERVICE_SLUG_DEFAULT,
-    STACKS_CHOICES,
     STAGE_ENV_NAME,
     STAGE_ENV_SLUG,
-    STAGE_ENV_STACK_CHOICES,
-    STAGE_STACK_SLUG,
     SUBREPOS_DIR,
     TERRAFORM_BACKEND_TFC,
 )
 from bootstrap.exceptions import BootstrapError
-from bootstrap.helpers import format_gitlab_variable, format_tfvar
+from bootstrap.helpers import format_gitlab_variable
 
 error = partial(click.style, fg="red")
 
@@ -71,7 +67,6 @@ class Runner:
     frontend_type: str
     frontend_service_slug: str | None = None
     frontend_service_port: int | None = None
-    deployment_type: str
     terraform_backend: str
     terraform_cloud_hostname: str | None = None
     terraform_cloud_token: str | None = None
@@ -81,10 +76,15 @@ class Runner:
     vault_token: str | None = None
     vault_url: str | None = None
     digitalocean_token: str | None = None
-    kubernetes_cluster_ca_certificate: str | None = None
-    kubernetes_host: str | None = None
-    kubernetes_token: str | None = None
-    environments_distribution: str
+    clusters: list[str] | None = None
+    cluster_core_providers: dict[str, list[str]] | None = None
+    env_to_cluster: dict[str, str] | None = None
+    python_version: str = PYTHON_VERSION_DEFAULT
+    node_version: str = NODE_VERSION_DEFAULT
+    minos_platform_image: str = MINOS_PLATFORM_IMAGE
+    minos_service_image: str = MINOS_SERVICE_IMAGE
+    opentofu_component_version: str = OPENTOFU_COMPONENT_VERSION
+    opentofu_version: str = OPENTOFU_VERSION
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -134,10 +134,8 @@ class Runner:
     logs_dir: Path | None = None
     run_id: str = field(init=False)
     service_slug: str = field(init=False)
-    stacks: list = field(init=False, default_factory=list)
     envs: list = field(init=False, default_factory=list)
     gitlab_variables: dict = field(init=False, default_factory=dict)
-    tfvars: dict = field(init=False, default_factory=dict)
     vault_secrets: dict = field(init=False, default_factory=dict)
     terraform_run_modules: list = field(init=False, default_factory=list)
     terraform_outputs: dict = field(init=False, default_factory=dict)
@@ -150,21 +148,21 @@ class Runner:
         self.terraform_dir = self.terraform_dir or Path(f".terraform/{self.run_id}")
         self.logs_dir = self.logs_dir or Path(f".logs/{self.run_id}")
 
-    def set_stacks(self):
-        """Set the stacks."""
-        self.stacks = STACKS_CHOICES[self.environments_distribution]
-
     def set_envs(self):
         """Set the envs."""
+        env_to_cluster = self.env_to_cluster or ENV_TO_CLUSTER_DEFAULT
+
+        def _host(url: str) -> str:
+            return (url or "").removeprefix("https://").removeprefix("http://").rstrip("/")
+
         self.envs = [
             {
                 "basic_auth_enabled": True,
                 "name": DEV_ENV_NAME,
                 "prefix": self.subdomain_dev,
                 "slug": DEV_ENV_SLUG,
-                "stack_slug": DEV_ENV_STACK_CHOICES.get(
-                    self.environments_distribution, DEV_STACK_SLUG
-                ),
+                "cluster_slug": env_to_cluster.get(DEV_ENV_NAME),
+                "host": _host(self.project_url_dev),
                 "url": self.project_url_dev,
             },
             {
@@ -172,9 +170,8 @@ class Runner:
                 "name": STAGE_ENV_NAME,
                 "prefix": self.subdomain_stage,
                 "slug": STAGE_ENV_SLUG,
-                "stack_slug": STAGE_ENV_STACK_CHOICES.get(
-                    self.environments_distribution, STAGE_STACK_SLUG
-                ),
+                "cluster_slug": env_to_cluster.get(STAGE_ENV_NAME),
+                "host": _host(self.project_url_stage),
                 "url": self.project_url_stage,
             },
             {
@@ -182,9 +179,8 @@ class Runner:
                 "name": PROD_ENV_NAME,
                 "prefix": self.subdomain_prod,
                 "slug": PROD_ENV_SLUG,
-                "stack_slug": PROD_ENV_STACK_CHOICES.get(
-                    self.environments_distribution, MAIN_STACK_SLUG
-                ),
+                "cluster_slug": env_to_cluster.get(PROD_ENV_NAME),
+                "host": _host(self.project_url_prod),
                 "url": self.project_url_prod,
             },
         ]
@@ -259,18 +255,6 @@ class Runner:
         self.digitalocean_token and self.register_gitlab_group_variables(
             ("DIGITALOCEAN_TOKEN", self.digitalocean_token, True)
         )
-        if self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            self.register_gitlab_group_variables(
-                (
-                    "KUBERNETES_CLUSTER_CA_CERTIFICATE",
-                    base64.b64encode(
-                        Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                    ).decode(),
-                    True,
-                ),
-                ("KUBERNETES_HOST", self.kubernetes_host),
-                ("KUBERNETES_TOKEN", self.kubernetes_token, True),
-            )
         if "s3" in self.media_storage:
             self.register_gitlab_group_variables(
                 ("S3_ACCESS_ID", self.s3_access_id, True),
@@ -291,128 +275,18 @@ class Runner:
             f"{k} = {v}" for k, v in self.gitlab_variables.get(level, {}).items()
         )
 
-    def register_tfvar(self, tf_stage, var_name, var_value=None, var_type=None):
-        """Register a Terraform variable value for the given stage."""
-        vars_list = self.tfvars.setdefault(tf_stage, [])
-        if var_value is None:
-            var_value = getattr(self, var_name)
-        vars_list.append("=".join((var_name, format_tfvar(var_value, var_type))))
-
-    def register_tfvars(self, tf_stage, *vars):
-        """Register one or more Terraform variable for the given stage."""
-        [
-            self.register_tfvar(tf_stage, *((i,) if isinstance(i, str) else i))
-            for i in vars
-        ]
-
-    def register_base_tfvars(self, *vars, stack_slug=None):
-        """Register one or more base Terraform variable."""
-        tf_stage = "base" + (stack_slug and f"_{stack_slug}" or "")
-        self.register_tfvars(tf_stage, *vars)
-
-    def register_cluster_tfvars(self, *vars, stack_slug=None):
-        """Register one or more cluster Terraform variable."""
-        tf_stage = "cluster" + (stack_slug and f"_{stack_slug}" or "")
-        self.register_tfvars(tf_stage, *vars)
-
-    def register_environment_tfvars(self, *vars, env_slug=None):
-        """Register one or more environment Terraform variable."""
-        tf_stage = "environment" + (env_slug and f"_{env_slug}" or "")
-        self.register_tfvars(tf_stage, *vars)
-
-    def collect_tfvars(self):
-        """Collect the base, cluster and environment Terraform variables."""
-        self.register_environment_tfvars(("registry_server", "registry.gitlab.com"))
-        backend_service_paths = ["/", f"/{self.backend_service_slug}"]
-        frontend_service_paths = ["/", f"/{self.frontend_service_slug}"]
-        if self.frontend_service_slug:
-            self.register_environment_tfvars(
-                ("frontend_service_paths", frontend_service_paths, "list"),
-                ("frontend_service_port", None, "num"),
-                "frontend_service_slug",
-            )
-            backend_service_paths = [
-                "/admin",
-                "/api",
-                "/static",
-                f"/{self.backend_service_slug}",
-            ] + (["/media"] if self.media_storage == "local" else [])
-        if self.backend_service_slug:
-            self.register_environment_tfvars(
-                ("backend_service_paths", backend_service_paths, "list"),
-                ("backend_service_port", None, "num"),
-                "backend_service_slug",
-            )
-        self.project_domain and self.register_environment_tfvars("project_domain")
-        if self.letsencrypt_certificate_email:
-            self.register_cluster_tfvars("letsencrypt_certificate_email")
-            self.register_environment_tfvars("letsencrypt_certificate_email")
-        self.subdomain_monitoring and self.register_environment_tfvars(
-            ("monitoring_subdomain", self.subdomain_monitoring), env_slug="prod"
-        )
-        if self.use_redis:
-            self.register_base_tfvars(("use_redis", True, "bool"))
-            self.register_environment_tfvars(("use_redis", True, "bool"))
-        if "digitalocean" in self.deployment_type:
-            self.register_environment_tfvars(
-                ("create_dns_records", self.digitalocean_dns_records_create, "bool"),
-            )
-            self.digitalocean_domain_create and self.register_environment_tfvars(
-                ("create_domain", True, "bool"), env_slug=DEV_ENV_SLUG
-            )
-            self.register_base_tfvars(
-                ("k8s_cluster_region", self.digitalocean_k8s_cluster_region),
-                ("database_cluster_region", self.digitalocean_database_cluster_region),
-                (
-                    "database_cluster_node_size",
-                    self.digitalocean_database_cluster_node_size,
-                ),
-            )
-            self.use_redis and self.register_base_tfvars(
-                ("redis_cluster_region", self.digitalocean_redis_cluster_region),
-                ("redis_cluster_node_size", self.digitalocean_redis_cluster_node_size),
-            )
-        elif self.deployment_type == DEPLOYMENT_TYPE_OTHER:
-            self.register_environment_tfvars(
-                "postgres_image",
-                "postgres_persistent_volume_capacity",
-                "postgres_persistent_volume_claim_capacity",
-                "postgres_persistent_volume_host_path",
-            )
-            self.use_redis and self.register_environment_tfvars("redis_image")
-        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
-            self.register_base_tfvars(("create_s3_bucket", True, "bool"))
-            self.register_environment_tfvars(
-                ("digitalocean_spaces_bucket_available", True, "bool")
-            )
-        for env in self.envs:
-            env_slug = env["slug"]
-            self.register_environment_tfvars(
-                ("basic_auth_enabled", env["basic_auth_enabled"], "bool"),
-                ("stack_slug", env["stack_slug"]),
-                ("subdomains", [getattr(self, f"subdomain_{env_slug}")], "list"),
-                env_slug=env_slug,
-            )
-
-    def register_vault_stack_secret(
-        self, stack_name, stack_envs_names, secret_name, secret_data
-    ):
-        """Register a Vault stack secret locally, optionally copying it to the envs."""
-        self.vault_secrets[f"stacks/{stack_name}/{secret_name}"] = secret_data
-        [
-            self.register_vault_environment_secret(i, secret_name, secret_data)
-            for i in stack_envs_names
-        ]
+    def register_vault_platform_secret(self, cluster_slug, secret_name, secret_data):
+        """Register a Vault platform secret at platforms/{cluster}/{name}."""
+        self.vault_secrets[f"platforms/{cluster_slug}/{secret_name}"] = secret_data
 
     def register_vault_environment_secret(self, env_name, secret_name, secret_data):
         """Register a Vault environment secret locally."""
         self.vault_secrets[f"envs/{env_name}/{secret_name}"] = secret_data
 
-    def collect_vault_stack_secrets(self, stack_name, stack_envs_names):
-        """Collect the Vault secrets for the given stack."""
-        self.digitalocean_token and self.register_vault_stack_secret(
-            stack_name,
-            stack_envs_names,
+    def collect_vault_platform_secrets(self, cluster_slug):
+        """Collect the Vault secrets for the given cluster (platform layer)."""
+        self.digitalocean_token and self.register_vault_platform_secret(
+            cluster_slug,
             "digitalocean",
             {"digitalocean_token": self.digitalocean_token},
         )
@@ -426,33 +300,7 @@ class Runner:
             self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and s3_secret.update(
                 s3_host=self.s3_host
             )
-            self.register_vault_stack_secret(
-                stack_name, stack_envs_names, "s3", s3_secret
-            )
-        (
-            self.subdomain_monitoring
-            and stack_name == MAIN_STACK_NAME
-            and self.register_vault_stack_secret(
-                stack_name,
-                stack_envs_names,
-                "monitoring",
-                {"grafana_password": secrets.token_urlsafe(12)},
-            )
-        )
-        (
-            self.deployment_type == DEPLOYMENT_TYPE_OTHER
-            and self.register_vault_stack_secret(
-                stack_name,
-                "k8s",
-                {
-                    "kubernetes_cluster_ca_certificate": base64.b64encode(
-                        Path(self.kubernetes_cluster_ca_certificate).read_bytes()
-                    ).decode(),
-                    "kubernetes_host": self.kubernetes_host,
-                    "kubernetes_token": self.kubernetes_token,
-                },
-            )
-        )
+            self.register_vault_platform_secret(cluster_slug, "s3", s3_secret)
 
     def collect_vault_environment_secrets(self, env_name):
         """Collect the Vault secrets for the given environment."""
@@ -495,18 +343,14 @@ class Runner:
                 "registry_username": gitlab_terraform_outputs["registry_username"],
                 "registry_password": gitlab_terraform_outputs["registry_password"],
             }
-        stacks_mapping = {i["slug"]: i["name"] for i in self.stacks}
-        for stack_slug, stack_envs in groupby(self.envs, key=itemgetter("stack_slug")):
-            stack_name = stacks_mapping[stack_slug]
-            stack_envs_names = []
-            for env in stack_envs:
-                env_name = env["name"]
-                self.collect_vault_environment_secrets(env_name)
-                regcred and self.register_vault_environment_secret(
-                    env_name, f"{self.service_slug}/regcred", regcred
-                )
-                stack_envs_names.append(env_name)
-            self.collect_vault_stack_secrets(stack_name, stack_envs_names)
+        for cluster_slug in self.clusters or []:
+            self.collect_vault_platform_secrets(cluster_slug)
+        for env in self.envs:
+            env_name = env["name"]
+            self.collect_vault_environment_secrets(env_name)
+            regcred and self.register_vault_environment_secret(
+                env_name, f"{self.service_slug}/regcred", regcred
+            )
         self.pact_broker_url and self.collect_vault_pact_secrets()
 
     def init_service(self):
@@ -518,26 +362,74 @@ class Runner:
                 "backend_service_port": self.backend_service_port,
                 "backend_service_slug": self.backend_service_slug,
                 "backend_type": self.backend_type,
-                "deployment_type": self.deployment_type,
-                "environments_distribution": self.environments_distribution,
                 "frontend_service_port": self.frontend_service_port,
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
                 "media_storage": self.media_storage,
+                "minos_platform_image": self.minos_platform_image,
+                "minos_service_image": self.minos_service_image,
+                "opentofu_component_version": self.opentofu_component_version,
+                "opentofu_version": self.opentofu_version,
                 "project_dirname": self.project_dirname,
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
-                "resources": {"envs": self.envs, "stacks": self.stacks},
+                "python_version": self.python_version,
+                "resources": {"envs": self.envs},
                 "service_slug": self.service_slug,
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,
-                "tfvars": self.tfvars,
                 "use_pact": self.pact_broker_url and "true" or "false",
                 "use_vault": self.vault_url and "true" or "false",
             },
             output_dir=self.output_dir,
             no_input=True,
         )
+        self.render_minos_per_cluster_files()
+
+    def render_minos_per_cluster_files(self):
+        """Write per-cluster minos tfvars skeletons (core/{provider}.tfvars + kubernetes.tfvars)."""
+        click.echo(info("...generating per-cluster minos files"))
+        clusters = self.clusters or []
+        cluster_core_providers = self.cluster_core_providers or {}
+        letsencrypt_email = self.letsencrypt_certificate_email or "tech@20tab.com"
+        platform_dir = self.output_dir / self.project_dirname / "minos"
+        for cluster in clusters:
+            cluster_full = f"{self.project_slug}-{cluster}"
+            cluster_dir = platform_dir / cluster
+            (cluster_dir / "core").mkdir(parents=True, exist_ok=True)
+            namespaces = sorted(
+                {f"{self.project_slug}-{env['slug']}" for env in self.envs if env.get("cluster_slug") == cluster}
+            )
+            traefik_host = (
+                f"proxy-{cluster}.{self.project_domain}" if self.project_domain else ""
+            )
+            for provider in cluster_core_providers.get(cluster, []):
+                if provider == "digitalocean":
+                    (cluster_dir / "core" / "digitalocean.tfvars").write_text(
+                        f'cluster_slug                  = "{cluster_full}"\n'
+                        'create_database               = true\n'
+                        'create_valkey                 = false\n'
+                        'database_cluster_node_size    = "db-s-1vcpu-2gb"\n'
+                        'database_cluster_storage_size = 10\n'
+                        'k8s_cluster_node_count        = 1\n'
+                        'k8s_cluster_node_size         = "s-2vcpu-4gb"\n'
+                        f'project_name                  = "{self.project_name}"\n'
+                    )
+                elif provider == "aws":
+                    (cluster_dir / "core" / "aws.tfvars").write_text(
+                        f'cluster_slug                  = "{cluster_full}"\n'
+                        'iam_permissions_boundary_name = ""\n'
+                        'iam_user_name_prefix          = ""\n'
+                        'iam_users                     = {}\n'
+                        'kms_keys                      = {}\n'
+                    )
+            (cluster_dir / "kubernetes.tfvars").write_text(
+                f'cluster_slug                        = "{cluster_full}"\n'
+                'managed_secrets                     = {}\n'
+                f'namespaces                          = {json.dumps(namespaces)}\n'
+                f'traefik_dashboard_host              = "{traefik_host}"\n'
+                f'traefik_dashboard_letsencrypt_email = "{letsencrypt_email}"\n'
+            )
 
     def create_env_file(self):
         """Create the final env file from its template."""
@@ -585,16 +477,15 @@ class Runner:
         click.echo(info("...creating the Terraform Cloud resources with Terraform"))
         env = {
             "TF_VAR_admin_email": self.terraform_cloud_admin_email,
+            "TF_VAR_cluster_core_providers": json.dumps(self.cluster_core_providers or {}),
+            "TF_VAR_clusters": json.dumps(self.clusters or []),
             "TF_VAR_create_organization": self.terraform_cloud_organization_create
             and "true"
             or "false",
-            "TF_VAR_environments": json.dumps(list(map(itemgetter("slug"), self.envs))),
             "TF_VAR_hostname": self.terraform_cloud_hostname,
             "TF_VAR_organization_name": self.terraform_cloud_organization,
             "TF_VAR_project_name": self.project_name,
             "TF_VAR_project_slug": self.project_slug,
-            "TF_VAR_service_slug": self.service_slug,
-            "TF_VAR_stacks": json.dumps(list(map(itemgetter("slug"), self.stacks))),
             "TF_VAR_terraform_cloud_token": self.terraform_cloud_token,
         }
         self.run_terraform("terraform-cloud", env)
@@ -770,8 +661,7 @@ class Runner:
             ]
         )
         options = {
-            "deployment_type": self.deployment_type,
-            "environments_distribution": self.environments_distribution,
+            "env_to_cluster": self.env_to_cluster,
             "gid": self.gid,
             "gitlab_namespace_path": str(
                 Path(self.gitlab_namespace_path) / self.gitlab_group_slug
@@ -779,6 +669,9 @@ class Runner:
             "gitlab_token": self.gitlab_token,
             "gitlab_url": self.gitlab_url,
             "logs_dir": str(self.logs_dir.resolve()),
+            "minos_service_image": self.minos_service_image,
+            "opentofu_component_version": self.opentofu_component_version,
+            "opentofu_version": self.opentofu_version,
             "output_dir": str(self.service_dir.resolve()),
             "project_dirname": service_slug,
             "project_name": self.project_name,
@@ -838,9 +731,7 @@ class Runner:
     def run(self):
         """Run the bootstrap."""
         click.echo(highlight(f"Initializing the {self.service_slug} service:"))
-        self.set_stacks()
         self.set_envs()
-        self.collect_tfvars()
         self.collect_gitlab_variables()
         self.init_service()
         self.create_env_file()
@@ -859,6 +750,7 @@ class Runner:
                 and (f"http://{self.backend_service_slug}:{self.backend_service_port}")
                 or None,
                 internal_service_port=self.frontend_service_port,
+                node_version=self.node_version,
                 sentry_dsn=self.frontend_sentry_dsn,
             )
         backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
@@ -868,6 +760,7 @@ class Runner:
                 backend_template_url,
                 internal_service_port=self.backend_service_port,
                 media_storage=self.media_storage,
+                python_version=self.python_version,
                 sentry_dsn=self.backend_sentry_dsn,
             )
         self.change_output_owner()
