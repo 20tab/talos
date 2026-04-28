@@ -1,190 +1,102 @@
-# {{ cookiecutter.project_name }} <!-- omit in toc -->
+# {{ cookiecutter.project_name }}
 
-This is the "{{ cookiecutter.project_name }}" {{ cookiecutter.service_slug }}.
+Platform repository for the **{{ cookiecutter.project_name }}** project.
 
-## Index <!-- omit in toc -->
+This repo orchestrates the cloud infrastructure (Kubernetes cluster, core providers,
+DNS, certificates, …) via the [Minos](https://gitlab.com/20tab-open/minos) platform
+image. The application services live as sibling repositories cloned as nested
+directories with their own `.git`.
 
--   [Provisioning](#provisioning)
-    -   [Stages](#stages)
-    -   [Stacks](#stacks)
-    -   [Environments](#stage)
--   [Quickstart](#quickstart)
-    -   [Git](#git)
-        -   [Clone](#clone)
-    -   [Environment variables](#environment-variables)
-    -   [Docker](#docker)
-        -   [Build](#build)
-        -   [Run](#run)
-    -   [Makefile shortcuts](#makefile-shortcuts)
-        -   [Pull](#pull)
-        -   [Django manage command](#django-manage-command)
-        -   [Restart and build services](#restart-and-build-services)
-    -   [Create SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-ssl-certificate-sup-ida-setup-https-locally1sup)
-    -   [Create and activate a local SSL Certificate <sup id="a-setup-https-locally">1</sup>](#create-and-activate-a-local-ssl-certificate-sup-ida-setup-https-locally1sup)
-        -   [Install the cert utils](#install-the-cert-utils)
-        -   [Import certificates](#import-certificates)
-        -   [Trust the self-signed server certificate](#trust-the-self-signed-server-certificate)
+## Layout
 
-## Provisioning
-
-The first run is manual, made from [GitLab Pipeline](https://gitlab.com/{{ cookiecutter.project_slug }}/{{ cookiecutter.service_slug }}/-/pipelines/new).
-
-To create all the terraform resources, run the pipeline with the following variable:
-
-`ENABLED_ALL`= `true`
-
-If you want to choose what to activate to limit any costs, read below.
-
-### Stages
-
-{% if cookiecutter.deployment_type == "digitalocean-k8s" %}Base stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster.
-{% endif %}Cluster stage will create Ingress, Certificate and Monitoring if enabled.
-Environment stage will create the other resource for each of it.
-
-| Value                                                             | Description                                                                                                                                   |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| {% if cookiecutter.deployment_type == "digitalocean-k8s" %}`base` | Base stage will create Kubernetes Cluster{% if cookiecutter.media_storage == "digitalocean-s3" %}, S3 Spaces{% endif %} and Databases Cluster |
-| {% endif %}`cluster`                                              | Cluster stage will create Ingress, Certificate and Monitoring if enabled.                                                                     |
-| `environment`                                                     | Environment stage will create the other resource for each of it.                                                                              |
-
-`ENABLED_STAGES` = `{% if cookiecutter.deployment_type == "digitalocean-k8s" %}base, {% endif %}cluster, environment`
-
-### Stacks
-
-{% if cookiecutter.environments_distribution == "1" %}You have opted to have all environments share the same stack.
-
-`ENABLED_STACKS` = `main`{% endif %}{% if cookiecutter.environments_distribution == "2" %}You have opted to have Dev and Stage environments share the same stack, Prod has its own.
-
-`ENABLED_STACKS` = `dev, main`{% endif %}{% if cookiecutter.environments_distribution == "3" %}Each environment has its own stack
-
-`ENABLED_STACKS` = `main, dev, prod`{% endif %}
-
-### Environments
-
-| Value   | Description                                                              |
-| ------- | ------------------------------------------------------------------------ |
-| `dev`   | Development is the first delivery environment for developers.            |
-| `stage` | Staging is the test environment for customers.                           |
-| `prod`  | Production is the public production environment accessible to all users. |
-
-`ENABLED_ENVS` = `dev, stage, prod`
-
-## Quickstart
-
-This section explains the steps you need to clone and work with this project.
-
-1. [clone](#clone) the project code
-2. set all the required [environment variables](#environment-variables)
-3. [build](#build) all the services
-4. [create a superuser](#create-a-superuser) to login the platform
-5. [run](#run) all the services
-6. login using the URL: http://localhost:8080
-
-### Git
-
-#### Clone
-
-Clone the {{ cookiecutter.service_slug }} and services repositories:
-
-```console
-git clone __VCS_BASE_SSH_URL__/{{ cookiecutter.service_slug }}.git {{ cookiecutter.project_dirname }}
-cd {{ cookiecutter.project_dirname }}{% if cookiecutter.backend_type != 'none' %}
-git clone -b develop __VCS_BASE_SSH_URL__/{{ cookiecutter.backend_service_slug }}.git{% endif %}{% if cookiecutter.frontend_type != 'none' %}
-git clone -b develop __VCS_BASE_SSH_URL__/{{ cookiecutter.frontend_service_slug }}.git{% endif %}
-cd ..
+```
+{{ cookiecutter.project_dirname }}/
+├── .gitlab-ci.yml          # platform pipeline (core + kubernetes stages)
+├── minos/
+│   └── ${CLUSTER}/         # one folder per cluster (e.g. dev, main)
+│       ├── core/
+│       │   ├── aws.tfvars
+│       │   └── digitalocean.tfvars
+│       └── kubernetes.tfvars
+├── vault-project.tfvars.example   # input for Phase A (admin) of vault-project
+{% if cookiecutter.backend_type != 'none' %}├── {{ cookiecutter.backend_service_slug }}/      # backend service (own .git)
+{% endif %}{% if cookiecutter.frontend_type != 'none' %}├── {{ cookiecutter.frontend_service_slug }}/     # frontend service (own .git)
+{% endif %}└── README.md
 ```
 
-**NOTE** : We're cloning the `develop` branch for all repo.
+The matrix in `.gitlab-ci.yml` runs core provisioning for **aws** and **digitalocean**
+in parallel; tweak `CORE_PROVIDER` matrix or remove tfvars for providers you don't use.
 
-### Environment variables
+## Prerequisites
 
-In order for the project to run correctly, a number of environment variables must be set in an `.env` file inside the {{ cookiecutter.service_slug }} directory. For ease of use, a `.env_template` template is provided.
+This is a two-phase setup. Phase A is run once by an administrator, Phase B is the
+GitLab pipeline that consumes the platform repo.
 
-Enter the newly created **project** directory and create the `.env` file copying from `.env_template`:
+### Phase A — admin (one-off)
 
-```console
-$ cd ~/projects/{{ cookiecutter.project_dirname }}
-$ cp .env_template .env
+The admin runs the [`vault-project`](https://gitlab.com/20tab/vault/vault-project)
+Terraform module to create per-project policies and identity entities on Vault. The
+file `vault-project.tfvars.example` in this repo contains the values to use:
+
+```shell
+git clone https://gitlab.com/20tab/vault/vault-project.git
+cd vault-project
+cp /path/to/this/repo/vault-project.tfvars.example terraform.tfvars
+# edit project_admin_users, project_namespace_path
+terraform init
+terraform apply
 ```
 
-### Docker
+After Phase A the admin also seeds the per-project Vault secrets used by the
+platform CI (DigitalOcean token, S3 credentials, TFC token).
 
-All the following Docker commands are supposed to be run from the {{ cookiecutter.service_slug }} directory.
+### Phase B — platform pipeline
 
-#### Build
+Required variables on the GitLab project (or the parent group):
 
-```console
-$ docker-compose build
-```
+| Variable                   | Notes                                                                     |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `VAULT_ADDR`               | Vault address (e.g. `https://vault.20tab.com/`).                          |
+| `TF_CLOUD_HOSTNAME`        | Defaults to `app.terraform.io`.                                           |
+| `TF_CLOUD_ORGANIZATION`    | Set to `{{ cookiecutter.terraform_cloud_organization }}`.                 |
+| `CLUSTER`                  | Set on pipeline trigger (e.g. `dev`, `main`).                             |
 
-#### Run
+To provision a cluster, run a manual pipeline on `main` from the GitLab UI
+(_Pipelines → Run pipeline_) with `CLUSTER=<cluster_slug>`. The pipeline iterates:
 
-```console
-$ docker-compose up
-```
+1. `core:plan` → `core:apply` (matrix on `CORE_PROVIDER`) reads
+   `minos/${CLUSTER}/core/${CORE_PROVIDER}.tfvars` and applies via the
+   `{{ cookiecutter.minos_platform_image }}` image.
+2. `kubernetes:plan` → `kubernetes:apply` reads `minos/${CLUSTER}/kubernetes.tfvars`
+   and consumes the outputs from `core:apply` via auto-loaded JSON tfvars.
 
-**NOTE**: It can be daemonized adding the `-d` flag.
+Two kubernetes plan/apply variants are provided:
 
-### Makefile shortcuts
+- `kubernetes-base` only applies `helm_release.traefik` and `helm_release.cert_manager`
+  (bootstrap of routing + certs).
+- `kubernetes-full` applies the full kubernetes stack.
 
-#### Self documentation of Makefile commands
+The TFC workspace naming used:
 
-To show the Makefile self documentation help:
+- `${PROJECT_SLUG}_platform_${CLUSTER}_core_${CORE_PROVIDER}`
+- `${PROJECT_SLUG}_platform_${CLUSTER}_kubernetes`
 
-```console
-$ make
-```
+All workspaces live inside the TFC project named after `{{ cookiecutter.project_slug }}`
+(execution mode `local`, inherited from the project).
 
-#### Pull
+## Services
 
-Pull the main git repo and the sub-repos:
+Application services live in sibling directories, each as an independent GitLab
+project with its own `.git`. They are bootstrapped from their own template repos
+(see `django-continuous-delivery`, `nextjs-continuous-delivery`) and consume the
+`{{ cookiecutter.minos_service_image }}` image at deploy time.
 
-```console
-$ make pull
-```
+Each service repo lays out its own `minos/` directory with `common.tfvars` plus
+per-environment `this.tfvars` and `shared-config.yaml`. Service workspaces on TFC
+are named `${PROJECT_SLUG}_${SERVICE_SLUG}_${CI_ENVIRONMENT_SLUG}`.
 
-#### Django manage command
+## References
 
-Use the Django `manage.py` command shell:
-
-```console
-$ make django
-```
-
-You can pass the specific command:
-
-```console
-$ make django p=check
-```
-
-You can pass the container name:
-
-```console
-$ make django p=shell c=backend_2
-```
-
-#### Restart and build services
-
-Restart and build all services:
-
-```console
-$ make rebuild
-```
-
-You can pass the service name:
-
-```console
-$ make rebuild s=backend
-```
-
-### Activate a valid local SSL Certificate
-
-Import the `traefik/20tab.crt` file in your browser to have a trusted ssl certificate:
-
-#### Firefox
-
--   Settings > Privacy & Security > Manage Certificates > View Certificates... > Authorities > Import
-
-#### Chrome
-
--   Settings > Security > Certificates > Authorities > Import
+- Minos image registry: `registry.gitlab.com/20tab-open/minos/{platform,service}`
+- OpenTofu CI component: `${CI_SERVER_FQDN}/components/opentofu/job-templates@{{ cookiecutter.opentofu_component_version }}`
+- OpenTofu version: `{{ cookiecutter.opentofu_version }}`
