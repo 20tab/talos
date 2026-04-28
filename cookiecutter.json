@@ -19,12 +19,6 @@
   "minos_service_image": "registry.gitlab.com/20tab-open/minos/service:latest",
   "opentofu_component_version": "3.11.0",
   "opentofu_version": "1.10.6",
-  "clusters": ["dev", "main"],
-  "cluster_core_providers": {
-    "dev": ["aws", "digitalocean"],
-    "main": ["aws", "digitalocean"]
-  },
-  "services": [],
   "resources": {
     "stacks": [
       [
