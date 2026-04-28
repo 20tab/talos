@@ -8,8 +8,6 @@ import click
 
 from bootstrap.collector import Collector
 from bootstrap.constants import (
-    DEPLOYMENT_TYPE_CHOICES,
-    ENVIRONMENTS_DISTRIBUTION_CHOICES,
     GITLAB_TOKEN_ENV_VAR,
     MEDIA_STORAGE_CHOICES,
     VAULT_TOKEN_ENV_VAR,
@@ -38,10 +36,6 @@ from bootstrap.helpers import dump_options, load_options, slugify_option
 @click.option("--frontend-type")
 @click.option("--frontend-service-slug")
 @click.option("--frontend-service-port", default=3000, type=int)
-@click.option(
-    "--deployment-type",
-    type=click.Choice(DEPLOYMENT_TYPE_CHOICES, case_sensitive=False),
-)
 @click.option("--terraform-backend")
 @click.option("--terraform-cloud-hostname")
 @click.option("--terraform-cloud-token")
@@ -55,15 +49,6 @@ from bootstrap.helpers import dump_options, load_options, slugify_option
 @click.option("--vault-token", envvar=VAULT_TOKEN_ENV_VAR)
 @click.option("--vault-url")
 @click.option("--digitalocean-token")
-@click.option(
-    "--kubernetes-cluster-ca-certificate",
-    type=click.Path(dir_okay=False, exists=True, resolve_path=True),
-)
-@click.option("--kubernetes-host")
-@click.option("--kubernetes-token")
-@click.option(
-    "--environments-distribution", type=click.Choice(ENVIRONMENTS_DISTRIBUTION_CHOICES)
-)
 @click.option("--project-domain")
 @click.option("--subdomain-dev")
 @click.option("--subdomain-stage")
