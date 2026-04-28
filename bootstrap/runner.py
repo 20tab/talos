@@ -659,10 +659,6 @@ class Runner:
     def init_terraform_cloud(self):
         """Initialize the Terraform Cloud resources."""
         click.echo(info("...creating the Terraform Cloud resources with Terraform"))
-        services = list(filter(None, [self.backend_service_slug, self.frontend_service_slug]))
-        environments = [
-            {"slug": env["slug"], "cluster_slug": env["cluster_slug"]} for env in self.envs
-        ]
         env = {
             "TF_VAR_admin_email": self.terraform_cloud_admin_email,
             "TF_VAR_cluster_core_providers": json.dumps(self.cluster_core_providers or {}),
@@ -670,12 +666,10 @@ class Runner:
             "TF_VAR_create_organization": self.terraform_cloud_organization_create
             and "true"
             or "false",
-            "TF_VAR_environments": json.dumps(environments),
             "TF_VAR_hostname": self.terraform_cloud_hostname,
             "TF_VAR_organization_name": self.terraform_cloud_organization,
             "TF_VAR_project_name": self.project_name,
             "TF_VAR_project_slug": self.project_slug,
-            "TF_VAR_services": json.dumps(services),
             "TF_VAR_terraform_cloud_token": self.terraform_cloud_token,
         }
         self.run_terraform("terraform-cloud", env)

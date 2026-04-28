@@ -43,21 +43,6 @@ variable "cluster_core_providers" {
   default     = {}
 }
 
-variable "services" {
-  description = "The list of service slugs."
-  type        = list(string)
-  default     = []
-}
-
-variable "environments" {
-  description = "The list of environments mapped to a cluster."
-  type = list(object({
-    slug         = string
-    cluster_slug = string
-  }))
-  default = []
-}
-
 variable "terraform_cloud_token" {
   description = "The Terraform Cloud token."
   type        = string

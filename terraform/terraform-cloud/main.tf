@@ -30,26 +30,9 @@ locals {
     }
   ]
 
-  service_workspaces = flatten([
-    for service in var.services : [
-      for environment in var.environments : {
-        name        = "${var.project_slug}_${service}_${environment.slug}"
-        description = "${var.project_name} ${service} service, ${environment.slug} environment."
-        tags = [
-          "project:${var.project_slug}",
-          "layer:service",
-          "service:${service}",
-          "env:${environment.slug}",
-          "cluster:${environment.cluster_slug}",
-        ]
-      }
-    ]
-  ])
-
   workspaces = concat(
     local.platform_core_workspaces,
     local.platform_kubernetes_workspaces,
-    local.service_workspaces,
   )
 }
 
