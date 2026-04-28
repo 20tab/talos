@@ -32,6 +32,7 @@ from bootstrap.constants import (
     MEDIA_STORAGE_DIGITALOCEAN_S3,
     MINOS_PLATFORM_IMAGE,
     MINOS_SERVICE_IMAGE,
+    NODE_VERSION_DEFAULT,
     OPENTOFU_COMPONENT_VERSION,
     OPENTOFU_VERSION,
     PROD_ENV_NAME,
@@ -93,6 +94,7 @@ class Runner:
     cluster_core_providers: dict[str, list[str]] | None = None
     env_to_cluster: dict[str, str] | None = None
     python_version: str = PYTHON_VERSION_DEFAULT
+    node_version: str = NODE_VERSION_DEFAULT
     minos_platform_image: str = MINOS_PLATFORM_IMAGE
     minos_service_image: str = MINOS_SERVICE_IMAGE
     opentofu_component_version: str = OPENTOFU_COMPONENT_VERSION
@@ -806,8 +808,7 @@ class Runner:
             ]
         )
         options = {
-            "deployment_type": self.deployment_type,
-            "environments_distribution": self.environments_distribution,
+            "env_to_cluster": self.env_to_cluster,
             "gid": self.gid,
             "gitlab_namespace_path": str(
                 Path(self.gitlab_namespace_path) / self.gitlab_group_slug
@@ -815,6 +816,9 @@ class Runner:
             "gitlab_token": self.gitlab_token,
             "gitlab_url": self.gitlab_url,
             "logs_dir": str(self.logs_dir.resolve()),
+            "minos_service_image": self.minos_service_image,
+            "opentofu_component_version": self.opentofu_component_version,
+            "opentofu_version": self.opentofu_version,
             "output_dir": str(self.service_dir.resolve()),
             "project_dirname": service_slug,
             "project_name": self.project_name,
@@ -895,6 +899,7 @@ class Runner:
                 and (f"http://{self.backend_service_slug}:{self.backend_service_port}")
                 or None,
                 internal_service_port=self.frontend_service_port,
+                node_version=self.node_version,
                 sentry_dsn=self.frontend_sentry_dsn,
             )
         backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
@@ -904,6 +909,7 @@ class Runner:
                 backend_template_url,
                 internal_service_port=self.backend_service_port,
                 media_storage=self.media_storage,
+                python_version=self.python_version,
                 sentry_dsn=self.backend_sentry_dsn,
             )
         self.change_output_owner()
