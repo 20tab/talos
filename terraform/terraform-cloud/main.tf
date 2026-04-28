@@ -1,38 +1,55 @@
 locals {
   organization = var.create_organization ? tfe_organization.main[0] : data.tfe_organization.main[0]
 
-  workspaces = concat(
-    flatten(
-      [
-        for stage in ["base", "cluster"] :
-        [
-          for stack in var.stacks :
-          {
-            name        = "${var.project_slug}_${var.service_slug}_${stage}_${stack}"
-            description = "${var.project_name} project, ${var.service_slug} service, ${stack} stack, ${stage} stage"
-            tags = [
-              "project:${var.project_slug}",
-              "service:${var.service_slug}",
-              "stack:${stack}",
-              "stage:${stage}",
-            ]
-          }
-        ]
-      ]
-    ),
-    [
-      for env in var.environments :
-      {
-        name        = "${var.project_slug}_${var.service_slug}_environment_${env}"
-        description = "${var.project_name} project, ${var.service_slug} service, ${env} environment"
+  platform_core_workspaces = flatten([
+    for cluster in var.clusters : [
+      for provider in lookup(var.cluster_core_providers, cluster, []) : {
+        name        = "${var.project_slug}_platform_${cluster}_core_${provider}"
+        description = "${var.project_name} platform, ${cluster} cluster, ${provider} core."
         tags = [
-          "env:${env}",
           "project:${var.project_slug}",
-          "service:${var.service_slug}",
-          "stage:environment",
+          "layer:platform",
+          "cluster:${cluster}",
+          "component:core",
+          "provider:${provider}",
         ]
       }
     ]
+  ])
+
+  platform_kubernetes_workspaces = [
+    for cluster in var.clusters : {
+      name        = "${var.project_slug}_platform_${cluster}_kubernetes"
+      description = "${var.project_name} platform, ${cluster} cluster, kubernetes layer."
+      tags = [
+        "project:${var.project_slug}",
+        "layer:platform",
+        "cluster:${cluster}",
+        "component:kubernetes",
+      ]
+    }
+  ]
+
+  service_workspaces = flatten([
+    for service in var.services : [
+      for environment in var.environments : {
+        name        = "${var.project_slug}_${service}_${environment.slug}"
+        description = "${var.project_name} ${service} service, ${environment.slug} environment."
+        tags = [
+          "project:${var.project_slug}",
+          "layer:service",
+          "service:${service}",
+          "env:${environment.slug}",
+          "cluster:${environment.cluster_slug}",
+        ]
+      }
+    ]
+  ])
+
+  workspaces = concat(
+    local.platform_core_workspaces,
+    local.platform_kubernetes_workspaces,
+    local.service_workspaces,
   )
 }
 
@@ -43,7 +60,7 @@ terraform {
   required_providers {
     tfe = {
       source  = "hashicorp/tfe"
-      version = "~> 0.53"
+      version = "~> 0.70"
     }
   }
 }
@@ -68,6 +85,15 @@ resource "tfe_organization" "main" {
   email = var.admin_email
 }
 
+/* Project (groups all workspaces and inherits the local execution mode) */
+
+resource "tfe_project" "main" {
+  organization           = local.organization.name
+  name                   = var.project_slug
+  description            = "${var.project_name} project workspaces."
+  default_execution_mode = "local"
+}
+
 /* Workspaces */
 
 resource "tfe_workspace" "main" {
@@ -76,12 +102,6 @@ resource "tfe_workspace" "main" {
   name         = each.value.name
   description  = each.value.description
   organization = local.organization.name
+  project_id   = tfe_project.main.id
   tag_names    = each.value.tags
-}
-
-resource "tfe_workspace_settings" "main" {
-  for_each = tfe_workspace.main
-
-  workspace_id   = each.value.id
-  execution_mode = "local"
 }

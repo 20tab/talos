@@ -10,12 +10,6 @@ variable "create_organization" {
   default     = false
 }
 
-variable "environments" {
-  description = "The list of environments slugs."
-  type        = list(string)
-  default     = []
-}
-
 variable "hostname" {
   description = "The Terraform Cloud hostname."
   type        = string
@@ -37,15 +31,31 @@ variable "project_slug" {
   type        = string
 }
 
-variable "service_slug" {
-  description = "The service slug."
-  type        = string
-}
-
-variable "stacks" {
-  description = "The list of stacks slugs."
+variable "clusters" {
+  description = "The list of cluster slugs (e.g. [\"dev\", \"main\"])."
   type        = list(string)
   default     = []
+}
+
+variable "cluster_core_providers" {
+  description = "Per-cluster core providers map (e.g. {dev = [\"aws\", \"digitalocean\"]})."
+  type        = map(list(string))
+  default     = {}
+}
+
+variable "services" {
+  description = "The list of service slugs."
+  type        = list(string)
+  default     = []
+}
+
+variable "environments" {
+  description = "The list of environments mapped to a cluster."
+  type = list(object({
+    slug         = string
+    cluster_slug = string
+  }))
+  default = []
 }
 
 variable "terraform_cloud_token" {
