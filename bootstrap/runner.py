@@ -689,6 +689,7 @@ class Runner:
             "terraform_cloud_hostname": self.terraform_cloud_hostname,
             "terraform_cloud_organization_create": False,
             "terraform_cloud_organization": self.terraform_cloud_organization,
+            "terraform_cloud_project_create": False,
             "terraform_cloud_token": self.terraform_cloud_token,
             "terraform_dir": str(self.terraform_dir.resolve()),
             "uid": self.uid,
@@ -750,26 +751,30 @@ class Runner:
         if self.vault_url:
             self.init_vault()
         frontend_template_url = FRONTEND_TEMPLATE_URLS.get(self.frontend_type)
-        if frontend_template_url:
-            self.init_subrepo(
-                self.frontend_service_slug,
-                frontend_template_url,
-                internal_backend_url=self.backend_service_slug
-                and (f"http://{self.backend_service_slug}:{self.backend_service_port}")
-                or None,
-                internal_service_port=self.frontend_service_port,
-                node_version=self.node_version,
-                sentry_dsn=self.frontend_sentry_dsn,
-            )
         backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
-        if backend_template_url:
-            self.init_subrepo(
-                self.backend_service_slug,
-                backend_template_url,
-                internal_service_port=self.backend_service_port,
-                media_storage=self.media_storage,
-                python_version=self.python_version,
-                sentry_dsn=self.backend_sentry_dsn,
-            )
+        try:
+            if frontend_template_url:
+                self.init_subrepo(
+                    self.frontend_service_slug,
+                    frontend_template_url,
+                    internal_backend_url=self.backend_service_slug
+                    and (f"http://{self.backend_service_slug}:{self.backend_service_port}")
+                    or None,
+                    internal_service_port=self.frontend_service_port,
+                    node_version=self.node_version,
+                    sentry_dsn=self.frontend_sentry_dsn,
+                )
+            if backend_template_url:
+                self.init_subrepo(
+                    self.backend_service_slug,
+                    backend_template_url,
+                    internal_service_port=self.backend_service_port,
+                    media_storage=self.media_storage,
+                    python_version=self.python_version,
+                    sentry_dsn=self.backend_sentry_dsn,
+                )
+        except BootstrapError:
+            self.reset_terraform()
+            raise
         self.change_output_owner()
         self.cleanup()
