@@ -482,6 +482,9 @@ class Runner:
             "TF_VAR_project_name": self.project_name,
             "TF_VAR_project_slug": self.project_slug,
             "TF_VAR_terraform_cloud_token": self.terraform_cloud_token,
+            # Serialize workspace creation: tfe provider races on tfe_project readiness
+            # when creating multiple workspaces in parallel, returning sporadic 422s.
+            "TF_CLI_ARGS_apply": "-parallelism=1",
         }
         self.run_terraform("terraform-cloud", env)
 
