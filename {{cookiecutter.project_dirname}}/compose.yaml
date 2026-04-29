@@ -1,0 +1,128 @@
+services:
+{%- if cookiecutter.backend_type != "none" %}
+  {{ cookiecutter.backend_service_slug }}:
+    build:
+      args:
+        USER: ${USER:-appuser}
+      context: ./{{ cookiecutter.backend_service_slug }}
+      target: ${BACKEND_BUILD_TARGET:-local}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - CACHE_URL
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
+      - DJANGO_ADMINS
+      - DJANGO_ALLOWED_HOSTS
+      - DJANGO_CONFIGURATION
+      - DJANGO_DEBUG
+      - DJANGO_DEFAULT_FROM_EMAIL
+      - DJANGO_SECRET_KEY
+      - DJANGO_SERVER_EMAIL
+      - EMAIL_URL
+      - INTERNAL_SERVICE_PORT={{ cookiecutter.backend_service_port }}
+      - PYTHONBREAKPOINT
+      - PYTHONDEVMODE
+      - PYTHONTRACEMALLOC
+    healthcheck:
+      interval: 3s
+      retries: 30
+      test: curl --fail --get http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}/health/ || exit 1
+      timeout: 3s
+    restart: unless-stopped
+    user: ${USER:-appuser}
+    volumes:
+      - ./{{ cookiecutter.backend_service_slug }}:/app
+      - ./proxy/tls/cert.pem:/certs/cert.pem:ro
+{%- endif %}
+{%- if cookiecutter.frontend_type != "none" %}
+
+  {{ cookiecutter.frontend_service_slug }}:
+    build:
+      args:
+        USER: ${USER:-appuser}
+      context: ./{{ cookiecutter.frontend_service_slug }}
+      target: ${FRONTEND_BUILD_TARGET:-local}
+    {%- if cookiecutter.backend_type != "none" %}
+    depends_on:
+      {{ cookiecutter.backend_service_slug }}:
+        condition: service_healthy
+    {%- endif %}
+    environment:
+      - INTERNAL_SERVICE_PORT={{ cookiecutter.frontend_service_port }}
+      - NEXT_PUBLIC_PROJECT_URL=https://{{ cookiecutter.frontend_service_slug }}.localhost:${EXTERNAL_PORT:-8443}
+      {%- if cookiecutter.backend_type != "none" %}
+      - INTERNAL_BACKEND_URL=http://{{ cookiecutter.backend_service_slug }}:{{ cookiecutter.backend_service_port }}
+      - NEXT_PUBLIC_BACKEND_URL=https://{{ cookiecutter.backend_service_slug }}.localhost:${EXTERNAL_PORT:-8443}
+      {%- endif %}
+    extra_hosts:
+      {%- if cookiecutter.backend_type != "none" %}
+      - "${BACKEND_DOMAIN:-{{ cookiecutter.backend_service_slug }}.localhost}:host-gateway"
+      {%- endif %}
+    healthcheck:
+      test: wget -O- -q http://{{ cookiecutter.frontend_service_slug }}:{{ cookiecutter.frontend_service_port }}/api/healthz || exit 1
+      retries: 5
+      start_period: 5s
+    user: ${USER:-appuser}
+    volumes:
+      - ./{{ cookiecutter.frontend_service_slug }}:/app
+      - ./proxy/tls/cert.pem:/certs/cert.pem:ro
+      - /app/node_modules
+{%- endif %}
+{%- if cookiecutter.backend_type == "django" %}
+
+  db:
+    environment:
+      - POSTGRES_DB
+      - POSTGRES_INITDB_ARGS=--no-sync
+      - POSTGRES_PASSWORD
+      - POSTGRES_USER
+    healthcheck:
+      interval: 3s
+      retries: 30
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      timeout: 3s
+    image: postgres:17-bookworm
+    volumes:
+      - db_data:/var/lib/postgresql/data
+{%- endif %}
+
+  mail:
+    environment:
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
+      - MP_SMTP_AUTH_ACCEPT_ANY=true
+    healthcheck:
+      interval: 3s
+      retries: 30
+      test: ["CMD", "/mailpit", "readyz"]
+      timeout: 3s
+    image: axllent/mailpit:latest
+    volumes:
+      - mail_data:/data
+
+  proxy:
+    command:
+      - --configFile=/traefik/config/static.yaml
+    environment:
+      {%- if cookiecutter.backend_type != "none" %}
+      - BACKEND_DOMAIN=${BACKEND_DOMAIN:-{{ cookiecutter.backend_service_slug }}.localhost}
+      {%- endif %}
+      {%- if cookiecutter.frontend_type != "none" %}
+      - FRONTEND_DOMAIN=${FRONTEND_DOMAIN:-{{ cookiecutter.frontend_service_slug }}.localhost}
+      {%- endif %}
+      - MAIL_DOMAIN=${MAIL_DOMAIN:-mail.localhost}
+    healthcheck:
+      retries: 5
+      start_period: 5s
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+    image: traefik:v3.5
+    ports:
+      - "${EXTERNAL_PORT:-8443}:8443"
+    volumes:
+      - ./proxy/:/traefik/:ro
+
+volumes:
+{%- if cookiecutter.backend_type == "django" %}
+  db_data: {}
+{%- endif %}
+  mail_data: {}

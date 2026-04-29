@@ -24,9 +24,6 @@ kubeconfig.yaml
 {{ cookiecutter.backend_service_slug }}/{% endif %}{% if cookiecutter.frontend_type != 'none' %}
 {{ cookiecutter.frontend_service_slug }}/{% endif %}
 
-# Locals
-*.local.yaml
-
 # Backup
 *.sql
 *.dump
