@@ -505,8 +505,8 @@ class Runner:
     def get_terraform_module_params(self, module_name, env):
         """Return Terraform parameters for the given module."""
         return (
-            Path(__file__).parent.parent / "terraform" / module_name,
-            self.logs_dir / self.service_slug / "terraform" / module_name,
+            Path(__file__).parent.parent / "tofu" / module_name,
+            self.logs_dir / self.service_slug / "tofu" / module_name,
             terraform_dir := self.terraform_dir / self.service_slug / module_name,
             {
                 **env,
@@ -523,7 +523,7 @@ class Runner:
         init_stderr_path = logs_dir / "init-stderr.log"
         init_process = subprocess.run(
             [
-                "terraform",
+                "tofu",
                 "init",
                 "-backend-config",
                 f"path={state_path.resolve()}",
@@ -552,7 +552,7 @@ class Runner:
         apply_stdout_path = logs_dir / "apply-stdout.log"
         apply_stderr_path = logs_dir / "apply-stderr.log"
         apply_process = subprocess.run(
-            ["terraform", "apply", "-auto-approve", "-input=false", "-no-color"],
+            ["tofu", "apply", "-auto-approve", "-input=false", "-no-color"],
             capture_output=True,
             cwd=cwd,
             env=dict(**env, TF_LOG_PATH=str(apply_log_path.resolve())),
@@ -577,7 +577,7 @@ class Runner:
         destroy_stderr_path = logs_dir / "destroy-stderr.log"
         destroy_process = subprocess.run(
             [
-                "terraform",
+                "tofu",
                 "destroy",
                 "-auto-approve",
                 "-input=false",
@@ -603,7 +603,7 @@ class Runner:
         """Get Terraform outputs."""
         return {
             output_name: subprocess.run(
-                ["terraform", "output", "-raw", output_name],
+                ["tofu", "output", "-raw", output_name],
                 capture_output=True,
                 cwd=cwd,
                 env=env,

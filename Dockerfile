@@ -4,6 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG OUTPUT_BASE_DIR=/data
 ENV OUTPUT_BASE_DIR=${OUTPUT_BASE_DIR}
 WORKDIR /app
+ARG OPENTOFU_VERSION=1.10.6
 RUN apt-get update \
     && apt-get install --assume-yes --no-install-recommends \
         curl \
@@ -11,12 +12,11 @@ RUN apt-get update \
         gnupg \
         libpq-dev \
         software-properties-common \
-    && curl https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /usr/share/keyrings/hashicorp-archive-keyring.gpg \
-    && gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint \
-    && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list \
-    && apt-get update \
-    && apt-get install --assume-yes --no-install-recommends \
-        terraform \
+        unzip \
+    && curl -fsSL https://get.opentofu.org/install-opentofu.sh -o /tmp/install-opentofu.sh \
+    && chmod +x /tmp/install-opentofu.sh \
+    && /tmp/install-opentofu.sh --install-method standalone --opentofu-version "${OPENTOFU_VERSION}" \
+    && rm /tmp/install-opentofu.sh \
     && rm -rf /var/lib/apt/lists/*
 COPY ./requirements/common.txt requirements/common.txt
 RUN python3 -m pip install --no-cache-dir --upgrade pip setuptools \
