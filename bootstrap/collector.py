@@ -321,13 +321,18 @@ class Collector:
             or click.prompt("Production domain prefix", default="www")
         )
         self.project_url_prod = f"https://{self.subdomain_prod}.{self.project_domain}"
-        if self.subdomain_monitoring is not None or click.confirm(
-            warning("Do you want to enable the monitoring stack?"), default=False
+        if self.subdomain_monitoring or (
+            self.subdomain_monitoring is None
+            and click.confirm(
+                warning("Do you want to enable the monitoring stack?"), default=False
+            )
         ):
             self.subdomain_monitoring = slugify(
                 self.subdomain_monitoring
                 or click.prompt("Monitoring domain prefix", default="logs")
             )
+        else:
+            self.subdomain_monitoring = ""
 
     def set_letsencrypt(self):
         """Set Let's Encrypt options."""
@@ -428,6 +433,8 @@ class Collector:
                 default="",
                 required=False,
             )
+        else:
+            self.sentry_org = ""
 
     def set_pact(self):
         """Set the Pact options."""
@@ -444,6 +451,8 @@ class Collector:
             self.pact_broker_password = validate_or_prompt_secret(
                 "Pact broker password", self.pact_broker_password
             )
+        else:
+            self.pact_broker_url = ""
 
     def set_gitlab(self):
         """Set the GitLab options."""
