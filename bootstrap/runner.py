@@ -285,22 +285,17 @@ class Runner:
 
     def collect_vault_platform_secrets(self, cluster_slug):
         """Collect the Vault secrets for the given cluster (platform layer)."""
-        self.digitalocean_token and self.register_vault_platform_secret(
+        if not self.digitalocean_token:
+            return
+        digitalocean_credentials = {"token": self.digitalocean_token}
+        if self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3:
+            digitalocean_credentials["spaces_access_id"] = self.s3_access_id
+            digitalocean_credentials["spaces_secret_key"] = self.s3_secret_key
+        self.register_vault_platform_secret(
             cluster_slug,
             "digitalocean",
-            {"digitalocean_token": self.digitalocean_token},
+            {"digitalocean_credentials": digitalocean_credentials},
         )
-        if "s3" in self.media_storage:
-            s3_secret = {
-                "s3_region": self.s3_region,
-                "s3_access_id": self.s3_access_id,
-                "s3_secret_key": self.s3_secret_key,
-            }
-            self.s3_bucket_name and s3_secret.update(s3_bucket_name=self.s3_bucket_name)
-            self.media_storage == MEDIA_STORAGE_DIGITALOCEAN_S3 and s3_secret.update(
-                s3_host=self.s3_host
-            )
-            self.register_vault_platform_secret(cluster_slug, "s3", s3_secret)
 
     def collect_vault_environment_secrets(self, env_name):
         """Collect the Vault secrets for the given environment."""
