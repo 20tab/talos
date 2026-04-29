@@ -85,7 +85,7 @@ source talos/.venv/bin/activate
 
 ### ⚠️ Provisioning
 
-The first run is manual, made from GitLab Pipeline. Use orchestrator generated README for more details.
+The first run is manual, made from GitLab Pipeline. Use the platform generated README for more details.
 
 ### Example
 
@@ -132,7 +132,7 @@ Comma-separated GitLab group developers []:
 DigitalOcean Spaces region [fra1]:
 S3 Access Key ID:
 S3 Secret Access Key:
-Initializing the orchestrator service:
+Initializing the platform service:
 ...cookiecutting the service
 ...generating the .env file
 ...creating the GitLab repository and associated resources
