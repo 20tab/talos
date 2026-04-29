@@ -1,5 +1,6 @@
 """Web project initialization CLI constants."""
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
@@ -32,12 +33,21 @@ VAULT_TOKEN_ENV_VAR = "VAULT_TOKEN"
 # Subrepos
 
 BACKEND_TEMPLATE_URLS = {
-    "django": "https://github.com/20tab/django-continuous-delivery"
+    "django": os.environ.get(
+        "BACKEND_TEMPLATE_URL_DJANGO",
+        "https://github.com/20tab/django-continuous-delivery",
+    ),
 }
 
 FRONTEND_TEMPLATE_URLS = {
-    "nextjs": "https://github.com/20tab/nextjs-continuous-delivery",
-    "nextjs-light": "https://github.com/20tab/nextjs-light-continuous-delivery",
+    "nextjs": os.environ.get(
+        "FRONTEND_TEMPLATE_URL_NEXTJS",
+        "https://github.com/20tab/nextjs-continuous-delivery",
+    ),
+    "nextjs-light": os.environ.get(
+        "FRONTEND_TEMPLATE_URL_NEXTJS_LIGHT",
+        "https://github.com/20tab/nextjs-light-continuous-delivery",
+    ),
 }
 
 SUBREPOS_DIR = Path(__file__).parent.parent / ".subrepos"
