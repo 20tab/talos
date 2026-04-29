@@ -649,7 +649,7 @@ class Runner:
         """Initialize a subrepo using the given template and options."""
         subrepo_dir = str((SUBREPOS_DIR / service_slug).resolve())
         shutil.rmtree(subrepo_dir, ignore_errors=True)
-        subprocess.run(
+        clone = subprocess.run(
             [
                 "git",
                 "clone",
@@ -658,6 +658,9 @@ class Runner:
                 "-q",
             ]
         )
+        if clone.returncode != 0:
+            click.echo(error(f"Failed to clone {service_slug} subrepo from {template_url}"))
+            raise BootstrapError
         options = {
             "env_to_cluster": self.env_to_cluster,
             "gid": self.gid,
@@ -694,12 +697,16 @@ class Runner:
             "vault_token": self.vault_token,
             **kwargs,
         }
-        subprocess.run(
+        deps = subprocess.run(
             ["python", "-m", "pip", "install", "-r", "requirements/common.txt"],
             capture_output=True,
             cwd=subrepo_dir,
         )
-        subprocess.run(
+        if deps.returncode != 0:
+            click.echo(error(f"Failed to install {service_slug} subrepo dependencies"))
+            click.echo(deps.stderr.decode("utf-8", "replace"))
+            raise BootstrapError
+        runner = subprocess.run(
             [
                 "python",
                 "-c",
@@ -707,6 +714,9 @@ class Runner:
             ],
             cwd=subrepo_dir,
         )
+        if runner.returncode != 0:
+            click.echo(error(f"Subrepo {service_slug} bootstrap failed"))
+            raise BootstrapError
 
     def change_output_owner(self):
         """Change the owner of the output directory recursively."""
