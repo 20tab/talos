@@ -427,6 +427,21 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.subdomain_monitoring, "custom-log")
         mocked_prompt.assert_not_called()
 
+    def test_set_domain_and_urls_monitoring_skipped_on_reload(self):
+        """Test reloading a dump skips re-asking when monitoring was previously declined."""
+        collector = Collector(
+            project_slug="test-project",
+            project_domain="test.com",
+            subdomain_dev="dev",
+            subdomain_stage="stage",
+            subdomain_prod="www",
+            subdomain_monitoring="",
+        )
+        with mock.patch("bootstrap.collector.click.confirm") as mocked_confirm:
+            collector.set_domain_and_urls()
+        mocked_confirm.assert_not_called()
+        self.assertEqual(collector.subdomain_monitoring, "")
+
     def test_letsencrypt_from_input_true(self):
         """Test collecting the certificate email from user input."""
         collector = Collector()
@@ -597,7 +612,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.sentry_org)
         with mock_input("n"):
             collector.set_sentry()
-        self.assertIsNone(collector.sentry_org)
+        self.assertEqual(collector.sentry_org, "")
 
     def test_sentry_default(self):
         """Test setting Sentry options from default."""
@@ -640,6 +655,18 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.sentry_url, "https://other-sentry-url.com")
         self.assertEqual(collector.sentry_auth_token, "S0me!tok3n")
 
+    def test_sentry_skipped_on_reload(self):
+        """Test reloading a dump skips re-asking when Sentry was previously declined."""
+        collector = Collector(
+            backend_service_slug="backend-slug",
+            frontend_service_slug="frontend-slug",
+            sentry_org="",
+        )
+        with mock.patch("bootstrap.collector.click.confirm") as mocked_confirm:
+            collector.set_sentry()
+        mocked_confirm.assert_not_called()
+        self.assertEqual(collector.sentry_org, "")
+
     def test_pact_default(self):
         """Test setting Pact options from default."""
         collector = Collector()
@@ -648,7 +675,7 @@ class TestBootstrapCollector(TestCase):
         self.assertIsNone(collector.pact_broker_password)
         with mock_input(""):
             collector.set_pact()
-        self.assertIsNone(collector.pact_broker_url)
+        self.assertEqual(collector.pact_broker_url, "")
         self.assertIsNone(collector.pact_broker_username)
         self.assertIsNone(collector.pact_broker_password)
 
@@ -680,6 +707,14 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.pact_broker_url, "https://options.broker.url")
         self.assertEqual(collector.pact_broker_username, "options-username")
         self.assertEqual(collector.pact_broker_password, "PassW0rd FroM opt1ons!")
+
+    def test_pact_skipped_on_reload(self):
+        """Test reloading a dump skips re-asking when Pact was previously declined."""
+        collector = Collector(pact_broker_url="")
+        with mock.patch("bootstrap.collector.click.confirm") as mocked_confirm:
+            collector.set_pact()
+        mocked_confirm.assert_not_called()
+        self.assertEqual(collector.pact_broker_url, "")
 
     def test_gitlab_no(self):
         """Test not setting Gitlab."""
