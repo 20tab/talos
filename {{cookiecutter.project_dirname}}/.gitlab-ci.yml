@@ -34,15 +34,15 @@ before_script:
 .core:
   parallel:
     matrix:
-      - CORE_PROVIDER: ["aws", "digitalocean"]
-  id_tokens:
+      - CORE_PROVIDER: [{% for p in cookiecutter.core_providers %}"{{ p }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+  id_tokens:{% if "aws" in cookiecutter.core_providers %}
     GITLAB_OIDC_TOKEN:
-      aud: https://gitlab.com
+      aud: https://gitlab.com{% endif %}
     VAULT_ID_TOKEN:
       aud: ${VAULT_ADDR}
   image: {{ cookiecutter.minos_platform_image }}
-  variables:
-    AWS_WEB_IDENTITY_TOKEN_FILE: "/tmp/web_identity_token"
+  variables:{% if "aws" in cookiecutter.core_providers %}
+    AWS_WEB_IDENTITY_TOKEN_FILE: "/tmp/web_identity_token"{% endif %}
     GITLAB_TOFU_ROOT_DIR: "${CI_PROJECT_DIR}/tofu/core/${CORE_PROVIDER}"
     TF_WORKSPACE: "${PROJECT_SLUG}_platform_${CLUSTER}_core_${CORE_PROVIDER}"
     TOFU_ROOT_PATH: "tofu/core/${CORE_PROVIDER}"

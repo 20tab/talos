@@ -79,6 +79,8 @@ class Runner:
     clusters: list[str] | None = None
     cluster_core_providers: dict[str, list[str]] | None = None
     env_to_cluster: dict[str, str] | None = None
+    aws_role_arn: str | None = None
+    aws_region: str | None = None
     python_version: str = PYTHON_VERSION_DEFAULT
     node_version: str = NODE_VERSION_DEFAULT
     minos_platform_image: str = MINOS_PLATFORM_IMAGE
@@ -255,6 +257,11 @@ class Runner:
         self.digitalocean_token and self.register_gitlab_group_variables(
             ("DIGITALOCEAN_TOKEN", self.digitalocean_token, True)
         )
+        if self.aws_role_arn:
+            self.register_gitlab_group_variables(
+                ("AWS_ROLE_ARN", self.aws_role_arn, False, False),
+                ("AWS_DEFAULT_REGION", self.aws_region, False, False),
+            )
         if "s3" in self.media_storage:
             self.register_gitlab_group_variables(
                 ("S3_ACCESS_ID", self.s3_access_id, True),
@@ -351,12 +358,20 @@ class Runner:
     def init_service(self):
         """Initialize the service."""
         click.echo(info("...cookiecutting the service"))
+        core_providers = sorted(
+            {
+                provider
+                for providers in (self.cluster_core_providers or {}).values()
+                for provider in providers
+            }
+        )
         cookiecutter(
             os.path.dirname(os.path.dirname(__file__)),
             extra_context={
                 "backend_service_port": self.backend_service_port,
                 "backend_service_slug": self.backend_service_slug,
                 "backend_type": self.backend_type,
+                "core_providers": core_providers,
                 "frontend_service_port": self.frontend_service_port,
                 "frontend_service_slug": self.frontend_service_slug,
                 "frontend_type": self.frontend_type,
