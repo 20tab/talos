@@ -105,10 +105,10 @@ class Runner:
     postgres_persistent_volume_capacity: str | None = None
     postgres_persistent_volume_claim_capacity: str | None = None
     postgres_persistent_volume_host_path: str | None = None
-    use_redis: bool = False
-    redis_image: str | None = None
-    digitalocean_redis_cluster_region: str | None = None
-    digitalocean_redis_cluster_node_size: str | None = None
+    use_valkey: bool = False
+    valkey_image: str | None = None
+    digitalocean_valkey_cluster_region: str | None = None
+    digitalocean_valkey_cluster_node_size: str | None = None
     sentry_org: str | None = None
     sentry_url: str | None = None
     sentry_auth_token: str | None = None
@@ -708,7 +708,7 @@ class Runner:
             "terraform_cloud_token": self.terraform_cloud_token,
             "terraform_dir": str(self.terraform_dir.resolve()),
             "uid": self.uid,
-            "use_redis": self.use_redis,
+            "use_valkey": self.use_valkey,
             "vault_url": self.vault_url,
             "vault_token": self.vault_token,
             **kwargs,
