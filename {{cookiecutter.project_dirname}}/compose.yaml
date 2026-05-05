@@ -40,9 +40,11 @@ services:
   {{ cookiecutter.frontend_service_slug }}:
     build:
       args:
+        GROUP_ID: ${GROUP_ID:-1000}
+        USER_ID: ${USER_ID:-1000}
         USER: ${USER:-appuser}
       context: ./{{ cookiecutter.frontend_service_slug }}
-      target: ${FRONTEND_BUILD_TARGET:-local}
+      dockerfile: ${FRONTEND_DOCKER_FILE:-docker/local.Dockerfile}
     {%- if cookiecutter.backend_type != "none" %}
     depends_on:
       {{ cookiecutter.backend_service_slug }}:
