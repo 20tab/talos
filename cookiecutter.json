@@ -39,7 +39,8 @@
         "cluster_slug": "main",
         "host": ""
       }
-    ]
+    ],
+    "core_providers": ["aws", "digitalocean"]
   },
   "_extensions": ["cookiecutter.extensions.SlugifyExtension"]
 }
