@@ -27,7 +27,6 @@ from bootstrap.constants import (
     MEDIA_STORAGE_DIGITALOCEAN_S3,
     MINOS_PLATFORM_IMAGE,
     MINOS_SERVICE_IMAGE,
-    NODE_VERSION_DEFAULT,
     OPENTOFU_COMPONENT_VERSION,
     OPENTOFU_VERSION,
     PROD_ENV_NAME,
@@ -82,7 +81,6 @@ class Runner:
     aws_role_arn: str | None = None
     aws_region: str | None = None
     python_version: str = PYTHON_VERSION_DEFAULT
-    node_version: str = NODE_VERSION_DEFAULT
     minos_platform_image: str = MINOS_PLATFORM_IMAGE
     minos_service_image: str = MINOS_SERVICE_IMAGE
     opentofu_component_version: str = OPENTOFU_COMPONENT_VERSION
@@ -775,7 +773,6 @@ class Runner:
                     and (f"http://{self.backend_service_slug}:{self.backend_service_port}")
                     or None,
                     internal_service_port=self.frontend_service_port,
-                    node_version=self.node_version,
                     sentry_dsn=self.frontend_sentry_dsn,
                 )
             if backend_template_url:
