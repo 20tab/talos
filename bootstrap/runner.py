@@ -78,6 +78,8 @@ class Runner:
     clusters: list[str] | None = None
     cluster_core_providers: dict[str, list[str]] | None = None
     env_to_cluster: dict[str, str] | None = None
+    aws_role_arn: str | None = None
+    aws_region: str | None = None
     python_version: str = PYTHON_VERSION_DEFAULT
     minos_platform_image: str = MINOS_PLATFORM_IMAGE
     minos_service_image: str = MINOS_SERVICE_IMAGE
@@ -101,10 +103,10 @@ class Runner:
     postgres_persistent_volume_capacity: str | None = None
     postgres_persistent_volume_claim_capacity: str | None = None
     postgres_persistent_volume_host_path: str | None = None
-    use_redis: bool = False
-    redis_image: str | None = None
-    digitalocean_redis_cluster_region: str | None = None
-    digitalocean_redis_cluster_node_size: str | None = None
+    use_valkey: bool = False
+    valkey_image: str | None = None
+    digitalocean_valkey_cluster_region: str | None = None
+    digitalocean_valkey_cluster_node_size: str | None = None
     sentry_org: str | None = None
     sentry_url: str | None = None
     sentry_auth_token: str | None = None
@@ -253,6 +255,11 @@ class Runner:
         self.digitalocean_token and self.register_gitlab_group_variables(
             ("DIGITALOCEAN_TOKEN", self.digitalocean_token, True)
         )
+        if self.aws_role_arn:
+            self.register_gitlab_group_variables(
+                ("AWS_ROLE_ARN", self.aws_role_arn, False, False),
+                ("AWS_DEFAULT_REGION", self.aws_region, False, False),
+            )
         if "s3" in self.media_storage:
             self.register_gitlab_group_variables(
                 ("S3_ACCESS_ID", self.s3_access_id, True),
@@ -349,6 +356,13 @@ class Runner:
     def init_service(self):
         """Initialize the service."""
         click.echo(info("...cookiecutting the service"))
+        core_providers = sorted(
+            {
+                provider
+                for providers in (self.cluster_core_providers or {}).values()
+                for provider in providers
+            }
+        )
         cookiecutter(
             os.path.dirname(os.path.dirname(__file__)),
             extra_context={
@@ -367,7 +381,7 @@ class Runner:
                 "project_name": self.project_name,
                 "project_slug": self.project_slug,
                 "python_version": self.python_version,
-                "resources": {"envs": self.envs},
+                "resources": {"envs": self.envs, "core_providers": core_providers},
                 "service_slug": self.service_slug,
                 "terraform_backend": self.terraform_backend,
                 "terraform_cloud_organization": self.terraform_cloud_organization,
@@ -480,6 +494,9 @@ class Runner:
             "TF_VAR_project_name": self.project_name,
             "TF_VAR_project_slug": self.project_slug,
             "TF_VAR_terraform_cloud_token": self.terraform_cloud_token,
+            # Serialize workspace creation: tfe provider races on tfe_project readiness
+            # when creating multiple workspaces in parallel, returning sporadic 422s.
+            "TF_CLI_ARGS_apply": "-parallelism=1",
         }
         self.run_terraform("terraform-cloud", env)
 
@@ -503,8 +520,8 @@ class Runner:
     def get_terraform_module_params(self, module_name, env):
         """Return Terraform parameters for the given module."""
         return (
-            Path(__file__).parent.parent / "terraform" / module_name,
-            self.logs_dir / self.service_slug / "terraform" / module_name,
+            Path(__file__).parent.parent / "tofu" / module_name,
+            self.logs_dir / self.service_slug / "tofu" / module_name,
             terraform_dir := self.terraform_dir / self.service_slug / module_name,
             {
                 **env,
@@ -521,7 +538,7 @@ class Runner:
         init_stderr_path = logs_dir / "init-stderr.log"
         init_process = subprocess.run(
             [
-                "terraform",
+                "tofu",
                 "init",
                 "-backend-config",
                 f"path={state_path.resolve()}",
@@ -550,7 +567,7 @@ class Runner:
         apply_stdout_path = logs_dir / "apply-stdout.log"
         apply_stderr_path = logs_dir / "apply-stderr.log"
         apply_process = subprocess.run(
-            ["terraform", "apply", "-auto-approve", "-input=false", "-no-color"],
+            ["tofu", "apply", "-auto-approve", "-input=false", "-no-color"],
             capture_output=True,
             cwd=cwd,
             env=dict(**env, TF_LOG_PATH=str(apply_log_path.resolve())),
@@ -575,7 +592,7 @@ class Runner:
         destroy_stderr_path = logs_dir / "destroy-stderr.log"
         destroy_process = subprocess.run(
             [
-                "terraform",
+                "tofu",
                 "destroy",
                 "-auto-approve",
                 "-input=false",
@@ -601,7 +618,7 @@ class Runner:
         """Get Terraform outputs."""
         return {
             output_name: subprocess.run(
-                ["terraform", "output", "-raw", output_name],
+                ["tofu", "output", "-raw", output_name],
                 capture_output=True,
                 cwd=cwd,
                 env=env,
@@ -644,7 +661,7 @@ class Runner:
         """Initialize a subrepo using the given template and options."""
         subrepo_dir = str((SUBREPOS_DIR / service_slug).resolve())
         shutil.rmtree(subrepo_dir, ignore_errors=True)
-        subprocess.run(
+        clone = subprocess.run(
             [
                 "git",
                 "clone",
@@ -653,6 +670,9 @@ class Runner:
                 "-q",
             ]
         )
+        if clone.returncode != 0:
+            click.echo(error(f"Failed to clone {service_slug} subrepo from {template_url}"))
+            raise BootstrapError
         options = {
             "env_to_cluster": self.env_to_cluster,
             "gid": self.gid,
@@ -681,20 +701,25 @@ class Runner:
             "terraform_cloud_hostname": self.terraform_cloud_hostname,
             "terraform_cloud_organization_create": False,
             "terraform_cloud_organization": self.terraform_cloud_organization,
+            "terraform_cloud_project_create": False,
             "terraform_cloud_token": self.terraform_cloud_token,
             "terraform_dir": str(self.terraform_dir.resolve()),
             "uid": self.uid,
-            "use_redis": self.use_redis,
+            "use_valkey": self.use_valkey,
             "vault_url": self.vault_url,
             "vault_token": self.vault_token,
             **kwargs,
         }
-        subprocess.run(
+        deps = subprocess.run(
             ["python", "-m", "pip", "install", "-r", "requirements/common.txt"],
             capture_output=True,
             cwd=subrepo_dir,
         )
-        subprocess.run(
+        if deps.returncode != 0:
+            click.echo(error(f"Failed to install {service_slug} subrepo dependencies"))
+            click.echo(deps.stderr.decode("utf-8", "replace"))
+            raise BootstrapError
+        runner = subprocess.run(
             [
                 "python",
                 "-c",
@@ -702,6 +727,9 @@ class Runner:
             ],
             cwd=subrepo_dir,
         )
+        if runner.returncode != 0:
+            click.echo(error(f"Subrepo {service_slug} bootstrap failed"))
+            raise BootstrapError
 
     def change_output_owner(self):
         """Change the owner of the output directory recursively."""
@@ -735,25 +763,29 @@ class Runner:
         if self.vault_url:
             self.init_vault()
         frontend_template_url = FRONTEND_TEMPLATE_URLS.get(self.frontend_type)
-        if frontend_template_url:
-            self.init_subrepo(
-                self.frontend_service_slug,
-                frontend_template_url,
-                internal_backend_url=self.backend_service_slug
-                and (f"http://{self.backend_service_slug}:{self.backend_service_port}")
-                or None,
-                internal_service_port=self.frontend_service_port,
-                sentry_dsn=self.frontend_sentry_dsn,
-            )
         backend_template_url = BACKEND_TEMPLATE_URLS.get(self.backend_type)
-        if backend_template_url:
-            self.init_subrepo(
-                self.backend_service_slug,
-                backend_template_url,
-                internal_service_port=self.backend_service_port,
-                media_storage=self.media_storage,
-                python_version=self.python_version,
-                sentry_dsn=self.backend_sentry_dsn,
-            )
+        try:
+            if frontend_template_url:
+                self.init_subrepo(
+                    self.frontend_service_slug,
+                    frontend_template_url,
+                    internal_backend_url=self.backend_service_slug
+                    and (f"http://{self.backend_service_slug}:{self.backend_service_port}")
+                    or None,
+                    internal_service_port=self.frontend_service_port,
+                    sentry_dsn=self.frontend_sentry_dsn,
+                )
+            if backend_template_url:
+                self.init_subrepo(
+                    self.backend_service_slug,
+                    backend_template_url,
+                    internal_service_port=self.backend_service_port,
+                    media_storage=self.media_storage,
+                    python_version=self.python_version,
+                    sentry_dsn=self.backend_sentry_dsn,
+                )
+        except BootstrapError:
+            self.reset_terraform()
+            raise
         self.change_output_owner()
         self.cleanup()

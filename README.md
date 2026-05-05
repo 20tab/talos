@@ -115,7 +115,7 @@ Staging environment complete URL [https://stage.my-project-name.com]:
 Production environment complete URL [https://www.my-project-name.com]:
 Do you want Traefik to generate SSL certificates? [Y/n]:
 Let's Encrypt certificates email: info@my-organization-email.com
-Do you want to use Redis? [y/N]:
+Do you want to use Valkey? [y/N]:
 Kubernetes cluster DigitalOcean region [fra1]:
 Database cluster DigitalOcean region [fra1]:
 Database cluster node size [db-s-1vcpu-2gb]:
@@ -322,16 +322,16 @@ else use
 
 `--project-url-monitoring=https://logs.example.org/`
 
-#### Redis
+#### Valkey
 
-For enabling redis integration the following arguments are needed:
+For enabling valkey integration the following arguments are needed:
 
-`--use-redis`<br/>
-`--digitalocean-redis-cluster-region=fra1`<br/>
-`--digitalocean-redis-cluster-node-size=db-s-1vcpu-2gb`
+`--use-valkey`<br/>
+`--digitalocean-valkey-cluster-region=fra1`<br/>
+`--digitalocean-valkey-cluster-node-size=db-s-1vcpu-2gb`
 
 Disabled args
-`--no-redis`
+`--no-valkey`
 
 ### ☸️ Other Kubernetes
 
@@ -354,9 +354,9 @@ Disabled args
 `--postgres-persistent-volume-claim-capacity=""`
 `--postgres-persistent-volume-host-path={{postgres-persistent-volume-host-path}}`
 
-#### Redis
+#### Valkey
 
-`--redis-image=redis:6.2`
+`--valkey-image=valkey/valkey:8`
 
 ### 🦊 GitLab
 

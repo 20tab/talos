@@ -178,21 +178,21 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(collector.frontend_type, "nextjs")
         self.assertEqual(collector.frontend_service_slug, "frontend")
 
-    def test_use_redis_from_input(self):
-        """Test setting the `use_redis` flag from user input."""
+    def test_use_valkey_from_input(self):
+        """Test setting the `use_valkey` flag from user input."""
         collector = Collector()
-        self.assertIsNone(collector.use_redis)
+        self.assertIsNone(collector.use_valkey)
         with mock_input("y"):
-            collector.set_use_redis()
-        self.assertTrue(collector.use_redis)
+            collector.set_use_valkey()
+        self.assertTrue(collector.use_valkey)
 
-    def test_use_redis_from_options(self):
-        """Test setting the `use_redis` flag from user input."""
-        collector = Collector(use_redis=False)
-        self.assertFalse(collector.use_redis)
+    def test_use_valkey_from_options(self):
+        """Test setting the `use_valkey` flag from user input."""
+        collector = Collector(use_valkey=False)
+        self.assertFalse(collector.use_valkey)
         with mock.patch("bootstrap.collector.click.confirm") as mocked_confirm:
-            collector.set_use_redis()
-        self.assertFalse(collector.use_redis)
+            collector.set_use_valkey()
+        self.assertFalse(collector.use_valkey)
         mocked_confirm.assert_not_called()
 
     def test_terraform_backend_from_default(self):
@@ -490,7 +490,7 @@ class TestBootstrapCollector(TestCase):
 
     def test_digitalocean_default(self):
         """Test setting the Digitalocean options from default."""
-        collector = Collector(use_redis=False)
+        collector = Collector(use_valkey=False)
         collector.set_digitalocean_token = mock.MagicMock()
         self.assertFalse(collector._digitalocean_enabled)
         self.assertIsNone(collector.digitalocean_domain_create)
@@ -511,7 +511,7 @@ class TestBootstrapCollector(TestCase):
 
     def test_digitalocean_input(self):
         """Test setting the Digitalocean options from input."""
-        collector = Collector(use_redis=True)
+        collector = Collector(use_valkey=True)
         collector.set_digitalocean_token = mock.MagicMock()
         self.assertFalse(collector._digitalocean_enabled)
         self.assertIsNone(collector.digitalocean_domain_create)
@@ -526,7 +526,7 @@ class TestBootstrapCollector(TestCase):
             "database-cluster-region",
             "db-size",
             "",
-            "redis-cluster-size",
+            "valkey-cluster-size",
         ):
             collector.set_digitalocean()
         self.assertEqual(collector._digitalocean_enabled, True)
@@ -539,17 +539,17 @@ class TestBootstrapCollector(TestCase):
             collector.digitalocean_database_cluster_region, "database-cluster-region"
         )
         self.assertEqual(collector.digitalocean_database_cluster_node_size, "db-size")
-        self.assertEqual(collector.digitalocean_redis_cluster_region, "fra1")
+        self.assertEqual(collector.digitalocean_valkey_cluster_region, "fra1")
         self.assertEqual(
-            collector.digitalocean_redis_cluster_node_size, "redis-cluster-size"
+            collector.digitalocean_valkey_cluster_node_size, "valkey-cluster-size"
         )
 
     def test_digitalocean_options(self):
         """Test setting the Digitalocean options from options."""
         collector = Collector(
-            use_redis=True,
-            digitalocean_redis_cluster_region="fra2",
-            digitalocean_redis_cluster_node_size="size",
+            use_valkey=True,
+            digitalocean_valkey_cluster_region="fra2",
+            digitalocean_valkey_cluster_node_size="size",
             digitalocean_domain_create=False,
             digitalocean_dns_records_create=True,
             digitalocean_k8s_cluster_region="k8s-cluster-region-from-options",
@@ -975,7 +975,7 @@ class TestBootstrapCollector(TestCase):
             project_url_prod="https://www.test.com",
             project_url_stage="https://stage.test.com",
             terraform_backend="terraform-cloud",
-            use_redis=False,
+            use_valkey=False,
         )
         collector._service_dir = Path(".")
         runner = collector.get_runner()
@@ -989,7 +989,7 @@ class TestBootstrapCollector(TestCase):
         self.assertEqual(runner.project_url_prod, "https://www.test.com")
         self.assertEqual(runner.project_url_stage, "https://stage.test.com")
         self.assertEqual(runner.terraform_backend, "terraform-cloud")
-        self.assertEqual(runner.use_redis, False)
+        self.assertEqual(runner.use_valkey, False)
 
     def test_collect(self):
         """Test collect options."""
@@ -1000,7 +1000,7 @@ class TestBootstrapCollector(TestCase):
         collector.set_service_dir = mock.MagicMock()
         collector.set_backend_service = mock.MagicMock()
         collector.set_frontend_service = mock.MagicMock()
-        collector.set_use_redis = mock.MagicMock()
+        collector.set_use_valkey = mock.MagicMock()
         collector.set_terraform = mock.MagicMock()
         collector.set_vault = mock.MagicMock()
         collector.set_clusters = mock.MagicMock()
@@ -1019,7 +1019,7 @@ class TestBootstrapCollector(TestCase):
         collector.set_service_dir.assert_called_once()
         collector.set_backend_service.assert_called_once()
         collector.set_frontend_service.assert_called_once()
-        collector.set_use_redis.assert_called_once()
+        collector.set_use_valkey.assert_called_once()
         collector.set_terraform.assert_called_once()
         collector.set_vault.assert_called_once()
         collector.set_clusters.assert_called_once()

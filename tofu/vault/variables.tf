@@ -9,8 +9,8 @@ variable "project_slug" {
 }
 
 variable "secrets" {
-  description = "The secrets."
-  type        = map(map(any))
+  description = "The secrets keyed by Vault KV path."
+  type        = any
   default     = {}
 }
 

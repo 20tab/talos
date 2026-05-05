@@ -13,11 +13,12 @@ from bootstrap.constants import (
     BACKEND_TYPE_CHOICES,
     BACKEND_TYPE_DEFAULT,
     CLUSTERS_DEFAULT,
+    CORE_PROVIDER_AWS,
     CORE_PROVIDER_CHOICES,
     CORE_PROVIDER_DIGITALOCEAN,
     DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
-    DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
     DIGITALOCEAN_SPACES_REGION_DEFAULT,
+    DIGITALOCEAN_VALKEY_CLUSTER_NODE_SIZE_DEFAULT,
     EMPTY_SERVICE_TYPE,
     ENV_NAMES,
     ENV_TO_CLUSTER_DEFAULT,
@@ -68,6 +69,8 @@ class Collector:
     clusters: list[str] | None = None
     cluster_core_providers: dict[str, list[str]] | None = None
     env_to_cluster: dict[str, str] | None = None
+    aws_role_arn: str | None = None
+    aws_region: str | None = None
     project_domain: str | None = None
     subdomain_dev: str | None = None
     subdomain_stage: str | None = None
@@ -86,10 +89,10 @@ class Collector:
     postgres_persistent_volume_capacity: str | None = None
     postgres_persistent_volume_claim_capacity: str | None = None
     postgres_persistent_volume_host_path: str | None = None
-    use_redis: bool | None = None
-    redis_image: str | None = None
-    digitalocean_redis_cluster_region: str | None = None
-    digitalocean_redis_cluster_node_size: str | None = None
+    use_valkey: bool | None = None
+    valkey_image: str | None = None
+    digitalocean_valkey_cluster_region: str | None = None
+    digitalocean_valkey_cluster_node_size: str | None = None
     sentry_org: str | None = None
     sentry_url: str | None = None
     sentry_auth_token: str | None = None
@@ -130,10 +133,11 @@ class Collector:
         self.set_service_dir()
         self.set_backend_service()
         self.set_frontend_service()
-        self.set_use_redis()
+        self.set_use_valkey()
         self.set_terraform()
         self.set_vault()
         self.set_clusters()
+        self.set_aws()
         self.set_envs()
         self.set_domain_and_urls()
         self.set_letsencrypt()
@@ -201,11 +205,11 @@ class Collector:
                 separator="",
             )
 
-    def set_use_redis(self):
-        """Set the use Redis option."""
-        if self.use_redis is None:
-            self.use_redis = click.confirm(
-                warning("Do you want to use Redis?"), default=False
+    def set_use_valkey(self):
+        """Set the use Valkey option."""
+        if self.use_valkey is None:
+            self.use_valkey = click.confirm(
+                warning("Do you want to use Valkey?"), default=False
             )
 
     def set_terraform(self):
@@ -288,6 +292,21 @@ class Collector:
                 for p in raw.split(",")
                 if p.strip().lower() in CORE_PROVIDER_CHOICES
             ]
+
+    def set_aws(self):
+        """Set AWS-specific options when AWS is among the chosen core providers."""
+        uses_aws = any(
+            CORE_PROVIDER_AWS in providers
+            for providers in (self.cluster_core_providers or {}).values()
+        )
+        if not uses_aws:
+            return
+        self.aws_role_arn = self.aws_role_arn or click.prompt(
+            "AWS IAM role ARN for GitLab OIDC federation"
+        )
+        self.aws_region = self.aws_region or click.prompt(
+            "AWS region", default=AWS_S3_REGION_DEFAULT
+        )
 
     def set_envs(self):
         """Set the environment-to-cluster mapping (one cluster slug per environment)."""
@@ -388,15 +407,15 @@ class Collector:
                 default=DIGITALOCEAN_DATABASE_CLUSTER_NODE_SIZE_DEFAULT,
             )
         )
-        if self.use_redis:
-            if self.digitalocean_redis_cluster_region is None:
-                self.digitalocean_redis_cluster_region = click.prompt(
-                    "Redis cluster DigitalOcean region", default="fra1"
+        if self.use_valkey:
+            if self.digitalocean_valkey_cluster_region is None:
+                self.digitalocean_valkey_cluster_region = click.prompt(
+                    "Valkey cluster DigitalOcean region", default="fra1"
                 )
-            if self.digitalocean_redis_cluster_node_size is None:
-                self.digitalocean_redis_cluster_node_size = click.prompt(
-                    "Redis cluster node size",
-                    default=DIGITALOCEAN_REDIS_CLUSTER_NODE_SIZE_DEFAULT,
+            if self.digitalocean_valkey_cluster_node_size is None:
+                self.digitalocean_valkey_cluster_node_size = click.prompt(
+                    "Valkey cluster node size",
+                    default=DIGITALOCEAN_VALKEY_CLUSTER_NODE_SIZE_DEFAULT,
                 )
 
     def set_digitalocean_token(self):
@@ -572,6 +591,8 @@ class Collector:
             clusters=self.clusters,
             cluster_core_providers=self.cluster_core_providers,
             env_to_cluster=self.env_to_cluster,
+            aws_role_arn=self.aws_role_arn,
+            aws_region=self.aws_region,
             project_domain=self.project_domain,
             subdomain_dev=self.subdomain_dev,
             subdomain_stage=self.subdomain_stage,
@@ -590,10 +611,10 @@ class Collector:
             postgres_persistent_volume_capacity=self.postgres_persistent_volume_capacity,
             postgres_persistent_volume_claim_capacity=self.postgres_persistent_volume_claim_capacity,
             postgres_persistent_volume_host_path=self.postgres_persistent_volume_host_path,
-            use_redis=self.use_redis,
-            redis_image=self.redis_image,
-            digitalocean_redis_cluster_region=self.digitalocean_redis_cluster_region,
-            digitalocean_redis_cluster_node_size=self.digitalocean_redis_cluster_node_size,
+            use_valkey=self.use_valkey,
+            valkey_image=self.valkey_image,
+            digitalocean_valkey_cluster_region=self.digitalocean_valkey_cluster_region,
+            digitalocean_valkey_cluster_node_size=self.digitalocean_valkey_cluster_node_size,
             sentry_org=self.sentry_org,
             sentry_url=self.sentry_url,
             backend_sentry_dsn=self.backend_sentry_dsn,

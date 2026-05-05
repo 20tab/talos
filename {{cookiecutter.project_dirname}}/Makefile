@@ -24,7 +24,7 @@ pull:  ## Pull develop on all services
 s =
 .PHONY: rebuild
 rebuild:  ## Rebuild container
-	docker-compose stop $(s) && docker-compose rm -f $(s) && docker-compose up -d --build $(s)
+	docker compose stop $(s) && docker compose rm -f $(s) && docker compose up -d --build $(s)
 
 help:
 	@echo "[Help] Makefile list commands:"

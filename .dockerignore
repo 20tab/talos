@@ -1,5 +1,13 @@
 **/__pycache__
 **/lost+found
+**/.terraform
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfvars
+**/terraform.tfvars.json
+**/*.auto.tfvars
+**/*.auto.tfvars.json
 *.md
 .*
 Dockerfile

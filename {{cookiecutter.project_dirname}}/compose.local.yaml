@@ -1,0 +1,32 @@
+services:
+{%- if cookiecutter.backend_type != "none" %}
+  {{ cookiecutter.backend_service_slug }}:
+    build:
+      context: ./{{ cookiecutter.backend_service_slug }}
+    command: sleep infinity
+    entrypoint: ""
+    healthcheck:
+      test: ["CMD", "true"]
+    ports:
+      - "${BACKEND_LOCAL_PORT:-8005}:{{ cookiecutter.backend_service_port }}"
+    volumes:
+      - ./{{ cookiecutter.backend_service_slug }}:/app
+      - ~/.claude:/home/${USER}/.claude
+      - ~/.ssh:/home/${USER}/.ssh-localhost:ro
+{%- endif %}
+{%- if cookiecutter.frontend_type != "none" %}
+
+  {{ cookiecutter.frontend_service_slug }}:
+    build:
+      context: ./{{ cookiecutter.frontend_service_slug }}
+    command: sleep infinity
+    entrypoint: ""
+    healthcheck:
+      test: ["CMD", "true"]
+    ports:
+      - "${FRONTEND_LOCAL_PORT:-3005}:{{ cookiecutter.frontend_service_port }}"
+    volumes:
+      - ./{{ cookiecutter.frontend_service_slug }}:/app
+      - ~/.claude:/home/${USER}/.claude
+      - ~/.ssh:/home/${USER}/.ssh-localhost:ro
+{%- endif %}
